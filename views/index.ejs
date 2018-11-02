@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Parabug Estimate Solution Tool</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      html {
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+      }
+      
+      body {
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+        display: grid;
+        grid-template-columns: 70% 30%;
+        grid-template-rows: 100%;
+      }
+      
+      .map-container {
+        padding: 10px;
+      }
+      
+      .sidebar {
+        padding: 10px;
+      }
+      
+      #map {
+        height: 100%;
+      }
+      
+    </style>
+  </head>
+  <body>
+      <div class="map-container"><div id="map"></div></div>
+      <div class="sidebar">
+        <input type="button" value="Move Map" onclick="drawToggle(0)">
+        <input type="button" value="Mark Application Area" onclick="drawToggle(1)">
+        <input type="button" value="Mark Hazard Area" onclick="drawToggle(2)">
+        <input type="button" value="Mark Variable Rate" onclick="drawToggle(3)">
+        <input type="button" value="Validate" onclick="validate()">
+        <input type="button" value="Reset" onclick="resetMap()">
+      </div>
+  </body>
+</html>
+
+<script type="text/javascript" src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.1.2/jsts.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<%=api_key%>&callback=initMap&libraries=drawing" async defer> </script>
+
+<script type="text/javascript" src="/js/classes.js"></script>
+<script>
+
+  // GLOBAL VARIABLES
+  var map;
+  var drawingManager;
+  var appArea;
+  
+  // Internal object to help manage toggling between our custom
+  //  drawing modes
+  var drawModeControl = {
+    modes: ['Drag', 'Application', 'Hazard', 'Variable'],
+    current: 0,
+    getCurrent: function(){
+      return this.modes[this.current];
+    }
+  };
+  
+  function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+      center: {lat: 36.677756, lng: -121.729448},
+      zoom: 16,
+      mapTypeId: 'satellite'
+    });
+    drawingManager = new google.maps.drawing.DrawingManager({
+      drawingMode: null,
+      drawingControl: false,
+      map: map,
+      polygonOptions: {
+        editable: true,
+      },
+    }); 
+    
+    google.maps.event.addListener(drawingManager, 'polygoncomplete', function(p) {
+      var path = p.getPath();
+      if(drawModeControl.getCurrent()=='Application') {
+        drawApplicationArea(path);
+      } else if (drawModeControl.getCurrent()=='Hazard') {
+        drawHazardArea(path);
+      } else if (drawModeControl.getCurrent()=='Variable') {
+        drawVariableRateArea(path);
+      }
+      p.setMap(null);
+      path = null;
+    });
+  }
+  
+  function drawToggle(mode) {
+    if(mode==0) {
+      drawingManager.setOptions({
+        drawingMode: null
+      });
+      drawModeControl.current=mode;
+    } else if(mode==1 || mode==2 || mode==3){
+      drawingManager.setOptions({
+        drawingMode: google.maps.drawing.OverlayType.POLYGON
+      });
+      drawModeControl.current=mode;
+    } else {
+      // Unexpected Input
+    }
+  }
+  
+  function drawApplicationArea(path) {
+    if(appArea == null) {
+      appArea = new AppArea(map,path);
+    } else {
+      appArea.del();
+      appArea = new AppArea(map,path);
+    }
+  }
+  
+  function drawHazardArea(path) {
+    // Check to see if any point is found outside of the polygon
+    if(appArea==null) {
+      console.log("Error: no outer application area defined for hazard");
+      return false;
+    }
+    return appArea.addHazard(path);
+  }
+  
+  function drawVariableRateArea(path) {
+    // Check to see if any point is found outside of the polygon
+    if(appArea==null) {
+      console.log("Error: no outer application area defined for variate rate area");
+      return false;
+    }
+    return appArea.addVariableRate(path);
+  }
+  
+  function resetMap() {
+    if(appArea != null) {
+      appArea.del();
+      appArea.clearHazards();
+      appArea.clearVariableRateAreas();
+    }
+    appArea = null;
+  }
+
+  function validate() {
+    if(appArea==null) {return false;}
+    appArea.validateAndFix();
+  }
+  
+function createJstsPolygon(geometryFactory, polygon) {
+  var path = polygon.getPath();
+  var coordinates = path.getArray().map(function name(coord) {
+    return new jsts.geom.Coordinate(coord.lat(), coord.lng());
+  });
+  if(coordinates[0].compareTo(coordinates[coordinates.length-1]) != 0) 
+      coordinates.push(coordinates[0]);
+  var shell = geometryFactory.createLinearRing(coordinates);
+  return geometryFactory.createPolygon(shell);
+}
+</script>
