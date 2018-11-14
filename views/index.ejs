@@ -47,7 +47,9 @@
   </body>
 </html>
 
-<script type="text/javascript" src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.1.2/jsts.min.js"></script>
+<!--<script type="text/javascript" src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.1.2/jsts.min.js"></script>-->
+<script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
+<!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
 <script src="https://maps.googleapis.com/maps/api/js?key=<%=api_key%>&callback=initMap&libraries=drawing" async defer> </script>
 
 <script type="text/javascript" src="/js/classes.js"></script>
@@ -142,9 +144,9 @@
   
   function resetMap() {
     if(appArea != null) {
-      appArea.del();
       appArea.clearHazards();
       appArea.clearVariableRateAreas();
+      appArea.del();
     }
     appArea = null;
   }
@@ -153,15 +155,4 @@
     if(appArea==null) {return false;}
     appArea.validateAndFix();
   }
-  
-function createJstsPolygon(geometryFactory, polygon) {
-  var path = polygon.getPath();
-  var coordinates = path.getArray().map(function name(coord) {
-    return new jsts.geom.Coordinate(coord.lat(), coord.lng());
-  });
-  if(coordinates[0].compareTo(coordinates[coordinates.length-1]) != 0) 
-      coordinates.push(coordinates[0]);
-  var shell = geometryFactory.createLinearRing(coordinates);
-  return geometryFactory.createPolygon(shell);
-}
 </script>
