@@ -56,6 +56,10 @@ class VariableRateArea {
         this.poly = null;
         this.map = null;
     }
+        
+    getPoly() {
+        return this.poly;
+    }
     
     setDescription(description) {
         this.description = description;
@@ -96,9 +100,12 @@ class AppArea {
         return true;
     }
     
-    addVariableRate(path) {
-        var variableRateArea = new VariableRateArea(this.map,path);
-        this.variableRateAreas.push(variableRateArea);
+    addVariableRate(path, holes=[]) {
+        var allPaths = holes;
+        allPaths.unshift(path);
+        
+        var vra = new VariableRateArea(this.map,allPaths);
+        this.variableRateAreas.push(vra);
         return true;
     }
     
@@ -111,7 +118,11 @@ class AppArea {
     }
     
     clearVariableRateAreas() {
-        for(var i = 0; i < this.variableRateAreas.length; i++) { this.removeVariableRateArea(i); }
+        var i = this.getNumVariableRateAreas()-1;
+        while(i>=0) {
+            this.removeVariableRateArea(i); 
+            i--;
+        }
     }
     
     del() {
@@ -129,8 +140,19 @@ class AppArea {
         return null;
     }
     
+    getVariableRateArea(index) {
+        if(index<this.variableRateAreas.length) {
+            return this.variableRateAreas[index];
+        }
+        return null;
+    }
+    
     getNumHazard() {
         return this.hazards.length;
+    }
+    
+    getNumVariableRateAreas() {
+        return this.variableRateAreas.length;
     }
     
     getPoly() {
@@ -157,6 +179,19 @@ class AppArea {
         return false;
     }
     
+    setVariableRateArea(index, path, holes=[]) {
+        if(index<this.variableRateAreas.length) {
+            this.variableRateAreas[index].del();
+            this.variableRateAreas[index] = null;
+            var allPaths = holes;
+            allPaths.unshift(path);
+            var vra = new VariableRateArea(this.map,allPaths);
+            this.variableRateAreas[index] = vra;
+            return true;
+        }
+        return false;
+    }
+    
     trimHazards() {
         var outer = this.getPoly();
         var inner, result;
@@ -167,7 +202,34 @@ class AppArea {
             for(var j = 0; j < result.length; j++){
                 this.addHazard(result[j].shell, result[j].holes);
             }
-            
+        }
+    }
+    
+    trimVariableRateAreas() {
+        var outer = this.getPoly();
+        var inner, result;
+        for(var i = 0; i < this.getNumVariableRateAreas(); i++) {
+            inner = this.getVariableRateArea(i).getPoly();
+            result = AppArea.trimPolygon(inner, outer);
+            this.removeVariableRateArea(i);
+            for(var j = 0; j < result.length; j++){
+                this.addVariableRate(result[j].shell, result[j].holes);
+            }
+        }
+        
+        var vra, haz;
+        var numVRAs = this.getNumVariableRateAreas();
+        for(i = 0; i < this.getNumHazard(); i++) {
+            haz = this.getHazard(i).getPoly();
+            for(j = 0; j < numVRAs; j++) {
+                vra = this.getVariableRateArea(j).getPoly();
+                result = AppArea.getDifference(vra,haz);
+                for(var k = 0; k < result.length; k++){
+                    if(k == 0) { this.setVariableRateArea(j, result[k].shell, result[k].holes); }
+                     else { this.addVariableRate(result[k].shell, result[k].holes); }
+                }
+                numVRAs = this.getNumVariableRateAreas();
+            }
         }
     }
     
@@ -233,9 +295,73 @@ class AppArea {
         }
     }
     
+    unionVariableRateAreas() {
+        // Return now if only 1 variable rate area is left, not necessary but decreases time by one loop
+        if(this.getNumVariableRateAreas() <= 1) { return true; }
+        
+        // Setup variables
+        var i = 0;
+        var numVRAs = this.getNumVariableRateAreas();
+        var temp1, temp2, result;
+        var unionOccured = false;
+        
+        while(i < numVRAs) {
+            // Reset bool which indicates if a union was found
+            unionOccured = false;
+            
+            // Get first variable rate area to compare with rest for union
+            temp1 = this.getVariableRateArea(i);
+            
+            // Loop through variable rate areas and compare
+            for(var j = 0; j < numVRAs; j++) {
+                
+                // If not the same variable rate area
+                if(j!=i) {
+                    
+                    // Get the other variable rate area and find the union of the two
+                    temp2 = this.getVariableRateArea(j);
+                    result = AppArea.unionPolygons(temp1.getPoly(), temp2.getPoly());
+                    
+                    // Check if the two variable rate areas were actually unioned (they interesected and a new path was made)
+                    if(result.unioned==1) {
+                        
+                        // Remove the original variable rate area at index i
+                        this.removeVariableRateArea(i);
+                        
+                        // Remove the original variable rate area at index j
+                        // But adjust for shift from deletion of i
+                        if(i<j) { this.removeVariableRateArea(j-1); } 
+                        else { this.removeVariableRateArea(j); }
+                        
+                        // Add new unioned variable rate area
+                        this.addVariableRate(result.shell, result.holes);
+                        
+                        // Set bool to true to indicate a union has occured 
+                        unionOccured = true;
+                        
+                        // Adjust numVRAs to reflect new additions and deletions
+                        numVRAs = this.getNumVariableRateAreas();
+                        break;
+                    }
+                }
+            }
+            
+            // Increment variable rate area index to check
+            i++;
+            
+            // Indexes have shifted and new paths were added, restart loop
+            if(unionOccured) {i=0;}
+            
+            // Return now if only 1 hazard is left, not necessary but decreases time by one loop
+            if(numVRAs <= 1) {return;}
+        }
+    }
+    
     validateAndFix() {
         this.unionHazards();
         this.trimHazards();
+        this.unionVariableRateAreas();
+        this.trimVariableRateAreas();
         // console.log(this);
     }
     
@@ -243,8 +369,8 @@ class AppArea {
         Trims the inner polygon to be contained within the outer polygon
         Takes two google polygons and returns array of objects:
         {
-            shell   - the outer path of the trim (at most, boundaries of outer polygon),
-            [holes]   - the inner paths of the trim, representing holes (if any)
+            shell   - (coordinates) the outer path of the trim (at most, boundaries of outer polygon),
+            [holes]   - (coordinates) the inner paths of the trim, representing holes (if any)
         }
     */
     static trimPolygon(inner, outer) {
@@ -273,11 +399,45 @@ class AppArea {
     }
     
     /*
+        Removes area the area of a polygon that overlaps with another
+        Takes two google polygons and returns array of objects:
+        {
+            shell   - (coordinates) the outer path of the difference,
+            [holes]   - (coordinates) the inner paths of the difference, representing holes (if any)
+        }
+    */
+    static getDifference(poly, polyRemove) {
+        var gF = new jsts.geom.GeometryFactory();
+        
+        var jstsPoly = AppArea.createJstsPolygon(gF, poly);
+        var jstsPolyRemove = AppArea.createJstsPolygon(gF, polyRemove);
+        
+        jstsPoly.normalize();
+        jstsPolyRemove.normalize();
+        
+        var difference = jstsPoly.difference(jstsPolyRemove);
+        // console.log("Trim difference geometry: ");
+        // console.log(difference);
+        
+        
+        var shellsHoles = AppArea.getGeoShellsHoles(difference);
+        // console.log("Linear Rings Shells and holes from difference: ");
+        // console.log(shellsHoles);
+        
+        var result = AppArea.shellsHolesToCoords(shellsHoles);
+        // console.log("Coordinates Shells and holes from difference: ");
+        // console.log(result);
+        
+        return result;
+    }
+    
+    
+    /*
         Create a unioned polygon between two input polygons, if intersection occurs
         Takes two google polygons and returns object:
         {
-            shell   - the outer path of the union
-            [holes]   - the inner paths of the union, representing holes (if any)
+            shell   - (coordinates) the outer path of the union
+            [holes]   - (coordinates) the inner paths of the union, representing holes (if any)
             unioned - Status int 1 (union occured) or 2 (union did not occur)
         }
     */
