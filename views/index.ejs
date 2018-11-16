@@ -1,158 +1,249 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Parabug Estimate Solution Tool</title>
-    <meta name="viewport" content="initial-scale=1.0">
-    <meta charset="utf-8">
-    <style>
-      html {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-      }
-      
-      body {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-        display: grid;
-        grid-template-columns: 70% 30%;
-        grid-template-rows: 100%;
-      }
-      
-      .map-container {
-        padding: 10px;
-      }
-      
-      .sidebar {
-        padding: 10px;
-      }
-      
-      #map {
-        height: 100%;
-      }
-      
-    </style>
-  </head>
-  <body>
-      <div class="map-container"><div id="map"></div></div>
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>Parabug Estimate Solution Tool</title>
+      <meta name="viewport" content="initial-scale=1.0">
+      <meta charset="utf-8">
+      <style>
+        html {
+          height: 100%;
+          margin: 0px;
+          padding: 0px;
+        }
+        
+        body {
+          height: 100%;
+          margin: 0px;
+          padding: 0px;
+          display: grid;
+          /*grid-template-columns: 70% 30%;*/
+          grid-template-rows: 90%;
+        }
+        
+        .map-container {
+          padding: 15px;
+        }
+        
+        .sidebar {
+          padding: 10px;
+        }
+        
+        #map {
+          height: 100%;
+          border: 2px solid black;
+        }
+        
+        #pac-input {
+          background-color: #fff;
+          font-family: Roboto;
+          font-size: 15px;
+          font-weight: 300;
+          margin-left: 10px;
+          margin-top: 10px;
+          padding: 0 11px 0 13px;
+          text-overflow: ellipsis;
+          width: 15%;
+          line-height: 32px;
+          border:'2px solid #fff';
+        }
+        
+        #pac-input:focus {
+          border-color: #4d90fe;
+        }
+        
+        #mode-control-container {
+          display: grid;
+          grid-template-columns: 30% 70%;
+          grid-template-rows: 100%;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="map-container">
+        <input id="pac-input" class="controls" type="text" placeholder="Search...">
+        <div id="map"></div>
+      </div>
       <div class="sidebar">
-        <input type="button" value="Move Map" onclick="drawToggle(0)">
-        <input type="button" value="Mark Application Area" onclick="drawToggle(1)">
-        <input type="button" value="Mark Hazard Area" onclick="drawToggle(2)">
-        <input type="button" value="Mark Variable Rate" onclick="drawToggle(3)">
         <input type="button" value="Validate" onclick="validate()">
         <input type="button" value="Reset" onclick="resetMap()">
       </div>
-  </body>
-</html>
-
-<!--<script type="text/javascript" src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.1.2/jsts.min.js"></script>-->
-<script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
-<!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
-<script src="https://maps.googleapis.com/maps/api/js?key=<%=api_key%>&callback=initMap&libraries=drawing" async defer> </script>
-
-<script type="text/javascript" src="/js/classes.js"></script>
-<script>
-
-  // GLOBAL VARIABLES
-  var map;
-  var drawingManager;
-  var appArea;
+    </body>
+  </html>
   
-  // Internal object to help manage toggling between our custom
-  //  drawing modes
-  var drawModeControl = {
-    modes: ['Drag', 'Application', 'Hazard', 'Variable'],
-    current: 0,
-    getCurrent: function(){
-      return this.modes[this.current];
-    }
-  };
   
-  function initMap() {
-    map = new google.maps.Map(document.getElementById('map'), {
-      center: {lat: 36.677756, lng: -121.729448},
-      zoom: 16,
-      mapTypeId: 'satellite'
-    });
-    drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: null,
-      drawingControl: false,
-      map: map,
-      polygonOptions: {
-        editable: true,
-      },
-    }); 
+  <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
+  <!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
+  <script src="https://maps.googleapis.com/maps/api/js?key=<%=api_key%>&callback=initMap&libraries=drawing,places" async defer> </script>
+  
+  <script type="text/javascript" src="/js/classes.js"></script>
+  <script>
+    // GLOBAL VARIABLES
+    var map;
+    var drawingManager;
+    var appArea;
     
-    google.maps.event.addListener(drawingManager, 'polygoncomplete', function(p) {
-      var path = p.getPath();
-      if(drawModeControl.getCurrent()=='Application') {
-        drawApplicationArea(path);
-      } else if (drawModeControl.getCurrent()=='Hazard') {
-        drawHazardArea(path);
-      } else if (drawModeControl.getCurrent()=='Variable') {
-        drawVariableRateArea(path);
+    // Internal object to help manage toggling between our custom
+    //  drawing modes
+    var drawModeControl = {
+      modes: ['Drag', 'Application', 'Hazard', 'Variable'],
+      current: 0,
+      getCurrent: function(){ return this.modes[this.current]; }
+    };
+    
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: {lat: 36.677756, lng: -121.729448},
+        zoom: 15,
+        mapTypeId: 'satellite',
+        streetViewControl: false,
+        rotateControl: false,
+        mapTypeControlOptions: {
+          style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+        }
+      });
+      drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: null,
+        drawingControl: false,
+        map: map,
+        polygonOptions: { editable: true }
+      });
+      google.maps.event.addListener(drawingManager, 'polygoncomplete', function(p) {
+        draw(p.getPath());
+        p.setMap(null);
+        path = null;
+      });
+      
+      //************************************* Search Box *************************************
+      // Create the search box and link it to the UI element.
+      var input = document.getElementById('pac-input');
+      var searchBox = new google.maps.places.SearchBox(input);
+      map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+      
+      // Bias the SearchBox results towards current map's viewport.
+      map.addListener('bounds_changed', function() {
+        searchBox.setBounds(map.getBounds());
+      });
+      
+      // Listen for the event fired when the user selects a prediction
+      searchBox.addListener('places_changed', function() {
+        var places = searchBox.getPlaces();
+        if (places.length == 0) { return; }
+        
+        // For each place, get the location.
+        var bounds = new google.maps.LatLngBounds();
+        places.forEach(function(place) {
+          if (!place.geometry) { console.log("Returned place contains no geometry"); return; }
+          
+          // Only geocodes have viewport
+          if (place.geometry.viewport) { bounds.union(place.geometry.viewport); } 
+          else { bounds.extend(place.geometry.location); }
+        });
+        map.fitBounds(bounds);
+        map.setTilt(0);
+      });
+      //*********************************** End search Box ***********************************
+      
+      
+      //*********************************** Custom Controls***********************************
+      //https://developers.google.com/maps/documentation/javascript/examples/control-custom
+      function MapModeControl(divHolder, map) {
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        // controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.marginTop = '10px';
+        controlUI.style.padding = '2px';
+        controlUI.title = 'Select Control Mode';
+        controlUI.id = "mode-control-container";
+        
+        var modeText = document.createElement('div');
+        modeText.innerHTML = 'Mode: ';
+        modeText.style.color = 'rgb(25,25,25)';
+        modeText.style.fontFamily = 'Roboto,Arial,sans-serif';
+        modeText.style.fontSize = '15px';
+        modeText.style.lineHeight = '30px';
+        modeText.style.marginRight = '10px';
+        modeText.style.fontWeight = '600';
+        
+        // Interior
+        var modeSelect = document.createElement('select');
+        modeSelect.style.color = 'rgb(25,25,25)';
+        modeSelect.style.fontFamily = 'Roboto,Arial,sans-serif';
+        modeSelect.style.fontSize = '15px';
+        modeSelect.style.lineHeight = '30px';
+        
+        var mode;
+        for(var i = 0; i < drawModeControl.modes.length; i++) {
+          mode = document.createElement('option');
+          mode.value = i;
+          mode.text = drawModeControl.modes[i];
+          modeSelect.appendChild(mode);
+        }
+        modeSelect.addEventListener('change', function() {
+          var index = modeSelect.selectedIndex;
+          var value = modeSelect.options[index].value;
+          drawToggle(value);
+        });
+        
+        controlUI.appendChild(modeText);
+        controlUI.appendChild(modeSelect);
+        divHolder.appendChild(controlUI);
       }
-      p.setMap(null);
-      path = null;
-    });
-  }
-  
-  function drawToggle(mode) {
-    if(mode==0) {
-      drawingManager.setOptions({
-        drawingMode: null
-      });
-      drawModeControl.current=mode;
-    } else if(mode==1 || mode==2 || mode==3){
-      drawingManager.setOptions({
-        drawingMode: google.maps.drawing.OverlayType.POLYGON
-      });
-      drawModeControl.current=mode;
-    } else {
-      // Unexpected Input
+      
+      var modeSelectionDiv = document.createElement('div');
+      var modeControl = new MapModeControl(modeSelectionDiv, map);
+      modeSelectionDiv.index = 1;
+      map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
+      
+      //********************************* End Custom Controls*********************************
     }
-  }
-  
-  function drawApplicationArea(path) {
-    if(appArea == null) {
-      appArea = new AppArea(map,path);
-    } else {
-      appArea.del();
-      appArea = new AppArea(map,path);
+    
+    function drawToggle(mode) {
+      // Value defaults in string, parse the int value
+      mode = parseInt(mode, 10);
+      switch(mode) {
+        case 0:
+          drawingManager.setOptions({ drawingMode: null });
+          break
+        case 1: // Fall through
+        case 2: // Fall through
+        case 3:
+          drawingManager.setOptions({ drawingMode: google.maps.drawing.OverlayType.POLYGON });
+          drawModeControl.current=mode;
+          break;
+        default: break; // unexpected input
+      }
     }
-  }
-  
-  function drawHazardArea(path) {
-    // Check to see if any point is found outside of the polygon
-    if(appArea==null) {
-      console.log("Error: no outer application area defined for hazard");
-      return false;
+    
+    function draw(path) {
+      var mode = drawModeControl.getCurrent();
+      switch(mode) {
+        case "Application":
+            if(appArea == null) { appArea = new AppArea(map,path); } 
+            else { appArea.del(); appArea = new AppArea(map,path); }
+          break
+        case "Hazard":
+            if(appArea==null) { console.log("No application area defined for hazard"); return; }
+            appArea.addHazard(path);
+          break;
+        case "Variable":
+            if(appArea==null) { console.log("No application area defined for variate rate area"); return; }
+            appArea.addVariableRate(path);
+          break;
+        default: break; // unexpected input
+      }
     }
-    return appArea.addHazard(path);
-  }
-  
-  function drawVariableRateArea(path) {
-    // Check to see if any point is found outside of the polygon
-    if(appArea==null) {
-      console.log("Error: no outer application area defined for variate rate area");
-      return false;
+    
+    function resetMap() {
+      if(appArea != null) { appArea.del(); }
+      appArea = null;
     }
-    return appArea.addVariableRate(path);
-  }
-  
-  function resetMap() {
-    if(appArea != null) {
-      appArea.clearHazards();
-      appArea.clearVariableRateAreas();
-      appArea.del();
+    
+    function validate() {
+      if(appArea==null) {return false;}
+      appArea.validateAndFix();
     }
-    appArea = null;
-  }
-
-  function validate() {
-    if(appArea==null) {return false;}
-    appArea.validateAndFix();
-  }
-</script>
+  </script>

@@ -42,7 +42,7 @@ class VariableRateArea {
         this.poly = new google.maps.Polygon({
             paths: path,
             strokeColor: '#000000',
-            strokeOpacity: 0.8,
+            strokeOpacity: 1,
             strokeWeight: 1,
             fillColor: '#CCCCCC',
             fillOpacity: 0.6,
@@ -82,7 +82,7 @@ class AppArea {
         this.poly = new google.maps.Polygon({
             paths: path,
             strokeColor: '#000000',
-            strokeOpacity: 0.8,
+            strokeOpacity: 1,
             strokeWeight: 1,
             fillColor: '#FFFF00',
             fillOpacity: 0.6,
@@ -471,6 +471,13 @@ class AppArea {
         };
     }
     
+    /*
+        Takes in a jsts geometry/linear ring and returns an array of objects:
+        {
+            lat - latitude coordinate of point
+            lng - longitude coordinate of point
+        }
+    */
     static getCoords(poly) {
         var coords = poly.getCoordinates().map(function (coord) {
             return { lat: coord.x, lng: coord.y };
