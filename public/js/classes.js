@@ -128,9 +128,67 @@ class AppArea {
     del() {
         this.clearHazards();
         this.clearVariableRateAreas();
-        this.poly.setMap(null);
+        if(this.poly != null) { this.poly.setMap(null); }
         this.poly = null;
         this.map = null;
+    }
+    
+    deleteNonPolys() {
+        if(AppArea.numUniqueCoordinates(this.getPoly()) < 3) {
+            console.log("Application area is not a polygon");
+            this.del();
+            return false;
+        }
+        
+        // Check to see if any hazard has less than 3 unique coordinates, if so then delete
+        for(var i = this.getNumHazard()-1; i >= 0; i--) {
+            if(AppArea.numUniqueCoordinates(this.getHazard(i).getPoly()) < 3) {
+                this.removeHazard(i);
+            }
+        }
+        
+        // Check to see if any variable rate area has less than 3 unique coordinates, if so then delete
+        for(i = this.getNumVariableRateAreas()-1; i >= 0; i--) {
+            if(AppArea.numUniqueCoordinates(this.getVariableRateArea(i).getPoly()) < 3) {
+                this.removeVariableRateArea(i);
+            }
+        }
+        return true;
+    }
+    
+    deleteSelfIntersections() {
+        var gF = new jsts.geom.GeometryFactory();
+        
+        // Check to see if application area has self intersections, if so then delete
+        var jstsPoly = AppArea.createJstsPolygon(gF, this.getPoly());
+        if(!jstsPoly.isSimple()) {
+            console.log("Application area is not simple, it may have self intersections");
+            this.del();
+            return false;
+        }
+        
+        // Check to see if any hazard has self intersections, if so then delete
+        // Traverse backwards to avoid shifting issue
+        for(var i = this.getNumHazard()-1; i >= 0; i--) {
+            jstsPoly = AppArea.createJstsPolygon(gF, this.getHazard(i).getPoly());
+            if(!jstsPoly.isSimple()) { this.removeHazard(i); }
+        }
+        
+        // Check to see if any variable rate area has self intersections, if so then delete
+        // Traverse backwards to avoid shifting issue
+        for(i = this.getNumVariableRateAreas()-1; i >= 0; i--) {
+            jstsPoly = AppArea.createJstsPolygon(gF, this.getVariableRateArea(i).getPoly());
+            if(!jstsPoly.isSimple()) { this.removeVariableRateArea(i); }
+        }
+        return true;
+    }    
+    
+    getCentroid() {
+        var gF = new jsts.geom.GeometryFactory();
+        var jstsPoly = AppArea.createJstsPolygon(gF, this.getPoly());
+        var c = jsts.algorithm.Centroid.getCentroid(jstsPoly);
+        return { lat: c.x, lng: c.y };
+
     }
     
     getHazard(index) {
@@ -199,8 +257,10 @@ class AppArea {
             inner = this.getHazard(i).getPoly();
             result = AppArea.trimPolygon(inner, outer);
             this.removeHazard(i);
-            for(var j = 0; j < result.length; j++){
-                this.addHazard(result[j].shell, result[j].holes);
+            if(result != null) {
+                for(var j = 0; j < result.length; j++){
+                    this.addHazard(result[j].shell, result[j].holes);
+                }
             }
         }
     }
@@ -208,15 +268,20 @@ class AppArea {
     trimVariableRateAreas() {
         var outer = this.getPoly();
         var inner, result;
+        
+        // Trim variable rate ares to be within application area
         for(var i = 0; i < this.getNumVariableRateAreas(); i++) {
             inner = this.getVariableRateArea(i).getPoly();
             result = AppArea.trimPolygon(inner, outer);
             this.removeVariableRateArea(i);
-            for(var j = 0; j < result.length; j++){
-                this.addVariableRate(result[j].shell, result[j].holes);
+            if(result != null) {
+                for(var j = 0; j < result.length; j++){
+                    this.addVariableRate(result[j].shell, result[j].holes);
+                }
             }
         }
         
+        // Trim variable rate ares to not overlap with any hazards
         var vra, haz;
         var numVRAs = this.getNumVariableRateAreas();
         for(i = 0; i < this.getNumHazard(); i++) {
@@ -358,44 +423,63 @@ class AppArea {
     }
     
     validateAndFix() {
-        this.unionHazards();
-        this.trimHazards();
-        this.unionVariableRateAreas();
-        this.trimVariableRateAreas();
-        // console.log(this);
+        try {
+            if(this.getPoly() == null) { return false; }
+            if(!this.deleteNonPolys()) { return false; }
+            if(!this.deleteSelfIntersections()){ return false; }
+            this.unionHazards();
+            this.trimHazards();
+            this.unionVariableRateAreas();
+            this.trimVariableRateAreas();
+        } catch (e) {
+            console.log(e);
+        }
     }
     
     /*
-        Trims the inner polygon to be contained within the outer polygon
-        Takes two google polygons and returns array of objects:
+        Given a jsts geometry factory and a Google Maps Polygon
+        Returns a jsts polygon on mutlipolygon
+        Errors on polygon with less than 3 unique points (2d)
+    */
+    static createJstsPolygon(geometryFactory, polygon) {
+        var path = polygon.getPaths();
+        
+        // Get path of outer shell
+        var coordinates = path.getAt(0).getArray().map(function name(coord) {
+            return new jsts.geom.Coordinate(coord.lat(), coord.lng());
+        });
+        if(coordinates[0].compareTo(coordinates[coordinates.length-1]) != 0) {
+            coordinates.push(coordinates[0]);
+        }
+        var shell = geometryFactory.createLinearRing(coordinates);
+        
+        // Get paths of holes
+        var holes = [];
+        for(var i = 1; i < path.getLength(); i++) {
+            coordinates = path.getAt(i).getArray().map(function name(coord) {
+                return new jsts.geom.Coordinate(coord.lat(), coord.lng());
+            });
+            if(coordinates[0].compareTo(coordinates[coordinates.length-1]) != 0) {
+                coordinates.push(coordinates[0]);
+            }
+            holes.push(geometryFactory.createLinearRing(coordinates));
+        }
+        
+        return geometryFactory.createPolygon(shell, holes);
+    }
+    
+    /*
+        Takes in a jsts geometry/linear ring and returns an array of objects:
         {
-            shell   - (coordinates) the outer path of the trim (at most, boundaries of outer polygon),
-            [holes]   - (coordinates) the inner paths of the trim, representing holes (if any)
+            lat - latitude coordinate of point
+            lng - longitude coordinate of point
         }
     */
-    static trimPolygon(inner, outer) {
-        var gF = new jsts.geom.GeometryFactory();
-        
-        var jstsInner = AppArea.createJstsPolygon(gF, inner);
-        var jstsOuter = AppArea.createJstsPolygon(gF, outer);
-        
-        jstsInner.normalize();
-        jstsOuter.normalize();
-        
-        var intersection = jstsInner.intersection(jstsOuter);
-        // console.log("Trim intersection geometry: ");
-        // console.log(intersection);
-        
-        
-        var shellsHoles = AppArea.getGeoShellsHoles(intersection);
-        // console.log("Linear Rings Shells and holes from trim: ");
-        // console.log(shellsHoles);
-        
-        var result = AppArea.shellsHolesToCoords(shellsHoles);
-        // console.log("Coordinates Shells and holes from trim: ");
-        // console.log(result);
-        
-        return result;
+    static getCoords(poly) {
+        var coords = poly.getCoordinates().map(function (coord) {
+            return { lat: coord.x, lng: coord.y };
+        });
+        return coords;
     }
     
     /*
@@ -429,87 +513,6 @@ class AppArea {
         // console.log(result);
         
         return result;
-    }
-    
-    
-    /*
-        Create a unioned polygon between two input polygons, if intersection occurs
-        Takes two google polygons and returns object:
-        {
-            shell   - (coordinates) the outer path of the union
-            [holes]   - (coordinates) the inner paths of the union, representing holes (if any)
-            unioned - Status int 1 (union occured) or 2 (union did not occur)
-        }
-    */
-    static unionPolygons(poly1, poly2) {
-        var gF = new jsts.geom.GeometryFactory();
-        
-        var jstsPoly1 = AppArea.createJstsPolygon(gF, poly1);
-        var jstsPoly2 = AppArea.createJstsPolygon(gF, poly2);
-        
-        jstsPoly1.normalize();
-        jstsPoly2.normalize();
-        
-        if(!jstsPoly1.intersects(jstsPoly2) || jstsPoly1.touches(jstsPoly2)) { return {"unioned": 0}; }
-        
-        var unioned = jstsPoly1.union(jstsPoly2);
-        
-        var shellsHoles = AppArea.getGeoShellsHoles(unioned);
-        var result = AppArea.shellsHolesToCoords(shellsHoles);
-        
-        // Union function should always return a polygon (not multi), length 1
-        // console.log("Unioned shape object return:");
-        // console.log(result);
-        
-        var shell = result[0].shell;
-        var holes = result[0].holes;
-        
-        return {
-            "shell": shell,
-            "holes": holes,
-            "unioned": 1
-        };
-    }
-    
-    /*
-        Takes in a jsts geometry/linear ring and returns an array of objects:
-        {
-            lat - latitude coordinate of point
-            lng - longitude coordinate of point
-        }
-    */
-    static getCoords(poly) {
-        var coords = poly.getCoordinates().map(function (coord) {
-            return { lat: coord.x, lng: coord.y };
-        });
-        return coords;
-    }
-    
-    static createJstsPolygon(geometryFactory, polygon) {
-        var path = polygon.getPaths();
-        
-        // Get path of outer shell
-        var coordinates = path.getAt(0).getArray().map(function name(coord) {
-            return new jsts.geom.Coordinate(coord.lat(), coord.lng());
-        });
-        if(coordinates[0].compareTo(coordinates[coordinates.length-1]) != 0) {
-            coordinates.push(coordinates[0]);
-        }
-        var shell = geometryFactory.createLinearRing(coordinates);
-        
-        // Get paths of holes
-        var holes = [];
-        for(var i = 1; i < path.getLength(); i++) {
-            coordinates = path.getAt(i).getArray().map(function name(coord) {
-                return new jsts.geom.Coordinate(coord.lat(), coord.lng());
-            });
-            if(coordinates[0].compareTo(coordinates[coordinates.length-1]) != 0) {
-                coordinates.push(coordinates[0]);
-            }
-            holes.push(geometryFactory.createLinearRing(coordinates));
-        }
-        
-        return geometryFactory.createPolygon(shell, holes);
     }
     
     /*
@@ -553,6 +556,72 @@ class AppArea {
         }
         return result;
     }
+    
+    /*
+        Given a Google Maps Polygon
+        Returns the number of unique coordinates found
+        1  -  Indicates a single point
+        2  -  A line (2d)
+        3+ -  A polygon
+    */
+    static numUniqueCoordinates(polygon) {
+        var path = polygon.getPaths();
+        
+        // Get path of outer shell
+        var coordinates = path.getAt(0);
+        var unique = [];
+        var coordTemp, newCoord;
+        for(var i = 0; i < coordinates.length; i++) {
+            coordTemp = coordinates.getAt(i);
+            newCoord = {
+              'lat': coordTemp.lat(),
+              'lng': coordTemp.lng()
+            };
+            if(unique.indexOf(newCoord) == -1) {
+                unique.push(newCoord);
+            }
+        }
+        return unique.length;
+    }    
+    
+    /*
+        Create a unioned polygon between two input polygons, if intersection occurs
+        Takes two google polygons and returns object:
+        {
+            shell   - (coordinates) the outer path of the union
+            [holes]   - (coordinates) the inner paths of the union, representing holes (if any)
+            unioned - Status int 1 (union occured) or 2 (union did not occur)
+        }
+    */
+    static unionPolygons(poly1, poly2) {
+        var gF = new jsts.geom.GeometryFactory();
+        
+        var jstsPoly1 = AppArea.createJstsPolygon(gF, poly1);
+        var jstsPoly2 = AppArea.createJstsPolygon(gF, poly2);
+        
+        jstsPoly1.normalize();
+        jstsPoly2.normalize();
+        
+        if(!jstsPoly1.intersects(jstsPoly2) || jstsPoly1.touches(jstsPoly2)) { return {"unioned": 0}; }
+        
+        var unioned = jstsPoly1.union(jstsPoly2);
+        
+        var shellsHoles = AppArea.getGeoShellsHoles(unioned);
+        var result = AppArea.shellsHolesToCoords(shellsHoles);
+        
+        // Union function should always return a polygon (not multi), length 1
+        // console.log("Unioned shape object return:");
+        // console.log(result);
+        
+        var shell = result[0].shell;
+        var holes = result[0].holes;
+        
+        return {
+            "shell": shell,
+            "holes": holes,
+            "unioned": 1
+        };
+    }
   
     /*
         Converts an array of 
@@ -581,6 +650,41 @@ class AppArea {
                 "holes":tempHoles
             });
         }
+        return result;
+    }
+    
+    /*
+        Trims the inner polygon to be contained within the outer polygon
+        Takes two google polygons and returns array of objects:
+        {
+            shell   - (coordinates) the outer path of the trim (at most, boundaries of outer polygon),
+            [holes]   - (coordinates) the inner paths of the trim, representing holes (if any)
+        }
+    */
+    static trimPolygon(inner, outer) {
+        var gF = new jsts.geom.GeometryFactory();
+        
+        var jstsInner = AppArea.createJstsPolygon(gF, inner);
+        var jstsOuter = AppArea.createJstsPolygon(gF, outer);
+        
+        jstsInner.normalize();
+        jstsOuter.normalize();
+        
+        if(!jstsInner.intersects(jstsOuter)) {return null;}
+        
+        var intersection = jstsInner.intersection(jstsOuter);
+        // console.log("Trim intersection geometry: ");
+        // console.log(intersection);
+        
+        
+        var shellsHoles = AppArea.getGeoShellsHoles(intersection);
+        // console.log("Linear Rings Shells and holes from trim: ");
+        // console.log(shellsHoles);
+        
+        var result = AppArea.shellsHolesToCoords(shellsHoles);
+        // console.log("Coordinates Shells and holes from trim: ");
+        // console.log(result);
+        
         return result;
     }
 }

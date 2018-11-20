@@ -63,11 +63,8 @@
         <input id="pac-input" class="controls" type="text" placeholder="Search...">
         <div id="map"></div>
       </div>
-      <div class="sidebar">
-        <input type="button" value="Validate" onclick="validate()">
-        <input type="button" value="Reset" onclick="resetMap()">
-      </div>
     </body>
+    <input type="button" value="Center" onclick="centerMap()"/>
   </html>
   
   
@@ -85,7 +82,7 @@
     // Internal object to help manage toggling between our custom
     //  drawing modes
     var drawModeControl = {
-      modes: ['Drag', 'Application', 'Hazard', 'Variable'],
+      modes: ['Drag', 'Application Area', 'Hazard', 'Variable Rate Area'],
       current: 0,
       getCurrent: function(){ return this.modes[this.current]; }
     };
@@ -146,13 +143,12 @@
       
       //*********************************** Custom Controls***********************************
       //https://developers.google.com/maps/documentation/javascript/examples/control-custom
-      function MapModeControl(divHolder, map) {
+      function MapModeControl(divHolder) {
         // Set CSS for the control border.
         var controlUI = document.createElement('div');
         controlUI.style.backgroundColor = '#fff';
         controlUI.style.border = '2px solid #fff';
         controlUI.style.borderRadius = '3px';
-        // controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
         controlUI.style.cursor = 'pointer';
         controlUI.style.marginTop = '10px';
         controlUI.style.padding = '2px';
@@ -194,11 +190,46 @@
       }
       
       var modeSelectionDiv = document.createElement('div');
-      var modeControl = new MapModeControl(modeSelectionDiv, map);
+      MapModeControl(modeSelectionDiv);
       modeSelectionDiv.index = 1;
       map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
       
+      function ResetButtonControl(divHolder) {
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.marginTop = '10px';
+        controlUI.style.marginLeft = '10px';
+        controlUI.title = 'Reset (Clear Map)';
+        controlUI.style.padding = "2px";
+        controlUI.style.textAlign = 'center';
+        
+        var modeText = document.createElement('div');
+        modeText.innerHTML = 'Reset';
+        modeText.style.color = 'rgb(25,25,25)';
+        modeText.style.fontFamily = 'Roboto,Arial,sans-serif';
+        modeText.style.fontSize = '15px';
+        modeText.style.lineHeight = '30px';
+        modeText.style.fontWeight = '600';
+        
+        controlUI.appendChild(modeText);
+        divHolder.appendChild(controlUI);
+        divHolder.addEventListener("click", resetMap);
+      }
+      
+      var resetDiv = document.createElement('div');
+      ResetButtonControl(resetDiv);
+      resetDiv.index = 1;
+      map.controls[google.maps.ControlPosition.TOP_LEFT].push(resetDiv);
       //********************************* End Custom Controls*********************************
+    }
+    
+    function centerMap() {
+      var center = appArea.getCentroid();
+      map.setCenter(center);
     }
     
     function drawToggle(mode) {
@@ -221,7 +252,7 @@
     function draw(path) {
       var mode = drawModeControl.getCurrent();
       switch(mode) {
-        case "Application":
+        case "Application Area":
             if(appArea == null) { appArea = new AppArea(map,path); } 
             else { appArea.del(); appArea = new AppArea(map,path); }
           break
@@ -229,12 +260,13 @@
             if(appArea==null) { console.log("No application area defined for hazard"); return; }
             appArea.addHazard(path);
           break;
-        case "Variable":
+        case "Variable Rate Area":
             if(appArea==null) { console.log("No application area defined for variate rate area"); return; }
             appArea.addVariableRate(path);
           break;
         default: break; // unexpected input
       }
+      validate();
     }
     
     function resetMap() {
@@ -244,6 +276,10 @@
     
     function validate() {
       if(appArea==null) {return false;}
-      appArea.validateAndFix();
+      if(!appArea.validateAndFix()) {
+        appArea==null;
+        return false;
+      }
+      return true;
     }
   </script>
