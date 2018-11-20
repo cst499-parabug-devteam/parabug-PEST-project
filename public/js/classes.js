@@ -183,7 +183,30 @@ class AppArea {
         return true;
     }    
     
+    
+    /*
+        Returns the total square acreage of the application area
+        Minus the hazard area 
+        (Validation should happen first, overlaps are not addressed)
+    */
+    getArea() {
+        var gF = new jsts.geom.GeometryFactory();
+        // Get the application area's area
+        var appArea = AppArea.createJstsPolygon(gF, this.getPoly());
+        var sqAcres = AppArea.caDegreeToSquareAcres(appArea.getArea());
+        
+        var tempPoly, tempAcres;
+        for(var i = 0; i < this.getNumHazard(); i++) {
+            tempPoly = AppArea.createJstsPolygon(gF, this.getHazard(i).getPoly());
+            tempAcres = AppArea.caDegreeToSquareAcres(tempPoly.getArea());
+            sqAcres -= tempAcres;
+        }
+        if(sqAcres < 0.000001) {return 0;}
+        return sqAcres;
+    }
+    
     getCentroid() {
+        if(this.getPoly() == null) {return null;}
         var gF = new jsts.geom.GeometryFactory();
         var jstsPoly = AppArea.createJstsPolygon(gF, this.getPoly());
         var c = jsts.algorithm.Centroid.getCentroid(jstsPoly);
@@ -431,9 +454,22 @@ class AppArea {
             this.trimHazards();
             this.unionVariableRateAreas();
             this.trimVariableRateAreas();
+            return true;
         } catch (e) {
             console.log(e);
         }
+        return false;
+    }
+    
+    /*
+        Returns the square acreage given the square degrees
+        Approximation - assumes geo coordinates are on cartesian plane
+    */
+    static caDegreeToSquareAcres(deg) {
+        var radians = deg / Math.PI;
+        var sqKm = radians * 6371;
+        var sqAcres = sqKm * 247.105;
+        return round(sqAcres,2);
     }
     
     /*
@@ -687,4 +723,12 @@ class AppArea {
         
         return result;
     }
+}
+
+
+/*      FUNCTIONS      */
+
+// http://www.jacklmoore.com/notes/rounding-in-javascript/
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }

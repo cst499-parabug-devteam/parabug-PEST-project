@@ -16,8 +16,7 @@
           margin: 0px;
           padding: 0px;
           display: grid;
-          /*grid-template-columns: 70% 30%;*/
-          grid-template-rows: 90%;
+          grid-template-rows: 80%;
         }
         
         .map-container {
@@ -26,6 +25,20 @@
         
         .sidebar {
           padding: 10px;
+        }
+        
+        /* Move reset button above google logo */
+        #reset-btn {
+          position: absolute;
+          margin-left: -72px;
+          margin-bottom: 85px;
+        }
+        
+        /* Move center button above google logo */
+        #center-btn {
+          position: absolute;
+          margin-left: -76px;
+          margin-bottom: 25px;
         }
         
         #map {
@@ -56,6 +69,22 @@
           grid-template-columns: 30% 70%;
           grid-template-rows: 100%;
         }
+        
+        #stat-display>div{
+          display: inline-block;
+          padding: 5px 2% 10px 2%;
+          font-family: Roboto;
+          font-size: 18px;
+          font-weight: 500;
+          line-height: 32px;
+        }
+        
+        .stat-item {
+          display: inline-block;
+          min-width: 120px;
+          padding: 0px 10px 0px 10px;
+          text-align: right;
+        }
       </style>
     </head>
     <body>
@@ -64,7 +93,27 @@
         <div id="map"></div>
       </div>
     </body>
-    <input type="button" value="Center" onclick="centerMap()"/>
+    <div>
+      <div id="stat-display">
+        <div id="bugs-per-acre">
+          <div class="stat-item">Bugs / Acre:</div>
+          <div class="stat-item"><input type="number" name="bugs-per-acre" id="num-bugs-per-acre" min="1" value="10000" required/></div>
+        </div>
+        <div id="multiplier">
+          <div class="stat-item">Variable Rate:</div>
+          <div class="stat-item"><input type="number" name="percent-multiplier" id="percent-multiplier" value="100" min="1" required/></div>
+        </div>
+        <div id="acres">
+          <div class="stat-item">Acres:</div>
+          <div class="stat-item"><input type="number" name="num-acres" id="num-acres" value="0" disabled/></div>
+        </div>
+        <div id="total-bugs">
+          <div class="stat-item">Total Bugs</div>
+          <div class="stat-item"><input type="number" name="num-bugs" id="num-bugs" value="0" disabled/></div>
+        </div>
+
+      </div>
+    </div>
   </html>
   
   
@@ -94,6 +143,7 @@
         mapTypeId: 'satellite',
         streetViewControl: false,
         rotateControl: false,
+        scaleControl: true,
         mapTypeControlOptions: {
           style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
         }
@@ -109,7 +159,7 @@
         p.setMap(null);
         path = null;
       });
-      
+      map.setTilt(0);
       //************************************* Search Box *************************************
       // Create the search box and link it to the UI element.
       var input = document.getElementById('pac-input');
@@ -194,6 +244,37 @@
       modeSelectionDiv.index = 1;
       map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
       
+      function CenterControl(divHolder) {
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.margin = '10px';
+        controlUI.title = 'Center Map on Application Area';
+        controlUI.style.padding = "2px";
+        controlUI.style.textAlign = 'center';
+        
+        var modeText = document.createElement('div');
+        modeText.innerHTML = 'Center';
+        modeText.style.color = 'rgb(25,25,25)';
+        modeText.style.fontFamily = 'Roboto,Arial,sans-serif';
+        modeText.style.fontSize = '15px';
+        modeText.style.lineHeight = '30px';
+        modeText.style.fontWeight = '600';
+        
+        controlUI.appendChild(modeText);
+        divHolder.appendChild(controlUI);
+        divHolder.addEventListener("click", centerMap);
+      }
+      
+      var centerDiv = document.createElement('div');
+      centerDiv.id = 'center-btn';
+      CenterControl(centerDiv);
+      centerDiv.index = 1;
+      map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(centerDiv);
+      
       function ResetButtonControl(divHolder) {
         // Set CSS for the control border.
         var controlUI = document.createElement('div');
@@ -223,12 +304,15 @@
       var resetDiv = document.createElement('div');
       ResetButtonControl(resetDiv);
       resetDiv.index = 1;
-      map.controls[google.maps.ControlPosition.TOP_LEFT].push(resetDiv);
+      resetDiv.id = "reset-btn";
+      map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(resetDiv);
       //********************************* End Custom Controls*********************************
     }
     
     function centerMap() {
+      if(appArea == null) { return; }
       var center = appArea.getCentroid();
+      if(center==null) { return; }
       map.setCenter(center);
     }
     
@@ -266,7 +350,21 @@
           break;
         default: break; // unexpected input
       }
-      validate();
+      var success = validate();
+      if(success) {
+        // Update stat display
+        var acres = appArea.getArea();
+        acres = round(acres,3);
+        document.getElementById('num-acres').value = acres;
+        var bpa = document.getElementById('num-bugs-per-acre').value;
+        var totBugs = acres * bpa;
+        totBugs = round(totBugs, 3);
+        document.getElementById('num-bugs').value = totBugs;
+      } else {
+        // Reset stat display
+        document.getElementById('num-acres').value = 0;
+        document.getElementById('num-bugs').value = 0;
+      }
     }
     
     function resetMap() {
@@ -275,7 +373,7 @@
     }
     
     function validate() {
-      if(appArea==null) {return false;}
+      if(appArea==null) {console.log("App area was null");return false;}
       if(!appArea.validateAndFix()) {
         appArea==null;
         return false;
