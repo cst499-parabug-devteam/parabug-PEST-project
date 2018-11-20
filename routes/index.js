@@ -1,5 +1,13 @@
 var express = require('express');
 var router = express.Router();
+var nodeMailer = require('nodemailer');
+var bodyParser = require('body-parser');
+
+
+
+
+
+
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -11,5 +19,8 @@ router.post('/', function(req, res, next) {
    var info = req.body;
    console.log(info);
 });
+
+
+
 
 module.exports = router;

@@ -7,8 +7,28 @@ var bodyParser = require('body-parser');
 var indexRouter = require('./routes/index');
 var nodeMailer = require('nodemailer')
 var app = express();
+var { google } = require('googleapis');
+var OAuth2 = google.auth.OAuth2;
 
 var favicon = require('serve-favicon');
+
+
+//oauth2 information for access:
+var oauth2Client = new OAuth2(
+     process.env.GMAIL_CLIENT_ID, // ClientID
+     process.env.GMAIL_CLIENT_SECRET, // Client Secret
+     "https://developers.google.com/oauthplayground" // Redirect URL
+);
+
+//receive access token for gmail access:
+oauth2Client.setCredentials({
+     refresh_token: process.env.REFRESH_TOKEN
+});
+
+var tokenList =  await oauth2Client.refreshAccessToken();
+var accessToken = tokenList.credentials.access_token;
+
+
 
 
 // view engine setup
@@ -50,22 +70,25 @@ app.use(function(err, req, res, next) {
 
 //setUp mailing service:
 app.post('/send-email', function (req, res) {
-      let transporter = nodeMailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 465,
-          secure: true,
-          auth: {
-              user: 'amazingmaxpayne@gmail.com',
-              pass: 'Carpinteria'
-          }
-      });
+    var transporter = nodeMailer.createTransport("SMTP",{
+        service: "gmail",
+     auth: {
+          type: "OAuth2",
+          user: "chrisumartinez@gmail.com", 
+          clientId: process.env.GMAIL_CLIENT_ID,
+          clientSecret: process.env.GMAIL_CLIENT_SECRET,
+          refreshToken: process.env.REFRESH_TOKEN,
+          accessToken: accessToken
+     }
+    });
       let mailOptions = {
-          from: '"Christian Martinez" <chrisumartinez@gmail.com>', // sender address
+          from: '"Parabug Automatic Test Email" <chrisumartinez@gmail.com>', // sender address
           to: req.body.to, // list of receivers
           subject: req.body.subject, // Subject line
           text: req.body.body, // plain text body
           html: '<b>NodeJS Email Tutorial</b>' // html body
       };
+      
 
       transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
@@ -74,9 +97,12 @@ app.post('/send-email', function (req, res) {
           console.log('Message %s sent: %s', info.messageId, info.response);
               res.render('index');
           });
+          
       });
           app.listen(port, function(){
             console.log('Server is running at port: ',port);
           });
+          
+        
 
 module.exports = app;
