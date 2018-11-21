@@ -240,6 +240,22 @@ class AppArea {
         return this.poly;
     }
     
+    getTotalBugs(standard, variablePercent) {
+        if(this.getPoly() == null) {return 0;}
+        var mult = variablePercent/100;
+        var appArea = this.getArea();
+        var tempAcres, tempPoly;
+        var vrArea = 0;
+        var gF = new jsts.geom.GeometryFactory();
+        for(var i = 0; i < this.getNumVariableRateAreas(); i++) {
+            tempPoly = AppArea.createJstsPolygon(gF, this.getVariableRateArea(i).getPoly());
+            tempAcres = AppArea.caDegreeToSquareAcres(tempPoly.getArea());
+            appArea -= tempAcres;
+            vrArea += tempAcres;
+        }
+        return ((appArea*standard)+(vrArea*mult*standard));
+    }
+    
     removeHazard(index) {
         if(index<this.hazards.length) {
             this.hazards[index].del();
@@ -271,6 +287,40 @@ class AppArea {
             return true;
         }
         return false;
+    }
+    
+    toJson() {
+        if(this.getPoly()==null) { return "{}"; }
+        var gF = new jsts.geom.GeometryFactory();
+        var temp;
+        
+        temp = AppArea.createJstsPolygon(gF, this.getPoly());
+        temp = AppArea.getGeoShellsHoles(temp);
+        var appArea = AppArea.shellsHolesToCoords(temp);
+        
+        var hazards = [];
+        for(var i = 0; i < this.getNumHazard(); i++) {
+            temp = AppArea.createJstsPolygon(gF, this.getHazard(i).getPoly());
+            temp = AppArea.getGeoShellsHoles(temp);
+            temp = AppArea.shellsHolesToCoords(temp);
+            hazards.push(temp);
+        }
+        
+        var vras = [];
+        for(i = 0; i < this.getNumVariableRateAreas(); i++) {
+            temp = AppArea.createJstsPolygon(gF, this.getVariableRateArea(i).getPoly());
+            temp = AppArea.getGeoShellsHoles(temp);
+            temp = AppArea.shellsHolesToCoords(temp);
+            vras.push(temp);
+        }
+        
+        var json = {
+            "ApplicationArea":appArea,
+            "Hazards":hazards,
+            "VariableRateAreas":vras
+        };
+        
+        return JSON.stringify(json);
     }
     
     trimHazards() {
@@ -454,6 +504,7 @@ class AppArea {
             this.trimHazards();
             this.unionVariableRateAreas();
             this.trimVariableRateAreas();
+            console.log(this.toJson());
             return true;
         } catch (e) {
             console.log(e);
@@ -592,6 +643,7 @@ class AppArea {
         }
         return result;
     }
+
     
     /*
         Given a Google Maps Polygon
