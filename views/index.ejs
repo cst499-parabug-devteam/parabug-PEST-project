@@ -16,8 +16,7 @@
           margin: 0px;
           padding: 0px;
           display: grid;
-          /*grid-template-columns: 70% 30%;*/
-          grid-template-rows: 90%;
+          grid-template-rows: 80%;
         }
         
         .map-container {
@@ -26,6 +25,20 @@
         
         .sidebar {
           padding: 10px;
+        }
+        
+        /* Move reset button above google logo */
+        #reset-btn {
+          position: absolute;
+          margin-left: -72px;
+          margin-bottom: 85px;
+        }
+        
+        /* Move center button above google logo */
+        #center-btn {
+          position: absolute;
+          margin-left: -76px;
+          margin-bottom: 25px;
         }
         
         #map {
@@ -56,6 +69,73 @@
           grid-template-columns: 30% 70%;
           grid-template-rows: 100%;
         }
+        
+        #additional-info {
+          font-family: Roboto;
+          font-size: 15px;
+          font-weight: 400;
+          line-height: 32px;
+        }
+        
+        #stat-display {
+          text-align: center;
+          margin: -11px 15px 0px 15px;
+          padding: 10px 0px 10px 0px;
+          /*background-color: grey;*/
+        }
+        
+        .stat-item {
+          display: inline-block;
+        }
+        
+        .stat-text {
+          display: inline-block;
+          min-width: 80px;
+          margin: 5px;
+        }
+        
+        .stat-input {
+          display: inline-block;
+          min-width: 140px;
+          margin: 5px;
+        }
+        
+        /* Read only inputs */
+        .read-only {
+          background-color: lightgrey;
+        }
+        
+        #user-info-display {
+          margin: 0px 15px 0px 15px;
+          padding: 10px;
+          /*background-color: lightblue;*/
+          text-align: center;
+        }
+        
+        #user-info-display>h2 {
+          margin-bottom: 5px;
+        }
+        
+        .form-element {
+          margin-top: 10px;
+        }
+        
+        .form-text {
+          display: inline-block;
+          min-width: 120px;
+          /*text-align: right;*/
+          /*margin-right: 10px;*/
+        }
+        
+        .form-input {
+          display: inline-block;
+          line-height: 40px;
+        }
+        
+        .align-input {
+            display: inline-block;
+            text-align: left;
+        }
       </style>
     </head>
     <body>
@@ -63,44 +143,70 @@
         <input id="pac-input" class="controls" type="text" placeholder="Search...">
         <div id="map"></div>
       </div>
-      <div class="sidebar">
-        <input type="button" value="Validate" onclick="validate()">
-        <input type="button" value="Reset" onclick="resetMap()">
-        <input type = "button" value = "submit" onclick = "onSubmit()">
-      </div>
-      <div class="container"><br />
-      <h1>Send The Email</h1><br />
-      <form action="/sendmail" method="post">
-        <div class="row">
-          <div class="col-md-4"></div>
-          <div class="form-group col-md-4">
-            <label for="to">To:</label>
-            <input type="email" class="form-control" name="to">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-4"></div>
-          <div class="form-group col-md-4">
-            <label for="subject">Subject:</label>
-            <input type="text" class="form-control" name="subject">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-4"></div>
-            <div class="form-group col-md-4">
-              <label for="body">Body:</label>
-              <textarea cols="5" rows="5"class="form-control" name="body"></textarea>
-            </div>
-        </div>
-        <div class="row">
-          <div class="col-md-4"></div>
-          <div class="form-group col-md-4">
-            <button type="submit" class="btn btn-success">Send</button>
-          </div>
-        </div>
     </body>
+    <form id="additional-info" method="POST" action="/">
+      <div id="stat-display">
+        <!--Bugs Per Acre-->
+        <div class="stat-item">
+          <div class="stat-text">Bugs / Acre:</div>
+          <div class="stat-input"><input type="number" name="bugs-per-acre" id="num-bugs-per-acre" min="1" value="10000" required/></div>
+        </div>
+        <!--Variable Rate Multiplier-->
+        <div class="stat-item">
+          <div class="stat-text">Variable Rate:</div>
+          <div class="stat-input"><input type="number" name="percent-multiplier" id="percent-multiplier" value="100" min="1" required/>%</div>
+        </div>
+        <!--Estimated Number of Acres-->
+        <div class="stat-item">
+          <div class="stat-text">Acres:</div>
+          <div class="stat-input"><input type="number" name="num-acres" id="num-acres" class="read-only" value="0" readonly/></div>
+        </div>
+        <!--Estimated Total Bugs-->
+        <div class="stat-item">
+          <div class="stat-text">Total Bugs:</div>
+          <div class="stat-input"><input type="number" name="num-bugs" id="num-bugs" class="read-only" value="0" readonly/></div>
+        </div>
+      </div>
+      
+      <div id="user-info-display">
+        <h2>User Information</h2>
+        <div class="align-input">
+          <!--Contact Name-->
+          <div class="form-element">
+            <div class="form-text">Contact Name:</div>
+            <div class="form-input"><input type="text" name="contact-name" id="contact-name"  size="60" required/></div>
+          </div>
+          <!--Contact Phone-->
+          <div class="form-element">
+            <div class="form-text">Contact Phone:</div>
+            <div class="form-input"><input type="text" name="contact-phone" id="contact-phone"  size="60" required/></div>
+          </div>
+          <!--Contact Email-->
+          <div class="form-element">
+            <div class="form-text">Contact Email:</div>
+            <div class="form-input"><input type="text" name="contact-email" id="contact-email"  size="60" required/></div>
+          </div>
+          <!--Billing Address-->
+          <div class="form-element">
+            <div class="form-text">Billing Address:</div>
+            <div class="form-input"><input type="text" name="billing-address" id="billing-address"  size="60" required/></div>
+          </div>
+          <!--Crop-->
+          <div class="form-element">
+            <div class="form-text">Crop:</div>
+            <div class="form-input"><input type="text" name="crop" id="crop"  size="60" required/></div>
+          </div>
+          <!--Row Spacing-->
+          <div class="form-element">
+            <div class="form-text">Row Spacing (ft):</div>
+            <div class="form-input"><input type="number" name="row-spacing" id="row-spacing" required/></div>
+          </div>
+        </div>
+        <div class="form-element">
+          <div class="form-input"><input type="submit" value="Submit Request"></div>
+        </div>
+      </div>
+    </form>
   </html>
   
   
@@ -118,7 +224,7 @@
     // Internal object to help manage toggling between our custom
     //  drawing modes
     var drawModeControl = {
-      modes: ['Drag', 'Application', 'Hazard', 'Variable'],
+      modes: ['Drag', 'Application Area', 'Hazard', 'Variable Rate Area'],
       current: 0,
       getCurrent: function(){ return this.modes[this.current]; }
     };
@@ -130,6 +236,7 @@
         mapTypeId: 'satellite',
         streetViewControl: false,
         rotateControl: false,
+        scaleControl: true,
         mapTypeControlOptions: {
           style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
         }
@@ -145,7 +252,7 @@
         p.setMap(null);
         path = null;
       });
-      
+      map.setTilt(0);
       //************************************* Search Box *************************************
       // Create the search box and link it to the UI element.
       var input = document.getElementById('pac-input');
@@ -179,13 +286,12 @@
       
       //*********************************** Custom Controls***********************************
       //https://developers.google.com/maps/documentation/javascript/examples/control-custom
-      function MapModeControl(divHolder, map) {
+      function MapModeControl(divHolder) {
         // Set CSS for the control border.
         var controlUI = document.createElement('div');
         controlUI.style.backgroundColor = '#fff';
         controlUI.style.border = '2px solid #fff';
         controlUI.style.borderRadius = '3px';
-        // controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
         controlUI.style.cursor = 'pointer';
         controlUI.style.marginTop = '10px';
         controlUI.style.padding = '2px';
@@ -227,11 +333,80 @@
       }
       
       var modeSelectionDiv = document.createElement('div');
-      var modeControl = new MapModeControl(modeSelectionDiv, map);
+      MapModeControl(modeSelectionDiv);
       modeSelectionDiv.index = 1;
       map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
       
+      function CenterControl(divHolder) {
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.margin = '10px';
+        controlUI.title = 'Center Map on Application Area';
+        controlUI.style.padding = "2px";
+        controlUI.style.textAlign = 'center';
+        
+        var modeText = document.createElement('div');
+        modeText.innerHTML = 'Center';
+        modeText.style.color = 'rgb(25,25,25)';
+        modeText.style.fontFamily = 'Roboto,Arial,sans-serif';
+        modeText.style.fontSize = '15px';
+        modeText.style.lineHeight = '30px';
+        modeText.style.fontWeight = '600';
+        
+        controlUI.appendChild(modeText);
+        divHolder.appendChild(controlUI);
+        divHolder.addEventListener("click", centerMap);
+      }
+      
+      var centerDiv = document.createElement('div');
+      centerDiv.id = 'center-btn';
+      CenterControl(centerDiv);
+      centerDiv.index = 1;
+      map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(centerDiv);
+      
+      function ResetButtonControl(divHolder) {
+        // Set CSS for the control border.
+        var controlUI = document.createElement('div');
+        controlUI.style.backgroundColor = '#fff';
+        controlUI.style.border = '2px solid #fff';
+        controlUI.style.borderRadius = '3px';
+        controlUI.style.cursor = 'pointer';
+        controlUI.style.marginTop = '10px';
+        controlUI.style.marginLeft = '10px';
+        controlUI.title = 'Reset (Clear Map)';
+        controlUI.style.padding = "2px";
+        controlUI.style.textAlign = 'center';
+        
+        var modeText = document.createElement('div');
+        modeText.innerHTML = 'Reset';
+        modeText.style.color = 'rgb(25,25,25)';
+        modeText.style.fontFamily = 'Roboto,Arial,sans-serif';
+        modeText.style.fontSize = '15px';
+        modeText.style.lineHeight = '30px';
+        modeText.style.fontWeight = '600';
+        
+        controlUI.appendChild(modeText);
+        divHolder.appendChild(controlUI);
+        divHolder.addEventListener("click", resetMap);
+      }
+      
+      var resetDiv = document.createElement('div');
+      ResetButtonControl(resetDiv);
+      resetDiv.index = 1;
+      resetDiv.id = "reset-btn";
+      map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(resetDiv);
       //********************************* End Custom Controls*********************************
+    }
+    
+    function centerMap() {
+      if(appArea == null) { return; }
+      var center = appArea.getCentroid();
+      if(center==null) { return; }
+      map.setCenter(center);
     }
     
     function drawToggle(mode) {
@@ -254,7 +429,7 @@
     function draw(path) {
       var mode = drawModeControl.getCurrent();
       switch(mode) {
-        case "Application":
+        case "Application Area":
             if(appArea == null) { appArea = new AppArea(map,path); } 
             else { appArea.del(); appArea = new AppArea(map,path); }
           break
@@ -262,22 +437,44 @@
             if(appArea==null) { console.log("No application area defined for hazard"); return; }
             appArea.addHazard(path);
           break;
-        case "Variable":
+        case "Variable Rate Area":
             if(appArea==null) { console.log("No application area defined for variate rate area"); return; }
             appArea.addVariableRate(path);
           break;
         default: break; // unexpected input
       }
+      var success = validate();
+      if(success) {
+        // Update stat display
+        var acres = appArea.getArea();
+        acres = round(acres,3);
+        document.getElementById('num-acres').value = acres;
+        var bpa = document.getElementById('num-bugs-per-acre').value;
+        var pm = document.getElementById('percent-multiplier').value;
+        var totalBugs = appArea.getTotalBugs(bpa,pm);
+        document.getElementById('num-bugs').value = round(totalBugs,0);
+      } else {
+        // Reset stat display
+        document.getElementById('num-acres').value = 0;
+        document.getElementById('num-bugs').value = 0;
+      }
     }
     
     function resetMap() {
-      if(appArea != null) { appArea.del(); }
-      appArea = null;
+        if(appArea != null) { appArea.del(); }
+        appArea = null;
+        // Reset stat display
+        document.getElementById('num-acres').value = 0;
+        document.getElementById('num-bugs').value = 0;
     }
-    
+
     function validate() {
-      if(appArea==null) {return false;}
-      appArea.validateAndFix();
+        if(appArea==null) {console.log("App area was null");return false;}
+        if(!appArea.validateAndFix()) {
+            appArea==null;
+            return false;
+        }
+        return true;
     }
     
     
