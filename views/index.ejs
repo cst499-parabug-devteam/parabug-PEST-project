@@ -212,7 +212,7 @@
   
   <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
   <!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
-  <script src="https://maps.googleapis.com/maps/api/js?key=<%=api_key%>&callback=initMap&libraries=drawing,places" async defer> </script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSPyVTS3rqfQQ294LN6qbOoZ2j_KsjaEQ&callback=initMap&libraries=drawing,places" async defer> </script>
   
   <script type="text/javascript" src="/js/classes.js"></script>
   <script>
@@ -476,4 +476,44 @@
         }
         return true;
     }
+    
+    document.getElementById('additional-info').addEventListener("submit", function(event) {
+      if(validate()) {
+        // Prevent default submission (we are building ajax reques)
+        event.preventDefault();
+        
+        // Create form data object to easily get form values
+        var formData = new FormData(document.getElementById('additional-info'));
+        
+        var appAreaJson = appArea.toJson();
+        var data = {
+          "appArea" : appAreaJson,
+          "acres" : formData.get('num-acres'),
+          "bugsPerAcre" : formData.get('bugs-per-acre'),
+          "variableRate": formData.get('percent-multiplier'),
+          "numBugs" : formData.get('num-bugs'),
+          "contactName" : formData.get('contact-name'),
+          "contactPhone" : formData.get('contact-phone'),
+          "contactEmail" : formData.get('contact-email'),
+          "billingAdress" : formData.get('billing-address'),
+          "crop" : formData.get('crop'),
+          "rowSpacing" : formData.get('row-spacing')
+        };
+        
+        // Ajax request
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+           console.log(this.responseText);
+          }
+        };
+        xhttp.open("POST", "/", true);
+        xhttp.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+        xhttp.send(JSON.stringify(data));
+      } else {
+        event.preventDefault();
+        console.log("Did not submit");
+      }
+      
+    });
   </script>

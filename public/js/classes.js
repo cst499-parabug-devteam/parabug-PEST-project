@@ -320,7 +320,8 @@ class AppArea {
             "VariableRateAreas":vras
         };
         
-        return JSON.stringify(json);
+        // return JSON.stringify(json);
+        return json;
     }
     
     trimHazards() {
@@ -504,7 +505,6 @@ class AppArea {
             this.trimHazards();
             this.unionVariableRateAreas();
             this.trimVariableRateAreas();
-            console.log(this.toJson());
             return true;
         } catch (e) {
             console.log(e);
