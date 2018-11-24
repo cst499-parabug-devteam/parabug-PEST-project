@@ -61,7 +61,7 @@ router.post('/', function(req, res, next) {
         //             },
         //             "acres":"228.33","bugsPerAcre":"10000","variableRate":"100","numBugs":"2283300","contactName":"Chris Willials",
         //             "contactPhone":"(831)123-4567","contactEmail":"chris@yahoo.com","billingAdress":"123 Big Road","crop":"Corn","rowSpacing":"5"};
-        var info = req.body
+        var info = req.body;
         
         var appArea = info["appArea"]["ApplicationArea"][0];
         appArea = jsonToJstsGeom(appArea);
@@ -100,11 +100,6 @@ router.post('/', function(req, res, next) {
         res.send("Error");
     }
 });
-
-
-
-
-module.exports = router;
 
 
 function numUniqueCoordinates(jstsPoly) {
@@ -313,3 +308,6 @@ function validateAndFix(appArea, hazards, vras) {
     }
     
 }
+
+
+module.exports = router;

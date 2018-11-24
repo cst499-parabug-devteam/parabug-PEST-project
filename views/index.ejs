@@ -485,9 +485,9 @@
         // Create form data object to easily get form values
         var formData = new FormData(document.getElementById('additional-info'));
         
-        var appAreaJson = appArea.toJson();
+        var applicationArea = appArea.toEasyFormat();
         var data = {
-          "appArea" : appAreaJson,
+          "appArea" : applicationArea,
           "acres" : formData.get('num-acres'),
           "bugsPerAcre" : formData.get('bugs-per-acre'),
           "variableRate": formData.get('percent-multiplier'),

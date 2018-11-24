@@ -289,8 +289,24 @@ class AppArea {
         return false;
     }
     
-    toJson() {
-        if(this.getPoly()==null) { return "{}"; }
+    /*
+        Converts THIS object into an object which is easily converted to JSON (for sending)
+        "ApplicationArea",
+            [{
+                "shell": [{lat,lng}], <- take first shell (should only have 1)
+                "holes": [ [{lat,lng}] ]
+            }]
+        "Hazards",
+            [
+                [{ "shell", "holes" }]
+            ]
+        "VariableRateAreas"
+            [
+                [{ "shell", "holes" }]
+            ]
+    */
+    toEasyFormat() {
+        if(this.getPoly()==null) { return null; }
         var gF = new jsts.geom.GeometryFactory();
         var temp;
         
@@ -320,7 +336,6 @@ class AppArea {
             "VariableRateAreas":vras
         };
         
-        // return JSON.stringify(json);
         return json;
     }
     
