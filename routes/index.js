@@ -300,6 +300,8 @@ function validateAndFix(appArea, hazards, vras) {
         newVras = unionPolyArray(newVras);
         newHazards = trimPolyArray(newHazards,appArea);
         newVras = trimPolyArray(newVras, appArea, newHazards);
+        
+        // All the values at this point should be valid 
         return true;
     } catch (e) {
         console.log("Error during validation:");
