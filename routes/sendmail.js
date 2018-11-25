@@ -8,32 +8,48 @@ var bodyParser = require('body-parser');
 
 
 //oauth2 information for access:
-var oauth2Client = new OAuth2(
-     process.env.GMAIL_CLIENT_ID, // ClientID
-     process.env.GMAIL_CLIENT_SECRET, // Client Secret
-     "https://developers.google.com/oauthplayground" // Redirect URL
-);
+// var oauth2Client = new OAuth2(
+//      process.env.GMAIL_CLIENT_ID, // ClientID
+//      process.env.GMAIL_CLIENT_SECRET, // Client Secret
+//      "https://developers.google.com/oauthplayground" // Redirect URL
+// );
 
 //receive access token for gmail access:
-oauth2Client.setCredentials({
-     refresh_token: process.env.REFRESH_TOKEN
-});
+// oauth2Client.setCredentials({
+//      refresh_token: process.env.REFRESH_TOKEN
+// });
 
-const tokens =  oauth2Client.refreshAccessToken()
-const accessToken = tokens.access_token;
+// const tokens =  oauth2Client.refreshAccessToken()
+// const accessToken = tokens.access_token;
 
 //setup transport module:
-    var transporter = nodeMailer.createTransport({
-        service: "gmail",
-     auth: {
-          type: "OAuth2",
-          user: "chrisumartinez@gmail.com", 
-          clientId: process.env.GMAIL_CLIENT_ID,
-          clientSecret: process.env.GMAIL_CLIENT_SECRET,
-          refreshToken: process.env.REFRESH_TOKEN,
-          accessToken: accessToken
-     }
-    });
+    // var transporter = nodeMailer.createTransport({
+    //     service: "gmail",
+    //  auth: {
+    //       type: "OAuth2",
+    //       user: "chrisumartinez@gmail.com", 
+    //       clientId: process.env.GMAIL_CLIENT_ID,
+    //       clientSecret: process.env.GMAIL_CLIENT_SECRET,
+    //       refreshToken: process.env.REFRESH_TOKEN,
+    //       accessToken: accessToken,
+    //       expires: 12345
+    //  },
+    //  debug: true
+    // });
+    
+/*
+LESS - SECURE METHOD FOR SMTP TRANSPORTER:
+*/
+
+var transporter = nodeMailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        user: process.env.GMAIL_ACC,
+        pass: process.env.GMAIL_P
+    }
+});
     
 //make sure transporter is verified and functioning
 transporter.verify(function (error, success) {
@@ -46,26 +62,12 @@ transporter.verify(function (error, success) {
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-    //       let mailOptions = {
-    //       from: '"Parabug Automatic Test Email" <chrisumartinez@gmail.com>', // sender address
-    //       to: req.body.to, // list of receivers
-    //       subject: req.body.subject, // Subject line
-    //       text: req.body.body, // plain text body
-    //       html: '<b>NodeJS Email Tutorial</b>' // html body
-    //   };
-     
-    //   transporter.sendMail(mailOptions, (error, info) => {
-    //       if (error) {
-    //           return console.log(error);
-    //       }
-    //     console.log("Message Sent: "  + info.response);
-    //       });
       });
       
       
 router.post('/', function(req, res, next) {
             let mailOptions = {
-          from: '"Parabug Automatic Test Email" <chrisumartinez@gmail.com>', // sender address
+          from: '"Parabug Automatic Test Email" <amazingmaxpayne@gmail.com>', // sender address
           to: req.body.to, // list of receivers
           subject: req.body.subject, // Subject line
           text: req.body.body, // plain text body
