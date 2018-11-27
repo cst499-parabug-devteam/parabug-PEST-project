@@ -1,28 +1,22 @@
 class Hazard {
-    constructor(map, path) {
+    constructor(map, poly) {
         // map is a google maps map object
         this.map = map;
         // initialize the path on the map
-        this.init(path,map);
-    }
-    
-    init(path,map) {
-        this.poly = new google.maps.Polygon({
-            paths: path,
-            strokeColor: '#000000',
-            strokeOpacity: 0.8,
-            strokeWeight: 1,
-            fillColor: '#FF0000',
-            fillOpacity: 0.7,
-            zIndex: 1,
-        });
-        this.poly.setMap(map); 
+        this.poly = poly;
     }
     
     del() {
         this.poly.setMap(null);
         this.poly = null;
         this.map = null;
+    }
+    
+    getCentroid() {
+        var gF = new jsts.geom.GeometryFactory();
+        var jstsPoly = AppArea.createJstsPolygon(gF, this.getPoly());
+        var c = jsts.algorithm.Centroid.getCentroid(jstsPoly);
+        return { lat: c.x, lng: c.y };
     }
     
     getPoly() {
@@ -31,24 +25,11 @@ class Hazard {
 }
 
 class VariableRateArea {
-    constructor(map, path) {
+    constructor(map, poly) {
         // map is a google maps map object
         this.map = map;
         // initialize the path on the map
-        this.init(path);
-    }
-    
-    init(path) {
-        this.poly = new google.maps.Polygon({
-            paths: path,
-            strokeColor: '#000000',
-            strokeOpacity: 1,
-            strokeWeight: 1,
-            fillColor: '#CCCCCC',
-            fillOpacity: 0.6,
-            zIndex: 2,
-        });
-        this.poly.setMap(this.map); 
+        this.poly = poly;
     }
     
     del() {
@@ -56,13 +37,16 @@ class VariableRateArea {
         this.poly = null;
         this.map = null;
     }
-        
-    getPoly() {
-        return this.poly;
+    
+    getCentroid() {
+        var gF = new jsts.geom.GeometryFactory();
+        var jstsPoly = AppArea.createJstsPolygon(gF, this.getPoly());
+        var c = jsts.algorithm.Centroid.getCentroid(jstsPoly);
+        return { lat: c.x, lng: c.y };
     }
     
-    setDescription(description) {
-        this.description = description;
+    getPoly() {
+        return this.poly;
     }
 }
 
@@ -76,6 +60,8 @@ class AppArea {
         this.variableRateAreas = vRAs;
         // initialize the path on the map
         this.init(path);
+        
+        this.subPolyId = 0;
     }
     
     init(path) {
@@ -95,7 +81,14 @@ class AppArea {
         var allPaths = holes;
         allPaths.unshift(path);
         
-        var hazard = new Hazard(this.map,allPaths);
+        var identifier = {
+            "type" : "hazard",
+            "id": this.subPolyId
+        };
+        this.subPolyId += 1;
+        
+        var poly = this.createHazardPoly(allPaths, identifier);
+        var hazard = new Hazard(this.map, poly);
         this.hazards.push(hazard);
         return true;
     }
@@ -104,7 +97,14 @@ class AppArea {
         var allPaths = holes;
         allPaths.unshift(path);
         
-        var vra = new VariableRateArea(this.map,allPaths);
+        var identifier = {
+            "type" : "variable",
+            "id": this.subPolyId
+        };
+        this.subPolyId += 1;
+        
+        var poly = this.createVariableRatePoly(allPaths, identifier);
+        var vra = new VariableRateArea(this.map, poly);
         this.variableRateAreas.push(vra);
         return true;
     }
@@ -123,6 +123,44 @@ class AppArea {
             this.removeVariableRateArea(i); 
             i--;
         }
+    }
+    
+    createHazardPoly(paths, id) {
+        var poly = new google.maps.Polygon({
+            paths: paths,
+            strokeColor: '#000000',
+            strokeOpacity: 0.8,
+            strokeWeight: 1,
+            fillColor: '#FF0000',
+            fillOpacity: 0.7,
+            zIndex: 1,
+            identifier: id
+        });
+        poly.setMap(this.map);
+        google.maps.event.addListener(poly,"click", function(event) {
+            // console.log(this.identifier); 
+            promptAndDelete(this.identifier);
+        });
+        return poly;
+    }
+    
+    createVariableRatePoly(paths, id) {
+        var poly = new google.maps.Polygon({
+            paths: paths,
+            strokeColor: '#000000',
+            strokeOpacity: 1,
+            strokeWeight: 1,
+            fillColor: '#CCCCCC',
+            fillOpacity: 0.6,
+            zIndex: 2,
+            identifier: id
+        });
+        poly.setMap(this.map);
+        google.maps.event.addListener(poly,"click", function(event) {
+            // console.log(this.identifier);
+            promptAndDelete(this.identifier);
+        });
+        return poly;
     }
     
     del() {
@@ -214,6 +252,28 @@ class AppArea {
 
     }
     
+    getIndexOfIdentifier(id, type=null) {
+        var both = false;
+        if(type == null) {
+            both = true;
+        }
+        if((type == "hazard") || both) {
+            for(var i = 0; i < this.getNumHazard(); i++) {
+                if(this.getHazard(i).getPoly().identifier.id == id) {
+                    return i;
+                }
+            }
+        }
+        if((type == "variable") || both) {
+            for(i = 0; i < this.getNumVariableRateAreas(); i++) {
+                if(this.getVariableRateArea(i).getPoly().identifier.id == id) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    
     getHazard(index) {
         if(index<this.hazards.length) {
             return this.hazards[index];
@@ -226,6 +286,10 @@ class AppArea {
             return this.variableRateAreas[index];
         }
         return null;
+    }
+    
+    getMap() {
+        return this.map;
     }
     
     getNumHazard() {
@@ -276,21 +340,57 @@ class AppArea {
         return false;
     }
     
+    resetGlobals() {
+        if(this.marker!=null) {
+            this.marker.setMap(null);
+            this.marker = null;
+        }
+        if(this.infoWindow != null) {
+            this.infoWindow.setMap(null);
+            this.infoWindow = null;
+        }
+        this.deleteIdentifier = null;
+    }
+    
     setVariableRateArea(index, path, holes=[]) {
         if(index<this.variableRateAreas.length) {
             this.variableRateAreas[index].del();
             this.variableRateAreas[index] = null;
             var allPaths = holes;
             allPaths.unshift(path);
-            var vra = new VariableRateArea(this.map,allPaths);
+            
+            var identifier = {
+                "type" : "variable",
+                "id": this.subPolyId
+            };
+            this.subPolyId += 1;
+            
+            var poly = this.createVariableRatePoly(allPaths, identifier);
+            var vra = new VariableRateArea(this.map, poly);
             this.variableRateAreas[index] = vra;
             return true;
         }
         return false;
     }
     
-    toJson() {
-        if(this.getPoly()==null) { return "{}"; }
+    /*
+        Converts THIS object into an object which is easily converted to JSON (for sending)
+        "ApplicationArea",
+            [{
+                "shell": [{lat,lng}], <- take first shell (should only have 1)
+                "holes": [ [{lat,lng}] ]
+            }]
+        "Hazards",
+            [
+                [{ "shell", "holes" }]
+            ]
+        "VariableRateAreas"
+            [
+                [{ "shell", "holes" }]
+            ]
+    */
+    toEasyFormat() {
+        if(this.getPoly()==null) { return null; }
         var gF = new jsts.geom.GeometryFactory();
         var temp;
         
@@ -320,7 +420,7 @@ class AppArea {
             "VariableRateAreas":vras
         };
         
-        return JSON.stringify(json);
+        return json;
     }
     
     trimHazards() {
@@ -504,7 +604,6 @@ class AppArea {
             this.trimHazards();
             this.unionVariableRateAreas();
             this.trimVariableRateAreas();
-            console.log(this.toJson());
             return true;
         } catch (e) {
             console.log(e);
@@ -777,8 +876,64 @@ class AppArea {
     }
 }
 
-
 /*      FUNCTIONS      */
+
+function promptAndDelete(identifier) {
+    // Havent found a good way to add event listeners to children polygons, and delete themselves
+    // after clicking, so using a named instance variable for now
+    // Named instance variable for AppArea is assumed to be appArea
+    
+    // check if drawing mode is set to delete
+    if(drawModeControl.getCurrent()!="Delete") {return;}
+    
+    if(appArea == null) {return;}
+    var index = appArea.getIndexOfIdentifier(identifier.id, identifier.type);
+    if(index == -1) {return;}
+    var centroid;
+    
+    if(identifier.type == "hazard") {
+        centroid = appArea.getHazard(index).getCentroid();
+    } else if (identifier.type == "variable") {
+        centroid = appArea.getVariableRateArea(index).getCentroid();
+    } else {return;}
+    
+    // function to clear markers and infowindow
+    appArea.resetGlobals();
+    
+    appArea.deleteIdentifier = identifier;
+    
+    var marker = new google.maps.Marker({
+        position: centroid,
+        map: appArea.getMap()
+    });
+    
+    var infoWindow = new google.maps.InfoWindow({content:""});
+    
+    
+    // Couldn't pass values easily in content string, utilizing global variable instead
+    infoWindow.setContent('<button type="button" onClick="deleteSubPoly()">Delete</button>');
+    google.maps.event.addListener(infoWindow,'closeclick',function(){
+        appArea.resetGlobals();
+    });
+    
+    infoWindow.open(appArea.getMap(), marker);
+    appArea.marker = marker;
+    appArea.infoWindow = infoWindow;
+}
+
+function deleteSubPoly() {
+    if((appArea!=null) && (appArea.deleteIdentifier!=null)) {
+        // console.log(appArea.deleteIdentifier);
+        index = appArea.getIndexOfIdentifier(appArea.deleteIdentifier.id, appArea.deleteIdentifier.type);
+        if(appArea.deleteIdentifier.type=="hazard") {
+            appArea.removeHazard(index);
+        } else if (appArea.deleteIdentifier.type="variable") {
+            appArea.removeVariableRateArea(index);
+        }
+        appArea.resetGlobals();
+        updateStats();
+    }
+}
 
 // http://www.jacklmoore.com/notes/rounding-in-javascript/
 function round(value, decimals) {
