@@ -5,6 +5,7 @@ var bodyParser = require('body-parser');
 var { google } = require('googleapis');
 var OAuth2 = google.auth.OAuth2;
 var bodyParser = require('body-parser');
+var fs = require('fs');
 
 
 //oauth2 information for access:
@@ -41,6 +42,9 @@ var bodyParser = require('body-parser');
 LESS - SECURE METHOD FOR SMTP TRANSPORTER:
 */
 
+
+var html_template= fs.readFileSync(__dirname + '/templates/abc.html',{encoding:'utf-8'});
+
 var transporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -68,16 +72,17 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
             let mailOptions = {
           from: '"Parabug Automatic Test Email" <amazingmaxpayne@gmail.com>', // sender address
-          to: req.body.to, // list of receivers
-          subject: req.body.subject, // Subject line
+          to: req.body.contact_email, // list of receivers
+          subject: "Parabug Estimate Request", // Subject line
           text: req.body.body, // plain text body
-          html: '<b>NodeJS Email Tutorial</b>' // html body
+          html: html_template  // html body
       };
      
       transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
               return console.log(error);
           }
+         res.redirect('back')
         console.log("Message Sent: "  + info.response);
           });
    var info = req.body;
