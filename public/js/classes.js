@@ -345,7 +345,7 @@ class AppArea {
             this.marker.setMap(null);
             this.marker = null;
         }
-        if(this.infoWindow == null) {
+        if(this.infoWindow != null) {
             this.infoWindow.setMap(null);
             this.infoWindow = null;
         }
@@ -931,6 +931,7 @@ function deleteSubPoly() {
             appArea.removeVariableRateArea(index);
         }
         appArea.resetGlobals();
+        updateStats();
     }
 }
 
