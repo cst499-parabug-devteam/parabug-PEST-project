@@ -119,18 +119,19 @@
         
         .form-element {
           margin-top: 10px;
+          vertical-align: middle;
         }
         
         .form-text {
           display: inline-block;
           min-width: 120px;
-          /*text-align: right;*/
-          /*margin-right: 10px;*/
+          vertical-align: middle;
         }
         
         .form-input {
           display: inline-block;
           line-height: 40px;
+          vertical-align: middle;
         }
         
         .align-input {
@@ -149,22 +150,22 @@
       <div id="stat-display">
         <!--Bugs Per Acre-->
         <div class="stat-item">
-          <div class="stat-text">Bugs / Acre:</div>
+          <label class="stat-text" for="num-bugs-per-acre">Bugs / Acre:</label>
           <div class="stat-input"><input type="number" name="bugs-per-acre" id="num-bugs-per-acre" min="1" value="10000" required/></div>
         </div>
         <!--Variable Rate Multiplier-->
         <div class="stat-item">
-          <div class="stat-text">Variable Rate:</div>
+          <label class="stat-text" for="percent-multiplier">Variable Rate:</label>
           <div class="stat-input"><input type="number" name="percent-multiplier" id="percent-multiplier" value="100" min="1" required/>%</div>
         </div>
         <!--Estimated Number of Acres-->
         <div class="stat-item">
-          <div class="stat-text">Acres:</div>
+          <label class="stat-text" for="num-acres">Acres:</label>
           <div class="stat-input"><input type="number" name="num-acres" id="num-acres" class="read-only" value="0" readonly/></div>
         </div>
         <!--Estimated Total Bugs-->
         <div class="stat-item">
-          <div class="stat-text">Total Bugs:</div>
+          <label class="stat-text" for="num-bugs">Total Bugs:</label>
           <div class="stat-input"><input type="number" name="num-bugs" id="num-bugs" class="read-only" value="0" readonly/></div>
         </div>
       </div>
@@ -174,33 +175,37 @@
         <div class="align-input">
           <!--Contact Name-->
           <div class="form-element">
-            <div class="form-text">Contact Name:</div>
+            <label class="form-text" for="contact-name">Contact Name:</label>
             <div class="form-input"><input type="text" name="contact-name" id="contact-name"  size="60" required/></div>
           </div>
           <!--Contact Phone-->
           <div class="form-element">
-            <div class="form-text">Contact Phone:</div>
+            <label class="form-text" for="contact-phone">Contact Phone:</label>
             <div class="form-input"><input type="text" name="contact-phone" id="contact-phone"  size="60" required/></div>
           </div>
           <!--Contact Email-->
           <div class="form-element">
-            <div class="form-text">Contact Email:</div>
+            <label class="form-text" for="contact-email">Contact Email:</label>
             <div class="form-input"><input type="text" name="contact-email" id="contact-email"  size="60" required/></div>
           </div>
           <!--Billing Address-->
           <div class="form-element">
-            <div class="form-text">Billing Address:</div>
+            <label class="form-text" for="billing-address">Billing Address:</label>
             <div class="form-input"><input type="text" name="billing-address" id="billing-address"  size="60" required/></div>
           </div>
           <!--Crop-->
           <div class="form-element">
-            <div class="form-text">Crop:</div>
+            <label class="form-text" for="crop">Crop:</label>
             <div class="form-input"><input type="text" name="crop" id="crop"  size="60" required/></div>
           </div>
           <!--Row Spacing-->
           <div class="form-element">
-            <div class="form-text">Row Spacing (ft):</div>
+            <label class="form-text" for="row-spacing">Row Spacing (ft):</label>
             <div class="form-input"><input type="number" name="row-spacing" id="row-spacing" required/></div>
+          </div>
+          <div class="form-element">
+            <label class="form-text" for="notes">Notes:</label>
+            <div class="form-input"><textarea name="notes" id="notes" rows="3" cols="60"></textarea></div>
           </div>
         </div>
         <div class="form-element">
@@ -210,29 +215,27 @@
     </form>
   </html>
   
-  
-  <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
   <!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
-  <!--<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSPyVTS3rqfQQ294LN6qbOoZ2j_KsjaEQ&callback=initMap&libraries=drawing,places" async defer> </script>-->
-  
+  <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
   <script type="text/javascript" src="/js/classes.js"></script>
   <script>
     // GLOBAL VARIABLES
     var map;
     var drawingManager;
     var appArea;
+    var infoWindow;
     
     // Internal object to help manage toggling between our custom
     //  drawing modes
     var drawModeControl = {
-      modes: ['Drag', 'Application Area', 'Hazard', 'Variable Rate Area'],
+      modes: ['Drag', 'Application Area', 'Hazard', 'Variable Rate Area', 'Delete'],
       current: 0,
       getCurrent: function(){ return this.modes[this.current]; }
     };
     
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), {
-        center: {lat: 36.677756, lng: -121.729448},
+        center: {lat: 36.677756, lng: -121.729448}, // default
         zoom: 15,
         mapTypeId: 'satellite',
         streetViewControl: false,
@@ -242,18 +245,41 @@
           style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
         }
       });
+      
       drawingManager = new google.maps.drawing.DrawingManager({
         drawingMode: null,
         drawingControl: false,
         map: map,
         polygonOptions: { editable: true }
       });
+      
       google.maps.event.addListener(drawingManager, 'polygoncomplete', function(p) {
         draw(p.getPath());
         p.setMap(null);
         path = null;
       });
+
       map.setTilt(0);
+      
+      //*********************************** User Location ************************************
+      // Try HTML5 geolocation.
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          var pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          map.setCenter(pos);
+          map.setZoom(15);
+        }, function() {
+          handleLocationError(true);
+        });
+      } else {
+        // Browser doesn't support Geolocation
+        handleLocationError(false);
+      }
+      //********************************* End User Location **********************************
+      
       //************************************* Search Box *************************************
       // Create the search box and link it to the UI element.
       var input = document.getElementById('pac-input');
@@ -403,6 +429,13 @@
       //********************************* End Custom Controls*********************************
     }
     
+    function handleLocationError(browserHasGeolocation) {
+      var message = (browserHasGeolocation ?
+        'Error: The Geolocation service failed.' :
+        'Error: Your browser doesn\'t support geolocation.');
+      console.log(message);
+    }
+    
     function centerMap() {
       if(appArea == null) { return; }
       var center = appArea.getCentroid();
@@ -411,11 +444,15 @@
     }
     
     function drawToggle(mode) {
+      if(appArea != null) { appArea.resetGlobals(); }
+      
       // Value defaults in string, parse the int value
       mode = parseInt(mode, 10);
       switch(mode) {
+        case 4:
         case 0:
           drawingManager.setOptions({ drawingMode: null });
+          drawModeControl.current=mode;
           break
         case 1: // Fall through
         case 2: // Fall through
@@ -445,20 +482,7 @@
         default: break; // unexpected input
       }
       var success = validate();
-      if(success) {
-        // Update stat display
-        var acres = appArea.getArea();
-        acres = round(acres,3);
-        document.getElementById('num-acres').value = acres;
-        var bpa = document.getElementById('num-bugs-per-acre').value;
-        var pm = document.getElementById('percent-multiplier').value;
-        var totalBugs = appArea.getTotalBugs(bpa,pm);
-        document.getElementById('num-bugs').value = round(totalBugs,0);
-      } else {
-        // Reset stat display
-        document.getElementById('num-acres').value = 0;
-        document.getElementById('num-bugs').value = 0;
-      }
+      updateStats();
     }
     
     function resetMap() {
@@ -469,6 +493,28 @@
         document.getElementById('num-bugs').value = 0;
     }
 
+    function updateStats() {
+      // console.log("Change");
+      try {
+        if(appArea != null) {
+          // Update stat display
+          var acres = appArea.getArea();
+          acres = round(acres,3);
+          document.getElementById('num-acres').value = acres;
+          var bpa = document.getElementById('num-bugs-per-acre').value;
+          var pm = document.getElementById('percent-multiplier').value;
+          var totalBugs = appArea.getTotalBugs(bpa,pm);
+          document.getElementById('num-bugs').value = round(totalBugs,0);
+        } else {
+          document.getElementById('num-acres').value = 0;
+          document.getElementById('num-bugs').value = 0;
+        }
+      } catch (e) {
+        document.getElementById('num-acres').value = 0;
+        document.getElementById('num-bugs').value = 0;
+      }
+    }
+
     function validate() {
         if(appArea==null) {console.log("App area was null");return false;}
         if(!appArea.validateAndFix()) {
@@ -477,6 +523,18 @@
         }
         return true;
     }
+    
+    
+    // Make text boxes responsive to user input (update the stats)
+    var bugsPerAcre = document.getElementById('num-bugs-per-acre');
+    bugsPerAcre.addEventListener('change', updateStats);
+    bugsPerAcre.addEventListener('paste', updateStats);
+    bugsPerAcre.addEventListener('input', updateStats);
+    
+    var percentMultiplier = document.getElementById('percent-multiplier');
+    percentMultiplier.addEventListener('change', updateStats);
+    percentMultiplier.addEventListener('paste', updateStats);
+    percentMultiplier.addEventListener('input', updateStats);
     
     document.getElementById('additional-info').addEventListener("submit", function(event) {
       if(validate()) {
@@ -498,7 +556,8 @@
           "contactEmail" : formData.get('contact-email'),
           "billingAdress" : formData.get('billing-address'),
           "crop" : formData.get('crop'),
-          "rowSpacing" : formData.get('row-spacing')
+          "rowSpacing" : formData.get('row-spacing'),
+          "notes": formData.get('notes')
         };
         
         // Ajax request

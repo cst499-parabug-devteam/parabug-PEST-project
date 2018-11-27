@@ -41,7 +41,8 @@ var data = {
     "contactEmail",
     "billingAdress",
     "crop",
-    "rowSpacing"
+    "rowSpacing",
+    "notes"
 };
 */
 
