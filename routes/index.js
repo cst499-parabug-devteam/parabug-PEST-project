@@ -1,8 +1,6 @@
 var express = require('express');
 var router = express.Router();
 
-var jsts = require('jsts');
-
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express', api_key: process.env.GOOGLE_MAPS_API_KEY });
