@@ -6,6 +6,7 @@ var { google } = require('googleapis');
 var OAuth2 = google.auth.OAuth2;
 var bodyParser = require('body-parser');
 var fs = require('fs');
+let privateKey = require('../private/fakeKey.json');
 
 
 //oauth2 information for access:
@@ -24,19 +25,7 @@ var fs = require('fs');
 // const accessToken = tokens.access_token;
 
 //setup transport module:
-    // var transporter = nodeMailer.createTransport({
-    //     service: "gmail",
-    //  auth: {
-    //       type: "OAuth2",
-    //       user: "chrisumartinez@gmail.com", 
-    //       clientId: process.env.GMAIL_CLIENT_ID,
-    //       clientSecret: process.env.GMAIL_CLIENT_SECRET,
-    //       refreshToken: process.env.REFRESH_TOKEN,
-    //       accessToken: accessToken,
-    //       expires: 12345
-    //  },
-    //  debug: true
-    // });
+
     
 /*
 LESS - SECURE METHOD FOR SMTP TRANSPORTER:
@@ -45,24 +34,22 @@ LESS - SECURE METHOD FOR SMTP TRANSPORTER:
 
 var html_template= fs.readFileSync(__dirname + '/templates/abc.html',{encoding:'utf-8'});
 
-var transporter = nodeMailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // use SSL
-    auth: {
-        user: process.env.GMAIL_ACC,
-        pass: process.env.GMAIL_P
-    }
-});
-    
-//make sure transporter is verified and functioning
-transporter.verify(function (error, success) {
-    if (error) {
-        console.log(error);
-    } else {
-        console.log('Server is ready to take our messages');
-    }
-});
+// var transporter = nodeMailer.createTransport({
+//     host: 'smtp.gmail.com',
+//     port: 465,
+//     secure: true, // use SSL
+//     auth: {
+//         user: process.env.GMAIL_ACC,
+//         pass: process.env.GMAIL_P
+//     }
+// });
+
+
+//AUTH USING A SERVICE ACCCOUNT - SERVER TO SERVER
+
+
+//Using OAuth Combined:
+
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -70,7 +57,41 @@ router.get('/', function(req, res, next) {
       
       
 router.post('/', function(req, res, next) {
-            let mailOptions = {
+
+
+
+//configuring JWT Client:
+let JWTClient = new google.auth.JWT(
+    privateKey.client_email,
+    null,
+    privateKey.private_key,
+    ['https://www.googleapis.com/auth/gmail.send']);
+    
+//authorize request:
+JWTClient.authorize(function (err, tokens) {
+ if (err) {
+   console.log(err);
+   return;
+ } else {
+   console.log("Successfully connected!");
+   
+   
+   
+   
+   //create Transporter:
+      var transporter = nodeMailer.createTransport({
+        service: "gmail",
+     auth: {
+          type: "OAuth2",
+          serviceClient: privateKey.client_id,
+          privateKey: privateKey.private_key,
+          accessToken : tokens.access_token,
+          expires : tokens.expiry_date
+     }
+    });
+
+    // Set up Mail:
+        let mailOptions = {
           from: '"Parabug Automatic Test Email" <amazingmaxpayne@gmail.com>', // sender address
           to: req.body.contact_email, // list of receivers
           subject: "Parabug Estimate Request", // Subject line
@@ -78,6 +99,7 @@ router.post('/', function(req, res, next) {
           html: html_template  // html body
       };
      
+     //Send the Mail:
       transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
               return console.log(error);
@@ -85,8 +107,15 @@ router.post('/', function(req, res, next) {
          res.redirect('back')
         console.log("Message Sent: "  + info.response);
           });
-   var info = req.body;
-   console.log(info);
+   
+   
+   
+   
+   
+ }
+});
+
+
 });
 
 module.exports = router;
