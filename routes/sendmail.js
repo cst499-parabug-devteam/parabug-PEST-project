@@ -42,7 +42,7 @@ var fs = require('fs');
 LESS - SECURE METHOD FOR SMTP TRANSPORTER:
 */
 
-var html_template= fs.readFileSync('/parabug-PEST-project/public/test_files/email_template.html',{encoding:'utf-8'});
+var html_template= fs.readFileSync('../public/test_files/email_template.html',{encoding:'utf-8'});
 
 var transporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
