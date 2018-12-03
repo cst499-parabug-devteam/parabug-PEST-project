@@ -42,8 +42,7 @@ var fs = require('fs');
 LESS - SECURE METHOD FOR SMTP TRANSPORTER:
 */
 
-
-var html_template= fs.readFileSync(__dirname + '/templates/abc.html',{encoding:'utf-8'});
+var html_template= fs.readFileSync('/parabug-PEST-project/public/test_files/email_template.html',{encoding:'utf-8'});
 
 var transporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
@@ -75,7 +74,14 @@ router.post('/', function(req, res, next) {
           to: req.body.contact_email, // list of receivers
           subject: "Parabug Estimate Request", // Subject line
           text: req.body.body, // plain text body
-          html: html_template  // html body
+          html: html_template,  // html body
+          attachments :
+          [
+              {
+                  filename: 'test_attachment.txt',
+                  path: '/parabug-PEST-project/public/test_files/test_attachment.txt'
+              }
+        ]
       };
      
       transporter.sendMail(mailOptions, (error, info) => {
