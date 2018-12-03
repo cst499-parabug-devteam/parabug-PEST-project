@@ -6,7 +6,7 @@ var { google } = require('googleapis');
 var OAuth2 = google.auth.OAuth2;
 var bodyParser = require('body-parser');
 var fs = require('fs');
-
+var path = require('path');
 
 //oauth2 information for access:
 // var oauth2Client = new OAuth2(
@@ -41,8 +41,9 @@ var fs = require('fs');
 /*
 LESS - SECURE METHOD FOR SMTP TRANSPORTER:
 */
-
-var html_template= fs.readFileSync('../public/test_files/email_template.html',{encoding:'utf-8'});
+var p = path.join(__dirname,'..','public','test_files','email_template.html');
+// var html_template= fs.readFileSync('../public/test_files/email_template.html',{encoding:'utf-8'});
+var html_template= fs.readFileSync(p,{encoding:'utf-8'});
 
 var transporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
