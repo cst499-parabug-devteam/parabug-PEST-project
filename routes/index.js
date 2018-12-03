@@ -309,5 +309,109 @@ function validateAndFix(appArea, hazards, vras) {
     
 }
 
+function toKMl(){
+    var info = req.body(); 
+    var kml = new XMLWriter('UTF-8'); 
+    kml.formatting = 'indented'; 
+    kml.indentChar = ' '; 
+    kml.indentation = 2; 
+    
+    kml.writeStartDocument(); // start kml tag 
+    kml.writeStartElement('kml'); 
+    kml.writeAttributeString("xmlns", "http://www.opengis.net/kml/2.2"); 
+    kml.writeStartElement('Document'); 
+    
+    for(var i = 0; i < info["appArea"]["applicationArea"].length; i++){
+        kml.writeStartElement('Placemark'); // 1. placemark start tag 
+        
+        kml.writeStartElement('name'); // 2. name (title) of, start tag 
+        kml.writeCDATA("App Area");  
+        kml.writeEndElement(); // 2. name (title) of, end tag 
+        
+        kml.writeStartElement('description'); // 3. area description start tag 
+        kml.writeCDATA("Application Area"); 
+        kml.writeEndElement(); // 3. area description end tag 
+        
+        //use only outerboundaryis 
+        kml.writeStartElement('Polygon'); // 4. polygon tag start
+        kml.writeElementString('extrude', '1'); 
+        kml.writeElementString('altitudeMode', 'clampToGround');
+        
+        kml.writeStartElement('outerBoundaryIs'); // 5. 'hole' tag start
+        kml.writeStartElement('LinearRing'); // 6. linear ring tag start 
+        kml.writeStartElement("coordinates"); // 7. coordinate tag start 
+        
+        for(var i = 0; i < info["appArea"]["ApplicationArea"]["shell"].length; i++){
+            kml.writeSring(/*acess lng, then lat*/); 
+        }
+        
+        kml.writeEndElement(); // 5. 'hole' tag end 
+        kml.writeEndElement(); // 6. linear ring tag end 
+        kml.writeEndElement(); // 7. coordinate tag end 
+        
+        kml.writeEndElement(); // 4. polygon tag end 
+        
+        kml.writeStartElement('Polystyle'); // start polystyle tag 
+        kml.writeStartElement('Style');// start style tag 
+        kml.writeStartElement('Color'); // Start Color tag 
+        kml.writeString('5014F0FF'); // Color yellow 
+        kml.writeEndElement(); // end color style 
+        kml.writeEndElement(); // end style tag 
+        kml.writeEndElement(); // end polystyle tag
+        
+        kml.writeEndElement(); // 1. placemark end tag 
+    }
+    for(var i = 0; i < info["appArea"]["Hazards"].length; i++){
+        kml.writeStartElement('Placemark'); // 1. placemark start tag 
+        
+        kml.writeStartElement('name'); // 2. name (title) of, start tag 
+        kml.writeCDATA("Hazards");  
+        kml.writeEndElement(); // 2. name (title) of, end tag 
+        
+        kml.writeStartElement('description'); // 3. area description start tag 
+        kml.writeCDATA("Hazards area/s"); 
+        kml.writeEndElement(); // 3. area description end tag 
+        
+        //use only outerboundaryis 
+        kml.writeStartElement('Polygon'); // 4. polygon tag start
+        kml.writeElementString('extrude', '1'); 
+        kml.writeElementString('altitudeMode', 'clampToGround');
+        
+        kml.writeStartElement('outerBoundaryIs'); // 5. 'hole' tag start
+        kml.writeStartElement('LinearRing'); // 6. linear ring tag start 
+        kml.writeStartElement("coordinates"); // 7. coordinate tag start 
+        
+        for(var i = 0; i < info["appArea"]["Hazards"]["shell"].length; i++){
+            kml.writeSring(/*acess lng, then lat*/); 
+        }
+        
+        kml.writeEndElement(); // 5. 'hole' tag end 
+        kml.writeEndElement(); // 6. linear ring tag end 
+        kml.writeEndElement(); // 7. coordinate tag end 
+        
+        kml.writeEndElement(); // 4. polygon tag end 
+        
+        kml.writeStartElement('Polystyle'); // start polystyle tag 
+        kml.writeStartElement('Style');// start style tag 
+        kml.writeStartElement('Color'); // Start Color tag 
+        kml.writeString('501400FF'); // Color Red  
+        kml.writeEndElement(); // end color style 
+        kml.writeEndElement(); // end style tag 
+        kml.writeEndElement(); // end polystyle tag
+        
+        kml.writeEndElement(); // 1. placemark end tag 
+    }
+    
+    kml.writeEndElement(); // end tag 
+    kml.writeEndElement(); // end tag 
+    kml.writeEndDocument(); // end kml tag 
+    
+    var xml = kml.flush(); // creates the xml string 
+    kml.close(); 
+    kml = undefined; 
+    
+    // Enter the name of variable that will call the kml function 
+    document.getElementById('enterStringToCallHere').value = xml; 
+}
 
 module.exports = router;
