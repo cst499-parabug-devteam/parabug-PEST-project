@@ -1,7 +1,13 @@
 var express = require('express');
 var router = express.Router();
-
 var jsts = require('jsts');
+var nodeMailer = require('nodemailer');
+var bodyParser = require('body-parser');
+var { google } = require('googleapis');
+var OAuth2 = google.auth.OAuth2;
+var bodyParser = require('body-parser');
+var fs = require('fs');
+let privateKey = require('../private/fakeKey.json');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -92,6 +98,7 @@ router.post('/', function(req, res, next) {
         
         if(validateAndFix(appArea, hazards, vras)) {
             res.send("Valid");
+            sendMail(info);
         } else {
             res.send("Invalid");
         }
@@ -101,6 +108,86 @@ router.post('/', function(req, res, next) {
         res.send("Error");
     }
 });
+
+
+function sendMail(info){
+    
+    //NO-REPLY@SENDMAIL.COM METHOD:
+    var noreply_email = "no-reply@parabug.xyz";
+    var html_template= fs.readFileSync(__dirname + '/templates/abc.html',{encoding:'utf-8'});
+
+// //configuring JWT Client:
+// let JWTClient = new google.auth.JWT(
+//     privateKey.client_email,
+//     null,
+//     privateKey.private_key,
+//     ['https://mail.google.com'],
+//     email);
+    
+// //authorize request:
+// JWTClient.authorize(function (err, tokens) {
+//  if (err) {
+//   console.log(err);
+//   info.json({success: false, error: err});
+//   return;
+//  } else {
+//   console.log("Successfully got an access token! Token: " + tokens);
+//   //create Transporter:
+//       var transporter = nodeMailer.createTransport({
+//         service: "gmail",
+//      auth: {
+//           type: "OAuth2",
+//           serviceClient: privateKey.client_id,
+//           privateKey: privateKey.private_key,
+//           accessToken : tokens.access_token,
+//           expires : tokens.expiry_date
+//      }
+//     });
+//     // Set up Mail:
+//     console.log("Configuring Email:");
+//         let mailOptions = {
+//           from: '"Parabug Automatic Test Email" <amazingmaxpayne@gmail.com>', // sender address
+//           to: "roflitsbizzy@gmail.com", // list of receivers
+//           subject: "Parabug Estimate Request", // Subject line
+//           text: info.notes, // plain text body
+//           html: html_template  // html body
+//       };
+//      console.log("Sending Email:");
+//      //Send the Mail:
+//       transporter.sendMail(mailOptions, (error, info) => {
+//           if (error) {
+//             console.log(error);
+//           }
+//          return;
+//           });
+   
+//  }
+// });
+var transporter = nodeMailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        user: privateKey.G_ACCOUNT,
+        pass: privateKey.G_PASS
+    }
+});
+    
+        let mailOptions = {
+          from: '"Parabug Automatic Test Email"' + "<" + noreply_email + ">", // sender address
+          to: "amazingmaxpayne@gmail.com", // list of receivers
+          subject: "Parabug Estimate Request", // Subject line
+          text: info.notes, // plain text body
+          html: html_template  // html body
+      };
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error){
+            console.log(error);
+        }
+        return;
+    });
+
+}
 
 
 function numUniqueCoordinates(jstsPoly) {
