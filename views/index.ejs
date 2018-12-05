@@ -138,6 +138,34 @@
             display: inline-block;
             text-align: left;
         }
+        
+        #crosshair-center {
+          vertical-align: center;
+          text-align: center;
+          display: none;
+        }
+        
+        #mobile-div {
+          display: inline-block;
+          background-color: #fff;
+          border: 2px solid #fff;
+          border-radius: 3px;
+          cursor: pointer;
+          text-align: center;
+          vertical-align: center;
+          font-family: Roboto,Arial,sans-serif;
+          font-size: 15px;
+          padding:2px;
+          margin-bottom: 12px;
+        }
+        #mobile-mode-div {
+          display: inline-block;
+        }
+        #mobile-options-div {
+          display: none;
+        }
+
+        
       </style>
     </head>
     <body>
@@ -167,6 +195,17 @@
         <div class="stat-item">
           <label class="stat-text" for="num-bugs">Total Bugs:</label>
           <div class="stat-input"><input type="number" name="num-bugs" id="num-bugs" class="read-only" value="0" readonly/></div>
+        </div>
+      </div>
+      
+      <div id="mobile-div">
+        <div id="mobile-mode-div">
+          <label for="mobile-mode">Mobile</label>
+          <input type="checkbox" value="mobile" id="mobile-mode" name="mobile-mode">
+        </div>
+        <div id="mobile-options-div">
+          <input type="button" value="Mark / Select" onClick="makeMarker()"/>
+          <input type="button" value="Finish" onClick="finishShape()"/>
         </div>
       </div>
       
@@ -224,6 +263,10 @@
     var drawingManager;
     var appArea;
     var infoWindow;
+    var centerMarker;
+    var overlayMarkers = [];
+    var tempShape;
+    
     
     // Internal object to help manage toggling between our custom
     //  drawing modes
@@ -240,12 +283,27 @@
         mapTypeId: 'satellite',
         streetViewControl: false,
         rotateControl: false,
-        scaleControl: true,
         mapTypeControlOptions: {
           style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
         }
       });
       
+      
+      var image = {
+        url: "/img/crosshair.png",
+        size: new google.maps.Size(200,200),
+        origin: new google.maps.Point(0,0),
+        anchor: new google.maps.Point(100,100)
+      }
+      
+      centerMarker = new google.maps.Marker({
+        position: map.getCenter(),
+        icon: image,
+        draggable: true,
+        // map: map,
+        zIndex: 3
+      });
+  
       drawingManager = new google.maps.drawing.DrawingManager({
         drawingMode: null,
         drawingControl: false,
@@ -271,6 +329,7 @@
           };
           map.setCenter(pos);
           map.setZoom(15);
+          centerMarker.setPosition(pos);
         }, function() {
           handleLocationError(true);
         });
@@ -426,6 +485,10 @@
       resetDiv.index = 1;
       resetDiv.id = "reset-btn";
       map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(resetDiv);
+      
+      var mobileControl = document.getElementById('mobile-div');
+      mobileControl.index = 1;
+      map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(mobileControl);
       //********************************* End Custom Controls*********************************
     }
     
@@ -457,7 +520,11 @@
         case 1: // Fall through
         case 2: // Fall through
         case 3:
-          drawingManager.setOptions({ drawingMode: google.maps.drawing.OverlayType.POLYGON });
+          if(document.getElementById('mobile-mode').checked) {
+            drawingManager.setOptions({ drawingMode: null });
+          } else {
+            drawingManager.setOptions({ drawingMode: google.maps.drawing.OverlayType.POLYGON });
+          }
           drawModeControl.current=mode;
           break;
         default: break; // unexpected input
@@ -576,4 +643,92 @@
       }
       
     });
+    
+    function makeMarker() {
+      if(drawModeControl.current == 4) { // Delete Mode
+        mobileClickSubPoly(centerMarker.getPosition());
+        return;
+      }
+      if(drawModeControl.current == 0) { return; } // Drag Mode
+      
+      overlayMarkers.push(centerMarker.getPosition());
+      if(tempShape!=null) { tempShape.setMap(null); }
+      if(overlayMarkers.length == 1) {
+        tempShape = new google.maps.Marker({
+          position: centerMarker.getPosition(),
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: 'white',
+            fillOpacity: 1,
+            strokeColor: 'black',
+            strokeWeight: 2
+          },
+          map: map
+        });
+        return;
+      }
+      
+      // If more than one marker, generate a polyline
+      tempShape = new google.maps.Polyline({
+            path: overlayMarkers,
+            strokeColor: '#000000',
+            strokeOpacity: 1,
+            strokeWeight: 3,
+            draggable: true,
+            geodesic: true
+        });
+        tempShape.setMap(map);
+    }
+    
+    function mobileClickSubPoly(latLng) {
+      if(appArea==null) { return; }
+      // Mobile delete selection fix
+      var temp;
+      for(var i = 0; i < appArea.getNumHazard(); i++) {
+        temp = appArea.getHazard(i).getPoly();
+        if(google.maps.geometry.poly.containsLocation(latLng, temp)) {
+          var mev = {
+            stop: null,
+            latLng: latLng
+          }
+          google.maps.event.trigger(temp, 'click', mev);
+          return;
+        }
+      }
+      for(i = 0; i < appArea.getNumVariableRateAreas(); i++) {
+        temp = appArea.getVariableRateArea(i).getPoly();
+        if(google.maps.geometry.poly.containsLocation(latLng, temp)) {
+          var mev = {
+            stop: null,
+            latLng: latLng
+          }
+          google.maps.event.trigger(temp, 'click', mev);
+          return;
+        }
+      }
+      console.log("No subpoly contained spot");
+    }
+    
+    function finishShape() {
+      if(tempShape != null) {
+        draw(tempShape.getPath());
+        tempShape.setMap(null);
+      }
+      overlayMarkers = [];
+      tempShape = null;
+    }
+    
+    document.getElementById('mobile-mode').addEventListener('click', function() {
+      if(this.checked) {
+        drawingManager.setOptions({ drawingMode: null });
+        centerMarker.setMap(map);
+        document.getElementById('mobile-options-div').style.display = "inline-block";
+      } else {
+        drawToggle(drawModeControl.current);
+        centerMarker.setMap(null);
+        document.getElementById('mobile-options-div').style.display = "none";
+      }
+    });
+    
   </script>
