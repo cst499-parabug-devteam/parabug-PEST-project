@@ -884,7 +884,7 @@ function promptAndDelete(identifier) {
     // Named instance variable for AppArea is assumed to be appArea
     
     // check if drawing mode is set to delete
-    if(drawModeControl.getCurrent()!="Delete") {return;}
+    if(drawModeControl.getCurrent()!="Delete") {return;} // also instanced variable (drawModeControl)
     
     if(appArea == null) {return;}
     var index = appArea.getIndexOfIdentifier(identifier.id, identifier.type);
