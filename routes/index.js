@@ -9,6 +9,7 @@ var bodyParser = require('body-parser');
 var fs = require('fs');
 let privateKey = require('../private/fakeKey.json');
 var path = require('path');
+var ejs = require('ejs');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -115,57 +116,11 @@ function sendMail(info){
     
     //NO-REPLY@SENDMAIL.COM METHOD:
     var noreply_email = "no-reply@parabug.xyz";
-    var email_path = path.join(__dirname,'..','public','test_files','email_template.html');
-    var html_template = fs.readFileSync(email_path, {encoding:'utf-8'});
-
-// //configuring JWT Client:
-// let JWTClient = new google.auth.JWT(
-//     privateKey.client_email,
-//     null,
-//     privateKey.private_key,
-//     ['https://mail.google.com'],
-//     email);
+    var email_path = path.join(__dirname,'..','public','test_files','email_template.ejs');
     
-// //authorize request:
-// JWTClient.authorize(function (err, tokens) {
-//  if (err) {
-//   console.log(err);
-//   info.json({success: false, error: err});
-//   return;
-//  } else {
-//   console.log("Successfully got an access token! Token: " + tokens);
-//   //create Transporter:
-//       var transporter = nodeMailer.createTransport({
-//         service: "gmail",
-//      auth: {
-//           type: "OAuth2",
-//           serviceClient: privateKey.client_id,
-//           privateKey: privateKey.private_key,
-//           accessToken : tokens.access_token,
-//           expires : tokens.expiry_date
-//      }
-//     });
-//     // Set up Mail:
-//     console.log("Configuring Email:");
-//         let mailOptions = {
-//           from: '"Parabug Automatic Test Email" <amazingmaxpayne@gmail.com>', // sender address
-//           to: "roflitsbizzy@gmail.com", // list of receivers
-//           subject: "Parabug Estimate Request", // Subject line
-//           text: info.notes, // plain text body
-//           html: html_template  // html body
-//       };
-//      console.log("Sending Email:");
-//      //Send the Mail:
-//       transporter.sendMail(mailOptions, (error, info) => {
-//           if (error) {
-//             console.log(error);
-//           }
-//          return;
-//           });
-   
-//  }
-// });
-var transporter = nodeMailer.createTransport({
+    
+    //set up transporter
+    var transporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
     secure: true, // use SSL
@@ -174,39 +129,55 @@ var transporter = nodeMailer.createTransport({
         pass: privateKey.G_PASS
     }
 });
+    console.log(info);
+//     ejs.renderFile(email_path, { contact_name: info.contact_name, contact_email: info.contact_email, contact_phone: info.contact_phone, crop: info.crop,
+//         billing_address: info.billing_address, notes: info.notes, row_spacing: info.row_spacing
+//     }, function (err, data) {
+// if (err) {
+//     console.log(err);
+// } else {
+//         let mailOptions = {
+//           from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
+//           to: " <" + "roflitsbizzy@gmail.com" + ">", // list of receivers
+//           subject: "Parabug Estimate Request", // Subject line
+//           text: info.notes, // plain text body
+//           html: data
+//       };
+//     transporter.sendMail(mailOptions, function (err, info) {
+//         if (err) {
+//             console.log(err);
+//         } else {
+//             console.log('Message sent: ' + info.response);
+//         }
+//     });
+// }
 
-
-///parabug-PEST-project/public/test_files/email_template.html
-        //send Client Email:
-        let mailOptions = {
-          from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
-          to: " <" + "roflitsbizzy@gmail.com" + ">", // list of receivers
-          subject: "Parabug Estimate Request", // Subject line
-          text: info.notes, // plain text body
-          html: html_template  // html body
-      };
-     //send email over to client:
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error){
-            console.log(error);
-        }
-        return;
-    });
-    
-    //close transporter
-    
-    transporter.close();
+// });
+ 
+//     transporter.close();
     
 }
 
 
-function editTemplate(info, html){
-}
+// function editTemplate(info, htmlPath){
+// fs.readFile(htmlPath, 'utf8', function (err, data) {
+//                 if (err) {
+//                     return console.log(err);
+//                 }
+//                 var mainOptions = {
+//                     from: '"Tester" testmail@zoho.com',
+//                     to: email,
+//                     subject: 'Hello, world'
+//                     html: ejs.render(data, {name: 'Stranger'});
+//                 };
+//                 console.log(mainOptions.html);
+// });
+// }
 
 function sendMailToParabug(info){
    //NO-REPLY@SENDMAIL.COM METHOD:
 var noreply_email = "no-reply@parabug.xyz";
-var html_template = path.join(__dirname,'..','public','test_files','email_template.html');
+var html_template = path.join(__dirname,'..','public','test_files','email_template.ejs');
     
 
  var transporter = nodeMailer.createTransport({
