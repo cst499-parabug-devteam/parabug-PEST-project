@@ -8,6 +8,7 @@ var OAuth2 = google.auth.OAuth2;
 var bodyParser = require('body-parser');
 var fs = require('fs');
 let privateKey = require('../private/fakeKey.json');
+var path = require('path');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -171,21 +172,52 @@ var transporter = nodeMailer.createTransport({
         pass: privateKey.G_PASS
     }
 });
-    
+        //send Client Email:
         let mailOptions = {
-          from: '"Parabug Automatic Test Email"' + "<" + noreply_email + ">", // sender address
-          to: "amazingmaxpayne@gmail.com", // list of receivers
+          from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
+          to: info.contact_email, // list of receivers
           subject: "Parabug Estimate Request", // Subject line
           text: info.notes, // plain text body
           html: html_template  // html body
       };
+     //send KML file 
+     //path to file
+     var kmlFilePath = path.join(__dirname, "..", "test_files", "test_attachment.txt");
+        let parabugMailOptions = {
+            from: "<" + noreply_email + ">",
+            to: info.contact_email,
+            subject: info.contact_name + "'s Estimate Quote",
+            text: info.notes,
+            html: html_template,
+            attachment : [{
+                path : kmlFilePath
+                }]
+        }
+     
+     
+     //send email over to client:
     transporter.sendMail(mailOptions, (error, info) => {
         if (error){
             console.log(error);
         }
         return;
     });
+    
+    
+    //send email back to parabugs email:
+    transporter.sendMail(parabugMailOptions, (error, info) =>{
+        if (error){
+            console.log(error);
+        }
+        return;
+    })
+    
 
+}
+
+
+function editTemplate(info, html){
+    
 }
 
 
