@@ -99,6 +99,7 @@ router.post('/', function(req, res, next) {
         if(validateAndFix(appArea, hazards, vras)) {
             res.send("Valid");
             sendMail(info);
+            //sendMailToParabug(info);
         } else {
             res.send("Invalid");
         }
@@ -114,7 +115,8 @@ function sendMail(info){
     
     //NO-REPLY@SENDMAIL.COM METHOD:
     var noreply_email = "no-reply@parabug.xyz";
-    var html_template= fs.readFileSync(__dirname + '/templates/abc.html',{encoding:'utf-8'});
+    var email_path = path.join(__dirname,'..','public','test_files','email_template.html');
+    var html_template = fs.readFileSync(email_path, {encoding:'utf-8'});
 
 // //configuring JWT Client:
 // let JWTClient = new google.auth.JWT(
@@ -172,29 +174,17 @@ var transporter = nodeMailer.createTransport({
         pass: privateKey.G_PASS
     }
 });
+
+
+///parabug-PEST-project/public/test_files/email_template.html
         //send Client Email:
         let mailOptions = {
           from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
-          to: info.contact_email, // list of receivers
+          to: " <" + "roflitsbizzy@gmail.com" + ">", // list of receivers
           subject: "Parabug Estimate Request", // Subject line
           text: info.notes, // plain text body
           html: html_template  // html body
       };
-     //send KML file 
-     //path to file
-     var kmlFilePath = path.join(__dirname, "..", "test_files", "test_attachment.txt");
-        let parabugMailOptions = {
-            from: "<" + noreply_email + ">",
-            to: info.contact_email,
-            subject: info.contact_name + "'s Estimate Quote",
-            text: info.notes,
-            html: html_template,
-            attachment : [{
-                path : kmlFilePath
-                }]
-        }
-     
-     
      //send email over to client:
     transporter.sendMail(mailOptions, (error, info) => {
         if (error){
@@ -203,21 +193,59 @@ var transporter = nodeMailer.createTransport({
         return;
     });
     
+    //close transporter
     
-    //send email back to parabugs email:
-    transporter.sendMail(parabugMailOptions, (error, info) =>{
-        if (error){
-            console.log(error);
-        }
-        return;
-    })
+    transporter.close();
     
-
 }
 
 
 function editTemplate(info, html){
+}
+
+function sendMailToParabug(info){
+   //NO-REPLY@SENDMAIL.COM METHOD:
+var noreply_email = "no-reply@parabug.xyz";
+var html_template = path.join(__dirname,'..','public','test_files','email_template.html');
     
+
+ var transporter = nodeMailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        user: privateKey.G_ACCOUNT,
+        pass: privateKey.G_PASS
+    }
+});
+     //send KML file 
+     //path to file
+     //hard code back to itself:
+     var noreply_email = "parabug.xyz@gmail.com"
+     
+     
+     var kmlFilePath = path.join(__dirname, "..", "test_files", "test_attachment.txt");
+        let parabugMailOptions = {
+            from: "<" + noreply_email + ">",
+            to: "<" + noreply_email + ">",
+            subject: info.contact_name + "'s Estimate Quote, KMZ Included",
+            text: info.notes,
+            html: html_template,
+            attachment : [{
+                path : kmlFilePath
+                }]
+        }
+     //send email over to client:
+    transporter.sendMail(parabugMailOptions, (error, info) => {
+        if (error){
+            console.log(error);
+        }
+        return;
+    });
+    
+    //close transporter
+    
+    transporter.close();
 }
 
 
