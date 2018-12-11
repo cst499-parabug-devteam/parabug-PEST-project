@@ -130,31 +130,31 @@ function sendMail(info){
     }
 });
     console.log(info);
-//     ejs.renderFile(email_path, { contact_name: info.contact_name, contact_email: info.contact_email, contact_phone: info.contact_phone, crop: info.crop,
-//         billing_address: info.billing_address, notes: info.notes, row_spacing: info.row_spacing
-//     }, function (err, data) {
-// if (err) {
-//     console.log(err);
-// } else {
-//         let mailOptions = {
-//           from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
-//           to: " <" + "roflitsbizzy@gmail.com" + ">", // list of receivers
-//           subject: "Parabug Estimate Request", // Subject line
-//           text: info.notes, // plain text body
-//           html: data
-//       };
-//     transporter.sendMail(mailOptions, function (err, info) {
-//         if (err) {
-//             console.log(err);
-//         } else {
-//             console.log('Message sent: ' + info.response);
-//         }
-//     });
-// }
+    ejs.renderFile(email_path, { contact_name: info.contactName, contact_email: info.contactEmail, contact_phone: info.contactPhone, crop: info.crop,
+        billing_address: info.billingAddress, notes: info.notes, row_spacing: info.rowSpacing
+    }, function (err, data) {
+if (err) {
+    console.log(err);
+} else {
+        let mailOptions = {
+          from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
+          to: " <" + "roflitsbizzy@gmail.com" + ">", // list of receivers
+          subject: "Parabug Estimate Request", // Subject line
+          text: info.notes, // plain text body
+          html: data
+      };
+    transporter.sendMail(mailOptions, function (err, info) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Message sent: ' + info.response);
+        }
+    });
+}
 
-// });
+});
  
-//     transporter.close();
+    transporter.close();
     
 }
 
