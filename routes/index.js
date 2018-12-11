@@ -117,7 +117,7 @@ function sendMail(info){
     //NO-REPLY@SENDMAIL.COM METHOD:
     var noreply_email = "no-reply@parabug.xyz";
     var email_path = path.join(__dirname,'..','public','test_files','email_template.ejs');
-    
+    var attachment_path = path.join(__dirname, '..', 'public', 'test_files', 'test.txt');
     
     //set up transporter
     var transporter = nodeMailer.createTransport({
@@ -129,7 +129,6 @@ function sendMail(info){
         pass: privateKey.G_PASS
     }
 });
-    console.log(info);
     ejs.renderFile(email_path, { contact_name: info.contactName, contact_email: info.contactEmail, contact_phone: info.contactPhone, crop: info.crop,
         billing_address: info.billingAddress, notes: info.notes, row_spacing: info.rowSpacing
     }, function (err, data) {
@@ -138,10 +137,14 @@ if (err) {
 } else {
         let mailOptions = {
           from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
-          to: " <" + "roflitsbizzy@gmail.com" + ">", // list of receivers
+          to: " <" + info.contactEmail + ">", // list of receivers
           subject: "Parabug Estimate Request", // Subject line
-          text: info.notes, // plain text body
-          html: data
+          html: data,
+          attachments: [
+              {
+                  path: attachment_path
+              }
+              ]
       };
     transporter.sendMail(mailOptions, function (err, info) {
         if (err) {
@@ -174,50 +177,50 @@ if (err) {
 // });
 // }
 
-function sendMailToParabug(info){
-   //NO-REPLY@SENDMAIL.COM METHOD:
-var noreply_email = "no-reply@parabug.xyz";
-var html_template = path.join(__dirname,'..','public','test_files','email_template.ejs');
+// function sendMailToParabug(info){
+//   //NO-REPLY@SENDMAIL.COM METHOD:
+// var noreply_email = "no-reply@parabug.xyz";
+// var html_template = path.join(__dirname,'..','public','test_files','email_template.ejs');
     
 
- var transporter = nodeMailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // use SSL
-    auth: {
-        user: privateKey.G_ACCOUNT,
-        pass: privateKey.G_PASS
-    }
-});
-     //send KML file 
-     //path to file
-     //hard code back to itself:
-     var noreply_email = "parabug.xyz@gmail.com"
+//  var transporter = nodeMailer.createTransport({
+//     host: 'smtp.gmail.com',
+//     port: 465,
+//     secure: true, // use SSL
+//     auth: {
+//         user: privateKey.G_ACCOUNT,
+//         pass: privateKey.G_PASS
+//     }
+// });
+//      //send KML file 
+//      //path to file
+//      //hard code back to itself:
+//      var noreply_email = "parabug.xyz@gmail.com"
      
      
-     var kmlFilePath = path.join(__dirname, "..", "test_files", "test_attachment.txt");
-        let parabugMailOptions = {
-            from: "<" + noreply_email + ">",
-            to: "<" + noreply_email + ">",
-            subject: info.contact_name + "'s Estimate Quote, KMZ Included",
-            text: info.notes,
-            html: html_template,
-            attachment : [{
-                path : kmlFilePath
-                }]
-        }
-     //send email over to client:
-    transporter.sendMail(parabugMailOptions, (error, info) => {
-        if (error){
-            console.log(error);
-        }
-        return;
-    });
+//      var kmlFilePath = path.join(__dirname, "..", "test_files", "test_attachment.txt");
+//         let parabugMailOptions = {
+//             from: "<" + noreply_email + ">",
+//             to: "<" + noreply_email + ">",
+//             subject: info.contact_name + "'s Estimate Quote, KMZ Included",
+//             text: info.notes,
+//             html: html_template,
+//             attachment : [{
+//                 path : kmlFilePath
+//                 }]
+//         }
+//      //send email over to client:
+//     transporter.sendMail(parabugMailOptions, (error, info) => {
+//         if (error){
+//             console.log(error);
+//         }
+//         return;
+//     });
     
-    //close transporter
+//     //close transporter
     
-    transporter.close();
-}
+//     transporter.close();
+// }
 
 
 function numUniqueCoordinates(jstsPoly) {
