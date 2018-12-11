@@ -10,6 +10,7 @@ var fs = require('fs');
 let privateKey = require('../private/fakeKey.json');
 var path = require('path');
 var ejs = require('ejs');
+var pdf = require('html-pdf');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -119,6 +120,7 @@ function sendMail(info){
     var email_path = path.join(__dirname,'..','public','test_files','email_template.ejs');
     var attachment_path = path.join(__dirname, '..', 'public', 'test_files', 'test.txt');
     
+    
     //set up transporter
     var transporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
@@ -135,6 +137,16 @@ function sendMail(info){
 if (err) {
     console.log(err);
 } else {
+    
+        //convert html to pdf:
+        //path of pdfFile:
+        var htmlPDFPath = path.join(__dirname, "..", "public", "test_files", 'clientQuote.pdf');
+        pdf.create(data).toFile(htmlPDFPath, function(err, res) {
+        if (err) return console.log(err);
+        console.log(res);
+        });
+    
+    
         let mailOptions = {
           from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
           to: " <" + info.contactEmail + ">", // list of receivers
@@ -143,6 +155,9 @@ if (err) {
           attachments: [
               {
                   path: attachment_path
+              },
+              {
+                  path: htmlPDFPath
               }
               ]
       };
