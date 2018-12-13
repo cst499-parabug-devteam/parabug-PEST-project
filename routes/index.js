@@ -448,8 +448,19 @@ function kml(info){
 // 	kml.text(JSON.stringify(appArea["shell"]["lat"])); 
 // 	kml.text(JSON.stringify(hazard));
 // 	kml.text(JSON.stringify(vRAs));
+    var appArea = info["appArea"]["ApplicationArea"][0]["shell"];
+    var hazardArea = info["appArea"]["Hazards"];
+    var vRAArea = info["appArea"]["VariableRateAreas"]; 
+    
+    //testing size
+    // kml.text(appArea.length + " app area Length \n");
+    // kml.text(hazardArea.length + " hazard area Length \n"); 
+    // kml.text(vRAArea.length + " vras area Length \n");
+    
+    // kml.text(JSON.stringify(info)); 
 	
-	for(var i = 0; i < 1; i++){
+	// App area 
+	for(var i = 0; i < appArea.length; i++){
 	    kml.startElement("Placemark"); // 1. polygon start 
 	    
 	    kml.startElement("name").writeCData("App Area").endElement();
@@ -486,9 +497,9 @@ function kml(info){
 	    kml.endElement(); // 2, polygon end 
 	    
 	    kml.startElement("Style"); // start style tag 
-	    kml.startElement("Polystyle"); // start polystyle tag
+	    kml.startElement("PolyStyle"); // start polystyle tag
 	    kml.startElement("color"); // start color tag 
-	    kml.text("#5014F0FF"); 
+	    kml.text("#ff00ffff"); 
 	    kml.endElement(); // end color tag 
 	    kml.startElement("outline"); // start outline tag
 	    kml.text("0"); 
@@ -499,7 +510,8 @@ function kml(info){
 	    kml.endElement(); // 1. polyon end 
 	    
 	}
-	for(var i = 0; i < 1; i++){
+	// Hazard Area 
+	for(var i = 0; i < hazardArea.length; i++){
 	    kml.startElement("Placemark"); // 1. polygon start 
 	    
 	    kml.startElement("name").writeCData("Hazards").endElement();
@@ -513,9 +525,9 @@ function kml(info){
 	    kml.startElement("LinearRing"); // 4. linear ring start 
 	    kml.startElement("coordinates"); // 5. coordinate tag start 
 	    
-	    for(var i = 0; i < info["appArea"]["Hazards"]["0"][0]["shell"].length; i++){
-            var hazardLng = info["appArea"]["Hazards"][0][0]["shell"][i]["lng"];
-            var hazardLat = info["appArea"]["Hazards"][0][0]["shell"][i]["lat"];
+	    for(var j = 0; j < info["appArea"]["Hazards"][0][0]["shell"].length; j++){
+            var hazardLng = info["appArea"]["Hazards"][i][0]["shell"][j]["lng"];
+            var hazardLat = info["appArea"]["Hazards"][i][0]["shell"][j]["lat"];
             
             kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(hazardLng) + "," + JSON.stringify(hazardLat) + ",0");
 	    }
@@ -535,9 +547,9 @@ function kml(info){
 	    kml.endElement(); // 2, polygon end 
 	    
 	    kml.startElement("Style"); // start style tag 
-	    kml.startElement("Polystyle"); // start polystyle tag
+	    kml.startElement("PolyStyle"); // start polystyle tag
 	    kml.startElement("color"); // start color tag 
-	    kml.text("#501400FF"); 
+	    kml.text("ff0000cc"); 
 	    kml.endElement(); // end color tag 
 	    kml.startElement("outline"); // start outline tag
 	    kml.text("0"); 
@@ -548,7 +560,8 @@ function kml(info){
 	    kml.endElement(); // 1. polyon end 
 	    
 	}
-	for(var i = 0; i < 1; i++){
+	// variable rate area 
+	for(var i = 0; i < vRAArea.length; i++){
 	    kml.startElement("Placemark"); // 1. polygon start 
 	    
 	    kml.startElement("name").writeCData("VRA").endElement();
@@ -565,9 +578,9 @@ function kml(info){
 	    
 	    //object►appArea►VariableRateAreas►0►0►shell►0►lat
 
-	    for(var i = 0; i < info["appArea"]["VariableRateAreas"][0]["0"]["shell"].length; i++){
-            var vRALng = info["appArea"]["VariableRateAreas"][0][0]["shell"][i]["lng"];
-            var vRALat = info["appArea"]["VariableRateAreas"][0][0]["shell"][i]["lat"];
+	    for(var j = 0; j < info["appArea"]["VariableRateAreas"][0][0]["shell"].length; j++){
+            var vRALng = info["appArea"]["VariableRateAreas"][i][0]["shell"][j]["lng"];
+            var vRALat = info["appArea"]["VariableRateAreas"][i][0]["shell"][j]["lat"];
             
             kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(vRALng) + "," + JSON.stringify(vRALat) + ",0");
 	    }
@@ -587,9 +600,9 @@ function kml(info){
 	    kml.endElement(); // 2, polygon end 
 	    
 	    kml.startElement("Style"); // start style tag 
-	    kml.startElement("Polystyle"); // start polystyle tag
+	    kml.startElement("PolyStyle"); // start polystyle tag
 	    kml.startElement("color"); // start color tag 
-	    kml.text("#50B4B4B4"); 
+	    kml.text("64A0A0A0"); 
 	    kml.endElement(); // end color tag 
 	    kml.startElement("outline"); // start outline tag
 	    kml.text("0"); 
