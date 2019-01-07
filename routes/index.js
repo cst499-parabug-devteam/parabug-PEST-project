@@ -9,6 +9,7 @@ var bodyParser = require('body-parser');
 var fs = require('fs');
 let privateKey = require('../private/fakeKey.json');
 var path = require('path');
+var pdf = require('html-pdf');
 var ejs = require('ejs');
 var XMLWriter = require('xml-writer');
 var ws = require('fs');
@@ -104,7 +105,6 @@ router.post('/', function(req, res, next) {
             var txt = kml(info); 
             fileCreate(txt); 
             sendMail(info);
-            //sendMailToParabug(info);
         } else {
             res.send("Invalid");
         }
@@ -121,6 +121,8 @@ function sendMail(info){
     //NO-REPLY@SENDMAIL.COM METHOD:
     var noreply_email = "no-reply@parabug.xyz";
     var email_path = path.join(__dirname,'..','public','test_files','email_template.ejs');
+    var parabug_email_path = "parabug.xyz@gmail.com";
+    var kml_path = path.join(__dirname,  '..', "KMLMap.kml");
     
     
     //set up transporter
@@ -134,95 +136,49 @@ function sendMail(info){
     }
 });
     console.log(info);
-//     ejs.renderFile(email_path, { contact_name: info.contact_name, contact_email: info.contact_email, contact_phone: info.contact_phone, crop: info.crop,
-//         billing_address: info.billing_address, notes: info.notes, row_spacing: info.row_spacing
-//     }, function (err, data) {
-// if (err) {
-//     console.log(err);
-// } else {
-//         let mailOptions = {
-//           from: '"Requested Parabug Estimate Quote"' + "<" + noreply_email + ">", // sender address
-//           to: " <" + "roflitsbizzy@gmail.com" + ">", // list of receivers
-//           subject: "Parabug Estimate Request", // Subject line
-//           text: info.notes, // plain text body
-//           html: data
-//       };
-//     transporter.sendMail(mailOptions, function (err, info) {
-//         if (err) {
-//             console.log(err);
-//         } else {
-//             console.log('Message sent: ' + info.response);
-//         }
-//     });
-// }
-
-// });
- 
-//     transporter.close();
+    ejs.renderFile(email_path, {  contact_name: info.contactName, contact_email: info.contactEmail, contact_phone: info.contactPhone, crop: info.crop,
+        billing_address: info.billingAddress, notes: info.notes, row_spacing: info.rowSpacing
+    }, function (err, data) {
+if (err) {
+    console.log(err);
+} else {
     
-}
-
-
-// function editTemplate(info, htmlPath){
-// fs.readFile(htmlPath, 'utf8', function (err, data) {
-//                 if (err) {
-//                     return console.log(err);
-//                 }
-//                 var mainOptions = {
-//                     from: '"Tester" testmail@zoho.com',
-//                     to: email,
-//                     subject: 'Hello, world'
-//                     html: ejs.render(data, {name: 'Stranger'});
-//                 };
-//                 console.log(mainOptions.html);
-// });
-// }
-
-function sendMailToParabug(info){
-   //NO-REPLY@SENDMAIL.COM METHOD:
-var noreply_email = "no-reply@parabug.xyz";
-var html_template = path.join(__dirname,'..','public','test_files','email_template.ejs');
+        var htmlPDFPath = path.join(__dirname, "..", "public", "test_files", 'clientQuote.pdf');
+        pdf.create(data).toFile(htmlPDFPath, function(err, res) {
+        if (err) return console.log(err);
+        console.log(res);
+        });
     
-
- var transporter = nodeMailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // use SSL
-    auth: {
-        user: privateKey.G_ACCOUNT,
-        pass: privateKey.G_PASS
-    }
-});
-     //send KML file 
-     //path to file
-     //hard code back to itself:
-     var noreply_email = "parabug.xyz@gmail.com"
-     
-     
-     var kmlFilePath = path.join(__dirname, "..", "test_files", "test_attachment.txt");
-        let parabugMailOptions = {
-            from: "<" + noreply_email + ">",
-            to: "<" + noreply_email + ">",
-            subject: info.contact_name + "'s Estimate Quote, KMZ Included",
-            text: info.notes,
-            html: html_template,
-            attachment : [{
-                path : kmlFilePath
-                }]
+    
+        let mailOptions = {
+          from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
+          to: " <" + info.contactEmail + ">", // list of receivers
+          subject: "Parabug Estimate Request", // Subject line
+          text: info.notes, // plain text body
+          html: data,
+          attachments: [
+              {
+                  path: kml_path
+              },
+              {
+                  path: htmlPDFPath
+              }
+              ]
+      };
+    transporter.sendMail(mailOptions, function (err, info) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Message sent: ' + info.response);
         }
-     //send email over to client:
-    transporter.sendMail(parabugMailOptions, (error, info) => {
-        if (error){
-            console.log(error);
-        }
-        return;
     });
-    
-    //close transporter
-    
-    transporter.close();
 }
 
+});
+ 
+    transporter.close();
+    
+}
 
 function numUniqueCoordinates(jstsPoly) {
     var coords = jstsPoly.getCoordinates();

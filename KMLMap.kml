@@ -12,11 +12,10 @@
                 <outerBoundaryIs>
                     <LinearRing>
                         <coordinates>
-							-121.69545196899617,36.66561427928699,0
-							-121.69765138038838,36.66317014616109,0
-							-121.6961064279958,36.66230951742979,0
-							-121.69389628776753,36.66490858684705,0
-							-121.69545196899617,36.66561427928699,0
+							-119.52290565819703,34.40350112277389,0
+							-119.52290565819703,34.40279294881319,0
+							-119.5223048433777,34.402863766478994,0
+							-119.52290565819703,34.40350112277389,0
 						</coordinates>
                     </LinearRing>
                 </outerBoundaryIs>
@@ -24,32 +23,6 @@
             <Style>
                 <PolyStyle>
                     <color>#ff00ffff</color>
-                    <outline>0</outline>
-                </PolyStyle>
-            </Style>
-        </Placemark>
-        <Placemark>
-            <name>
-            <![CDATA[Hazards]]></name>
-            <description>
-            <![CDATA[Areas that have hazards in them]]></description>
-            <Polygon>
-                <extrude>1</extrude>
-                <altitudeMode>clampToGround</altitudeMode>
-                <outerBoundaryIs>
-                    <LinearRing>
-                        <coordinates>
-							-121.69632100471699,36.66414264504702,0
-							-121.69568800338948,36.66434919190099,0
-							-121.69604205497944,36.66487416266008,0
-							-121.69632100471699,36.66414264504702,0
-						</coordinates>
-                    </LinearRing>
-                </outerBoundaryIs>
-            </Polygon>
-            <Style>
-                <PolyStyle>
-                    <color>ff0000cc</color>
                     <outline>0</outline>
                 </PolyStyle>
             </Style>
