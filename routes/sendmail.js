@@ -31,9 +31,9 @@ var path = require('path');
 LESS - SECURE METHOD FOR SMTP TRANSPORTER:
 */
 
-var p = path.join(__dirname,'..','public','test_files','email_template.html');
+var p = path.join(__dirname,'..','public','test_files','email_template.ejs');
 // var html_template= fs.readFileSync('../public/test_files/email_template.html',{encoding:'utf-8'});
-var html_template= fs.readFileSync(p,{encoding:'utf-8'});
+var html_template= fs.readFile(p,{encoding:'utf-8'});
 
 
 //AUTH USING A SERVICE ACCCOUNT - SERVER TO SERVER

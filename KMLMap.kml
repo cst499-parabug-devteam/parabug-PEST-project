@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+    <Document>
+        <Placemark>
+            <name>
+            <![CDATA[App Area]]></name>
+            <description>
+            <![CDATA[Application Area for biologicals]]></description>
+            <Polygon>
+                <extrude>1</extrude>
+                <altitudeMode>clampToGround</altitudeMode>
+                <outerBoundaryIs>
+                    <LinearRing>
+                        <coordinates>
+							-119.52290565819703,34.40350112277389,0
+							-119.52290565819703,34.40279294881319,0
+							-119.5223048433777,34.402863766478994,0
+							-119.52290565819703,34.40350112277389,0
+						</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+            <Style>
+                <PolyStyle>
+                    <color>#ff00ffff</color>
+                    <outline>0</outline>
+                </PolyStyle>
+            </Style>
+        </Placemark>
+    </Document>
+</kml>
