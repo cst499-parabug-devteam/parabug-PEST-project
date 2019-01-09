@@ -135,6 +135,18 @@ function sendMail(info){
         pass: privateKey.G_PASS
     }
 });
+
+    //setup second transporter:
+        var parabugTranporter = nodeMailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        user: privateKey.G_ACCOUNT,
+        pass: privateKey.G_PASS
+    }
+});
+
     console.log(info);
     ejs.renderFile(email_path, {  contact_name: info.contactName, contact_email: info.contactEmail, contact_phone: info.contactPhone, crop: info.crop,
         billing_address: info.billingAddress, notes: info.notes, row_spacing: info.rowSpacing
@@ -150,10 +162,10 @@ if (err) {
         });
     
     
-        let mailOptions = {
+        let parabugMailOptions = {
           from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
-          to: " <" + info.contactEmail + ">", // list of receivers
-          subject: "Parabug Estimate Request", // Subject line
+          to: " <" + parabug_email_path + ">", // list of receivers
+          subject: "Parabug Estimate Request for: " + info.contactEmail, // Subject line
           text: info.notes, // plain text body
           html: data,
           attachments: [
@@ -165,11 +177,32 @@ if (err) {
               }
               ]
       };
+    
+    
+        let mailOptions = {
+          from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
+          to: " <" + info.contactEmail + ">", // list of receivers
+          subject: "Parabug Estimate Request", // Subject line
+          text: info.notes, // plain text body
+          html: data,
+          attachments: [
+              {
+                  path: htmlPDFPath
+              }
+              ]
+      };
     transporter.sendMail(mailOptions, function (err, info) {
         if (err) {
             console.log(err);
         } else {
             console.log('Message sent: ' + info.response);
+            parabugTranporter.sendMail(parabugMailOptions, function (err, info){
+                if (err){
+                    console.log(err);
+                } else {
+                    console.log('Parabug Message Sent: ' + info.response);
+                }
+            })
         }
     });
 }
