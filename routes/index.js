@@ -102,6 +102,7 @@ router.post('/', function(req, res, next) {
         
         if(validateAndFix(appArea, hazards, vras)) {
             res.send("Valid");
+            return; // prevent email when testing
             var txt = kml(info); 
             fileCreate(txt); 
             sendMail(info);
@@ -117,7 +118,6 @@ router.post('/', function(req, res, next) {
 
 
 function sendMail(info){
-    
     //NO-REPLY@SENDMAIL.COM METHOD:
     var noreply_email = "no-reply@parabug.xyz";
     var email_path = path.join(__dirname,'..','public','test_files','email_template.ejs');
@@ -127,57 +127,54 @@ function sendMail(info){
     
     //set up transporter
     var transporter = nodeMailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // use SSL
-    auth: {
-        user: privateKey.G_ACCOUNT,
-        pass: privateKey.G_PASS
-    }
-});
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // use SSL
+        auth: {
+            user: privateKey.G_ACCOUNT,
+            pass: privateKey.G_PASS
+        }
+    });
     console.log(info);
-    ejs.renderFile(email_path, {  contact_name: info.contactName, contact_email: info.contactEmail, contact_phone: info.contactPhone, crop: info.crop,
-        billing_address: info.billingAddress, notes: info.notes, row_spacing: info.rowSpacing
+    ejs.renderFile(email_path, {  
+        contact_name: info.contactName, 
+        contact_email: info.contactEmail, 
+        contact_phone: info.contactPhone, 
+        crop: info.crop,
+        billing_address: info.billingAddress, 
+        notes: info.notes, 
+        row_spacing: info.rowSpacing
     }, function (err, data) {
-if (err) {
-    console.log(err);
-} else {
-    
-        var htmlPDFPath = path.join(__dirname, "..", "public", "test_files", 'clientQuote.pdf');
-        pdf.create(data).toFile(htmlPDFPath, function(err, res) {
-        if (err) return console.log(err);
-        console.log(res);
-        });
-    
-    
-        let mailOptions = {
-          from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
-          to: " <" + info.contactEmail + ">", // list of receivers
-          subject: "Parabug Estimate Request", // Subject line
-          text: info.notes, // plain text body
-          html: data,
-          attachments: [
-              {
-                  path: kml_path
-              },
-              {
-                  path: htmlPDFPath
-              }
-              ]
-      };
-    transporter.sendMail(mailOptions, function (err, info) {
         if (err) {
             console.log(err);
         } else {
-            console.log('Message sent: ' + info.response);
+            var htmlPDFPath = path.join(__dirname, "..", "public", "test_files", 'clientQuote.pdf');
+            pdf.create(data).toFile(htmlPDFPath, function(err, res) {
+                if (err) return console.log(err);
+                console.log(res);
+            });
+            let mailOptions = {
+                from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
+                to: " <" + info.contactEmail + ">", // list of receivers
+                subject: "Parabug Estimate Request", // Subject line
+                text: info.notes, // plain text body
+                html: data,
+                attachments: [
+                    { path: kml_path },
+                    { path: htmlPDFPath }
+                ]
+            };
+            transporter.sendMail(mailOptions, function (err, info) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log('Message sent: ' + info.response);
+                }
+            });
         }
     });
-}
-
-});
- 
     transporter.close();
-    
+
 }
 
 function numUniqueCoordinates(jstsPoly) {

@@ -28,6 +28,10 @@
           padding: 10px;
         }
         
+        #add-bug-display {
+          display: none;
+        }
+        
         /* Move reset button above google logo */
         #reset-btn {
           position: absolute;
@@ -93,12 +97,21 @@
           display: inline-block;
           min-width: 80px;
           margin: 5px;
+          text-align: right;
         }
         
         .stat-input {
           display: inline-block;
           min-width: 140px;
           margin: 5px;
+        }
+        
+        .stat-input-checkbox {
+          display: inline-block;
+          min-width: 140px;
+          margin: 5px;
+          vertical-align: middle;
+          text-align: left;
         }
         
         /* Read only inputs */
@@ -165,6 +178,9 @@
           display: none;
         }
 
+        hr {
+          border: none;
+        }
         
       </style>
     </head>
@@ -176,31 +192,61 @@
     </body>
     <form id="additional-info" method="POST">
       <div id="stat-display">
+        <!--Bug Name-->
+        <div class="stat-item">
+          <label class="stat-text" for="bug-name" title="Bug Indicator">Bug:</label>
+          <div class="stat-input"><input type="text" name="bug-name" id="bug-name"/></div>
+        </div>
         <!--Bugs Per Acre-->
         <div class="stat-item">
-          <label class="stat-text" for="num-bugs-per-acre">Bugs / Acre:</label>
+          <label class="stat-text" for="num-bugs-per-acre" title="Bugs per acre in the application area">Bugs / Acre:</label>
           <div class="stat-input"><input type="number" name="bugs-per-acre" id="num-bugs-per-acre" min="1" value="10000" required/></div>
         </div>
-        <!--Variable Rate Multiplier-->
+        <!--Variable Rate-->
         <div class="stat-item">
-          <label class="stat-text" for="percent-multiplier">Variable Rate:</label>
-          <div class="stat-input"><input type="number" name="percent-multiplier" id="percent-multiplier" value="100" min="1" required/>%</div>
+          <label class="stat-text" for="variable-rate" title="Bugs per acre in variable rate areas">Variable Rate:</label>
+          <div class="stat-input"><input type="number" name="variable-rate" id="variable-rate" value="20000" min="1" required/></div>
         </div>
+        
+        <hr/>
+        <div id="add-bug-display">
+          <!--Bug Name 2-->
+          <div class="stat-item">
+            <label class="stat-text" for="bug-name2" title="Bug Indicator">Bug 2:</label>
+            <div class="stat-input"><input type="text" name="bug-name2" id="bug-name2"/></div>
+          </div>
+          <!--Bugs Per Acre 2-->
+          <div class="stat-item">
+            <label class="stat-text" for="num-bugs-per-acre2" title="Bugs per acre in the application area">Bugs / Acre 2:</label>
+            <div class="stat-input"><input type="number" name="bugs-per-acre2" id="num-bugs-per-acre2" min="1" value="10000" required/></div>
+          </div>
+          <!--Variable Rate 2-->
+          <div class="stat-item">
+            <label class="stat-text" for="variable-rate2" title="Bugs per acre in variable rate areas">Variable Rate 2:</label>
+            <div class="stat-input"><input type="number" name="variable-rate2" id="variable-rate2" value="20000" min="1" required/></div>
+          </div>
+        </div>
+        <hr/>
         <!--Estimated Number of Acres-->
         <div class="stat-item">
-          <label class="stat-text" for="num-acres">Acres:</label>
+          <label class="stat-text" for="num-acres" title="Estimated number acres = application area - sum(hazard areas)">Acres:</label>
           <div class="stat-input"><input type="number" name="num-acres" id="num-acres" class="read-only" value="0" readonly/></div>
         </div>
         <!--Estimated Total Bugs-->
         <div class="stat-item">
-          <label class="stat-text" for="num-bugs">Total Bugs:</label>
+          <label class="stat-text" for="num-bugs" title="Estimated total number of bugs">Total Bugs:</label>
           <div class="stat-input"><input type="number" name="num-bugs" id="num-bugs" class="read-only" value="0" readonly/></div>
+        </div>
+        
+        <div class="stat-item">
+          <label class="stat-text" for="add-bug-toggle" title="Toggle between 1 and 2 bugs for application">Add Bug:</label>
+          <div class="stat-input-checkbox"><input type="checkbox" name="add-bug-toggle" id="add-bug-toggle" value="add-bug"/></div>
         </div>
       </div>
       
       <div id="mobile-div">
         <div id="mobile-mode-div">
-          <label for="mobile-mode">Mobile</label>
+          <label for="mobile-mode">Crosshair</label>
           <input type="checkbox" value="mobile" id="mobile-mode" name="mobile-mode">
         </div>
         <div id="mobile-options-div">
@@ -210,6 +256,7 @@
       </div>
       
       <div id="user-info-display">
+        <img id="logo-img" src="/img/logo-sml.jpg"/>
         <h2>User Information</h2>
         <div class="align-input">
           <!--Contact Name-->
@@ -272,6 +319,13 @@
     //  drawing modes
     var drawModeControl = {
       modes: ['Drag', 'Application Area', 'Hazard', 'Variable Rate Area', 'Delete'],
+      hoverText: [
+        'Drag map view', 
+        'Create an application area. \n- Redrawing will reset map.',
+        'Create a hazard area. \n- Application area must exist to create hazard areas.',
+        'Create a variable rate area. \n- Application area must exist to create variable rate areas. \n- Variable rate areas do not overlap with hazard areas.',
+        'Delete selection tool for deleting application areas, hazard areas, and variable rate areas.'
+        ],
       current: 0,
       getCurrent: function(){ return this.modes[this.current]; }
     };
@@ -405,6 +459,7 @@
           mode = document.createElement('option');
           mode.value = i;
           mode.text = drawModeControl.modes[i];
+          mode.title = drawModeControl.hoverText[i];
           modeSelect.appendChild(mode);
         }
         modeSelect.addEventListener('change', function() {
@@ -569,7 +624,7 @@
           acres = round(acres,3);
           document.getElementById('num-acres').value = acres;
           var bpa = document.getElementById('num-bugs-per-acre').value;
-          var pm = document.getElementById('percent-multiplier').value;
+          var pm = document.getElementById('variable-rate').value;
           var totalBugs = appArea.getTotalBugs(bpa,pm);
           document.getElementById('num-bugs').value = round(totalBugs,0);
         } else {
@@ -598,7 +653,7 @@
     bugsPerAcre.addEventListener('paste', updateStats);
     bugsPerAcre.addEventListener('input', updateStats);
     
-    var percentMultiplier = document.getElementById('percent-multiplier');
+    var percentMultiplier = document.getElementById('variable-rate');
     percentMultiplier.addEventListener('change', updateStats);
     percentMultiplier.addEventListener('paste', updateStats);
     percentMultiplier.addEventListener('input', updateStats);
@@ -616,7 +671,7 @@
           "appArea" : applicationArea,
           "acres" : formData.get('num-acres'),
           "bugsPerAcre" : formData.get('bugs-per-acre'),
-          "variableRate": formData.get('percent-multiplier'),
+          "variableRate": formData.get('variable-rate'),
           "numBugs" : formData.get('num-bugs'),
           "contactName" : formData.get('contact_name'),
           "contactPhone" : formData.get('contact_phone'),
@@ -649,7 +704,10 @@
         mobileClickSubPoly(centerMarker.getPosition());
         return;
       }
-      if(drawModeControl.current == 0) { return; } // Drag Mode
+      if(drawModeControl.current == 0) { // Drag Mode
+        alert("Select a mode.");
+        return; 
+      } 
       
       overlayMarkers.push(centerMarker.getPosition());
       if(tempShape!=null) { tempShape.setMap(null); }
@@ -722,12 +780,21 @@
     document.getElementById('mobile-mode').addEventListener('click', function() {
       if(this.checked) {
         drawingManager.setOptions({ drawingMode: null });
+        centerMarker.setPosition(map.getCenter());
         centerMarker.setMap(map);
         document.getElementById('mobile-options-div').style.display = "inline-block";
       } else {
         drawToggle(drawModeControl.current);
         centerMarker.setMap(null);
         document.getElementById('mobile-options-div').style.display = "none";
+      }
+    });
+    
+    document.getElementById('add-bug-toggle').addEventListener('click', function() {
+      if(this.checked) {
+        document.getElementById('add-bug-display').style.display = "inline-block";
+      } else {
+        document.getElementById('add-bug-display').style.display = "none";
       }
     });
     
