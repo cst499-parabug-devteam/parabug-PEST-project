@@ -8,6 +8,7 @@ var OAuth2 = google.auth.OAuth2;
 var bodyParser = require('body-parser');
 var fs = require('fs');
 let privateKey = require('../private/fakeKey.json');
+let pk = require('../private/private.json');
 var path = require('path');
 var pdf = require('html-pdf');
 var ejs = require('ejs');
@@ -118,32 +119,44 @@ router.post('/', function(req, res, next) {
 
 function sendMail(info){
     
-    //NO-REPLY@SENDMAIL.COM METHOD:
+
+    
+    //Mails and Paths:
     var noreply_email = "no-reply@parabug.xyz";
     var email_path = path.join(__dirname,'..','public','test_files','email_template.ejs');
     var parabug_email_path = "parabug.xyz@gmail.com";
     var kml_path = path.join(__dirname,  '..', "KMLMap.kml");
     
     
-    //set up transporter
+    //set up transporter - OAUTH
     var transporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
     secure: true, // use SSL
     auth: {
-        user: privateKey.G_ACCOUNT,
-        pass: privateKey.G_PASS
+        type: "OAuth2",
+        user: privateKey.user,
+        clientId: privateKey.c_id,
+        clientSecret: privateKey.c_secret,
+        refreshToken: privateKey.refreshToken,
+        accessToken: privateKey.accessToken,
+        expires: 1484314697598
     }
 });
 
     //setup second transporter:
-        var parabugTranporter = nodeMailer.createTransport({
+     var parabugTransporter = nodeMailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
     secure: true, // use SSL
     auth: {
-        user: privateKey.G_ACCOUNT,
-        pass: privateKey.G_PASS
+        type: "OAuth2",
+        user: privateKey.user,
+        clientId: privateKey.c_id,
+        clientSecret: privateKey.c_secret,
+        refreshToken: privateKey.refreshToken,
+        accessToken: privateKey.accessToken,
+        expires: 1484314697598
     }
 });
 
@@ -196,7 +209,7 @@ if (err) {
             console.log(err);
         } else {
             console.log('Message sent: ' + info.response);
-            parabugTranporter.sendMail(parabugMailOptions, function (err, info){
+            parabugTransporter.sendMail(parabugMailOptions, function (err, info){
                 if (err){
                     console.log(err);
                 } else {
@@ -210,6 +223,32 @@ if (err) {
 });
  
     transporter.close();
+    parabugTransporter.close();
+    
+    
+    //OAUTH METHOD:
+    
+    
+    
+    //Set up Transporter:
+//     var  serviceTransporter = nodeMailer.createTransport({
+//     host: 'smtp.gmail.com',
+//     port: 465,
+//     secure: true,
+//     auth: {
+//       type: 'OAuth2',
+//       user: privateAcc.client_email,
+//       serviceClient: privateAcc.client_id,
+//       privateKey: privateAcc.private_key
+//   }
+// });
+
+    //
+
+    
+    
+    
+    
     
 }
 
