@@ -224,32 +224,7 @@ if (err) {
  
     transporter.close();
     parabugTransporter.close();
-    
-    
-    //OAUTH METHOD:
-    
-    
-    
-    //Set up Transporter:
-//     var  serviceTransporter = nodeMailer.createTransport({
-//     host: 'smtp.gmail.com',
-//     port: 465,
-//     secure: true,
-//     auth: {
-//       type: 'OAuth2',
-//       user: privateAcc.client_email,
-//       serviceClient: privateAcc.client_id,
-//       privateKey: privateAcc.private_key
-//   }
-// });
 
-    //
-
-    
-    
-    
-    
-    
 }
 
 function numUniqueCoordinates(jstsPoly) {
