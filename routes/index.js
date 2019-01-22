@@ -85,11 +85,19 @@ router.post('/', function(req, res, next) {
         
         if(validateAndFix(appArea, hazards, vras)) {
             // Start email process
-            email(info, function(success) {
-                if(success) {
+            email(info, function(response) {
+                if(response.success) {
                     res.send("Email and attachments sent successfully");
                 } else {
                     res.send("There was an error sending the email");
+                }
+                // Cleanup Temp PDF File
+                if(response.pdfPath) {
+                    fileCleanup(response.pdfPath, function(success) { if(!success) { console.log("There was an error deleting the pdf file"); } });
+                }
+                // Cleanup Temp KML File
+                if(response.kmlPath) {
+                    fileCleanup(response.kmlPath, function(success) { if(!success) { console.log("There was an error deleting the kml file"); } });
                 }
             });
         } else {
@@ -104,21 +112,28 @@ router.post('/', function(req, res, next) {
 
 function email(info, callback) {
     var email_files = path.join(__dirname, "..", "email_files");
+    var return_msg = { success: false };
     
     // Generate PDF File
     tmp.file({ dir: email_files, prefix: 'pdf-', postfix: '.pdf'}, function _tempFileCreated(pdfErr, pdfPath, pdfFd) {
-        if(pdfErr) { console.log("There was an issue creating the pdf"); callback(false); return;} // Error
+        // Set pdf path to be returned and deleted later
+        return_msg.pdfPath = pdfPath;
+        
+        if(pdfErr) { console.log("There was an issue creating the pdf"); callback(return_msg); return;} // Error
         
         // Generate KML File
         tmp.file({ dir: email_files, prefix: 'kml-', postfix: '.kml'}, function _tempFileCreated(kmlErr, kmlPath, kmlFd) {
-            if(kmlErr) { console.log("There was an issue creating the kml"); callback(false); return;} // Error
+            // Set kml path to be returned and deleted later
+            return_msg.kmlPath = kmlPath;
+            
+            if(kmlErr) { console.log("There was an issue creating the kml"); callback(return_msg); return;} // Error
             
             // ------------------------------------------------ SEND EMAIL WITH ATTACHMENTS HERE ------------------------------------------------
             // Write data to attachment files
             writeToAttachments(info, kmlPath, pdfPath, function(pdfData) { // Returns pdf data for email formatting
                 if(pdfData==null) { 
                     // Error while writing to files, don't send email
-                    callback(false);
+                    callback(return_msg);
                 } 
                 else {
                     // Atachments were created and written to, send the email
@@ -180,28 +195,26 @@ function email(info, callback) {
                     
                     // Send user email
                     transporter.sendMail(mailOptions, function (err, info) {
-                        if (err) { console.log(err); callback(false); } 
-                        else { console.log('User Message sent: ' + info.response); callback(true);}
-                        
-                        // Send Parabug emal
-                        parabugTransporter.sendMail(parabugMailOptions, function (err, info) {
-                            if (err) { console.log(err); callback(false); } 
-                            else { console.log('Parabug Message sent: ' + info.response); callback(true);}
-            
-                            // Email has finished sending, delete temp files (regardless)
-                            // Cleanup Temp PDF File
-                            fileCleanup(pdfPath, function(success) { if(!success) { console.log("There was an error deleting the pdf file"); } });
-                            // Cleanup Temp KML File
-                            fileCleanup(kmlPath, function(success) { if(!success) { console.log("There was an error deleting the kml file"); } });
-                            callback(true);
-                        });
+                        if (err) { console.log(err); callback(return_msg); } 
+                        else { 
+                            console.log('User Message sent: ' + info.response);
+                            
+                            // Send Parabug emal
+                            parabugTransporter.sendMail(parabugMailOptions, function (err, info) {
+                                if (err) { console.log(err); callback(false); } 
+                                else { 
+                                    console.log('Parabug Message sent: ' + info.response); 
+                                    return_msg.success = true;
+                                    callback(return_msg);
+                                }
+                            });
+                        }
                     });
                     transporter.close();
                     parabugTransporter.close();
                 }
             });
             // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SEND EMAIL WITH ATTACHMENTS HERE ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            
         });
     });
 }
