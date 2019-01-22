@@ -8,17 +8,18 @@ var OAuth2 = google.auth.OAuth2;
 var bodyParser = require('body-parser');
 var fs = require('fs');
 let privateKey = require('../private/fakeKey.json');
+let pk = require('../private/private.json');
 var path = require('path');
 var pdf = require('html-pdf');
 var ejs = require('ejs');
 var XMLWriter = require('xml-writer');
 var ws = require('fs');
-var tmp = require('tmp');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express', api_key: process.env.GOOGLE_MAPS_API_KEY });
 });
+
 
 // DATA FORMAT
 /*
@@ -60,6 +61,19 @@ var data = {
 router.post('/', function(req, res, next) {
     try {
         // Test Data (req.body)
+        // var info = {"appArea":{
+        //                 "ApplicationArea":[{"shell":[{"lat":36.688622136096754,"lng":-121.73602835452942},{"lat":36.689413644137105,"lng":-121.71259657657532},{"lat":36.67413265833216,"lng":-121.7075325659552},{"lat":36.67182648020323,"lng":-121.7430664709845},
+        //                     {"lat":36.688622136096754,"lng":-121.73602835452942}],"holes":[]}],
+        //                 "Hazards":[
+        //                     [ {"shell":[{"lat":36.67977733998844,"lng":-121.73469797885804},{"lat":36.68643819838118,"lng":-121.73694352021693},{"lat":36.6835672733297,"lng":-121.73814656372855},{"lat":36.67977733998844,"lng":-121.73469797885804}],"holes":[]} ],
+        //                     [ {"shell":[{"lat":36.6850086263356,"lng":-121.72984854495911},{"lat":36.68881517774766,"lng":-121.73031355585488},{"lat":36.688665605696116,"lng":-121.7347414819418},{"lat":36.6850086263356,"lng":-121.72984854495911}],"holes":[]} ]
+        //                 ],
+        //                 "VariableRateAreas":[
+        //                     [{"shell":[{"lat":36.67877922520428,"lng":-121.72590033328919},{"lat":36.681670280731396,"lng":-121.72594324863343},{"lat":36.68170469740463,"lng":-121.72800318515687},{"lat":36.67888247905837,"lng":-121.72813193118958},
+        //                     {"lat":36.67877922520428,"lng":-121.72590033328919}],"holes":[]}]]
+        //             },
+        //             "acres":"228.33","bugsPerAcre":"10000","variableRate":"100","numBugs":"2283300","contactName":"Chris Willials",
+        //             "contactPhone":"(831)123-4567","contactEmail":"chris@yahoo.com","billingAdress":"123 Big Road","crop":"Corn","rowSpacing":"5"};
         var info = req.body;
         var appArea = info["appArea"]["ApplicationArea"][0];
         appArea = jsonToJstsGeom(appArea);
@@ -73,199 +87,144 @@ router.post('/', function(req, res, next) {
         var hazards = [];
         for(var i = 0; i < temp.length; i++) { 
             tempPoly = jsonToJstsGeom(temp[i][0]);
-            if(tempPoly != null) { hazards.push(tempPoly); }
+            if(tempPoly != null) {
+                hazards.push(tempPoly); 
+            }
         }
         
         temp = info["appArea"]["VariableRateAreas"];
         var vras = [];
         for(i = 0; i < temp.length; i++) { 
             tempPoly = jsonToJstsGeom(temp[i][0]);
-            if(tempPoly != null) { vras.push(tempPoly); }
+            if(tempPoly != null) {
+                vras.push(tempPoly); 
+            }
         }
         
         if(validateAndFix(appArea, hazards, vras)) {
-            // Start email process
-            email(info, function(success) {
-                if(success) {
-                    res.send("Email and attachments sent successfully");
-                } else {
-                    res.send("There was an error sending the email");
-                }
-            });
+            res.send("Valid");
+            var txt = kml(info); 
+            fileCreate(txt); 
+            sendMail(info);
         } else {
-            res.send("Invalid input, email not sent");
+            res.send("Invalid");
         }
         
-    } catch (e) { 
+    } catch (e) {
         console.log(e);
         res.send("Error");
     }
 });
 
-function email(info, callback) {
-    var email_files = path.join(__dirname, "..", "email_files");
-    
-    // Generate PDF File
-    tmp.file({ dir: email_files, prefix: 'pdf-', postfix: '.pdf'}, function _tempFileCreated(pdfErr, pdfPath, pdfFd) {
-        if(pdfErr) { console.log("There was an issue creating the pdf"); callback(false); return;} // Error
-        
-        // Generate KML File
-        tmp.file({ dir: email_files, prefix: 'kml-', postfix: '.kml'}, function _tempFileCreated(kmlErr, kmlPath, kmlFd) {
-            if(kmlErr) { console.log("There was an issue creating the kml"); callback(false); return;} // Error
-            
-            // ------------------------------------------------ SEND EMAIL WITH ATTACHMENTS HERE ------------------------------------------------
-            // Write data to attachment files
-            writeToAttachments(info, kmlPath, pdfPath, function(pdfData) { // Returns pdf data for email formatting
-                if(pdfData==null) { 
-                    // Error while writing to files, don't send email
-                    callback(false);
-                } 
-                else {
-                    // Atachments were created and written to, send the email
-                    
-                    //NO-REPLY@SENDMAIL.COM METHOD:
-                    var noreply_email = "no-reply@parabug.xyz";
-                    var parabug_email_path = "parabug.xyz@gmail.com";
-                    
-                    
-                    //set up transporter - OAUTH
-                    var transporter = nodeMailer.createTransport({
-                        host: 'smtp.gmail.com',
-                        port: 465,
-                        secure: true, // use SSL
-                        auth: {
-                            type: "OAuth2",
-                            user: privateKey.user,
-                            clientId: privateKey.c_id,
-                            clientSecret: privateKey.c_secret,
-                            refreshToken: privateKey.refreshToken,
-                            accessToken: privateKey.accessToken,
-                            expires: 1484314697598
-                        }
-                    });
-                    
-                    //setup second transporter:
-                    var parabugTransporter = nodeMailer.createTransport({
-                        host: 'smtp.gmail.com',
-                        port: 465,
-                        secure: true, // use SSL
-                        auth: {
-                            type: "OAuth2",
-                            user: privateKey.user,
-                            clientId: privateKey.c_id,
-                            clientSecret: privateKey.c_secret,
-                            refreshToken: privateKey.refreshToken,
-                            accessToken: privateKey.accessToken,
-                            expires: 1484314697598
-                        }
-                    });
 
-                    let parabugMailOptions = {
-                        from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
-                        to: " <" + parabug_email_path + ">", // list of receivers
-                        subject: "Parabug Estimate Request", // Subject line
-                        text: info.notes, // plain text body
-                        html: pdfData,
-                        attachments: [ { path: kmlPath }, { path: pdfPath } ]
-                    };
-                    
-                    let mailOptions = {
-                        from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
-                        to: " <" + info.contactEmail + ">", // list of receivers
-                        subject: "Parabug Estimate Request", // Subject line
-                        text: info.notes, // plain text body
-                        html: pdfData,
-                        attachments: [ { path: pdfPath } ]
-                    };
-                    
-                    // Send user email
-                    transporter.sendMail(mailOptions, function (err, info) {
-                        if (err) { console.log(err); callback(false); } 
-                        else { console.log('User Message sent: ' + info.response); callback(true);}
-                        
-                        // Send Parabug emal
-                        parabugTransporter.sendMail(parabugMailOptions, function (err, info) {
-                            if (err) { console.log(err); callback(false); } 
-                            else { console.log('Parabug Message sent: ' + info.response); callback(true);}
-            
-                            // Email has finished sending, delete temp files (regardless)
-                            // Cleanup Temp PDF File
-                            fileCleanup(pdfPath, function(success) { if(!success) { console.log("There was an error deleting the pdf file"); } });
-                            // Cleanup Temp KML File
-                            fileCleanup(kmlPath, function(success) { if(!success) { console.log("There was an error deleting the kml file"); } });
-                            callback(true);
-                        });
-                    });
-                    transporter.close();
-                    parabugTransporter.close();
-                }
-            });
-            // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SEND EMAIL WITH ATTACHMENTS HERE ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            
+function sendMail(info){
+    
+
+    
+    //Mails and Paths:
+    var noreply_email = "no-reply@parabug.xyz";
+    var email_path = path.join(__dirname,'..','public','test_files','email_template.ejs');
+    var parabug_email_path = "parabug.xyz@gmail.com";
+    var kml_path = path.join(__dirname,  '..', "KMLMap.kml");
+    
+    
+    //set up transporter - OAUTH
+    var transporter = nodeMailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        type: "OAuth2",
+        user: privateKey.user,
+        clientId: privateKey.c_id,
+        clientSecret: privateKey.c_secret,
+        refreshToken: privateKey.refreshToken,
+        accessToken: privateKey.accessToken,
+        expires: 1484314697598
+    }
+});
+
+    //setup second transporter:
+     var parabugTransporter = nodeMailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        type: "OAuth2",
+        user: privateKey.user,
+        clientId: privateKey.c_id,
+        clientSecret: privateKey.c_secret,
+        refreshToken: privateKey.refreshToken,
+        accessToken: privateKey.accessToken,
+        expires: 1484314697598
+    }
+});
+
+    console.log(info);
+    ejs.renderFile(email_path, {  contact_name: info.contactName, contact_email: info.contactEmail, contact_phone: info.contactPhone, crop: info.crop,
+        billing_address: info.billingAddress, notes: info.notes, row_spacing: info.rowSpacing
+    }, function (err, data) {
+if (err) {
+    console.log(err);
+} else {
+    
+        var htmlPDFPath = path.join(__dirname, "..", "public", "test_files", 'clientQuote.pdf');
+        pdf.create(data).toFile(htmlPDFPath, function(err, res) {
+        if (err) return console.log(err);
+        console.log(res);
         });
-    });
-}
-
-function writeToAttachments(info, kmlPath, pdfPath, callback) {
-    var kmlData = kml(info);
-    writeKMLFile(kmlPath, kmlData, function(success) {
-        if(!success) { console.log("Error writing to kml file"); callback(null); }
-        else {
-            writePDFile(pdfPath, info, function(pdfData) {
-                if(pdfData==null) { console.log("Error writing to pdf file"); callback(null); }
-                else {
-                   console.log("Wrote to both files successfully");
-                   callback(pdfData);
-                }
-            });
-       }
-    });
-}
-
-function writeKMLFile(path, content, callback) {
-    fs.appendFile(path, content, function (err) {
-       if(err) { console.log(err); callback(false); return;}
-       callback(true);
-    });
-}
-
-// Returns null if fail or pdfData (ejs render from template) 
-function writePDFile(path, info, callback) {
-    var email_template = require('path').join(__dirname,'..','public','test_files','email_template.ejs');
-    // Path.join is not working without module reference here for some reason
     
-    ejs.renderFile(email_template, {  
-        contact_name: info.contactName, 
-        contact_email: info.contactEmail, 
-        contact_phone: info.contactPhone, 
-        crop: info.crop,
-        billing_address: info.billingAddress, 
-        notes: info.notes, 
-        row_spacing: info.rowSpacing
-    }, function (err, pdfData) {
-        if (err) { console.log(err); callback(null);} 
-        else {
-            pdf.create(pdfData).toFile(path, function(err, res) {
-                if (err) { callback(null);}
-                else { callback(pdfData); }
-                console.log(res);
-            });
+    
+        let parabugMailOptions = {
+          from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
+          to: " <" + parabug_email_path + ">", // list of receivers
+          subject: "Parabug Estimate Request for: " + info.contactEmail, // Subject line
+          text: info.notes, // plain text body
+          html: data,
+          attachments: [
+              {
+                  path: kml_path
+              },
+              {
+                  path: htmlPDFPath
+              }
+              ]
+      };
+    
+    
+        let mailOptions = {
+          from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
+          to: " <" + info.contactEmail + ">", // list of receivers
+          subject: "Parabug Estimate Request", // Subject line
+          text: info.notes, // plain text body
+          html: data,
+          attachments: [
+              {
+                  path: htmlPDFPath
+              }
+              ]
+      };
+    transporter.sendMail(mailOptions, function (err, info) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Message sent: ' + info.response);
+            parabugTransporter.sendMail(parabugMailOptions, function (err, info){
+                if (err){
+                    console.log(err);
+                } else {
+                    console.log('Parabug Message Sent: ' + info.response);
+                }
+            })
         }
     });
 }
 
-function fileCleanup(path, callback) {
-    fs.exists(path, function(exists) {
-        if (exists) {
-            fs.unlink(path, function(err) {
-                if (err) { console.log(err); callback(false); }
-                console.log(path + ' was deleted');
-                callback(true);
-                return;
-            });
-        }
-        callback(true);
-    });
+});
+ 
+    transporter.close();
+    parabugTransporter.close();
+
 }
 
 function numUniqueCoordinates(jstsPoly) {
@@ -483,9 +442,25 @@ function kml(info){
 	
 	kml.startElement("Document");
 	
+// 	var appArea = jsonToJstsGeom(info["appArea"]["ApplicationArea"][0]);
+   
+// 	var hazard = jsonToJstsGeom(info["appArea"]["Hazards"][0]); 
+// 	var vRAs = jsonToJstsGeom(info["appArea"]["VariableRateAreas"]); 
+    
+	
+// 	kml.text(JSON.stringify(appArea["shell"]["lat"])); 
+// 	kml.text(JSON.stringify(hazard));
+// 	kml.text(JSON.stringify(vRAs));
     var appArea = info["appArea"]["ApplicationArea"][0]["shell"];
     var hazardArea = info["appArea"]["Hazards"];
     var vRAArea = info["appArea"]["VariableRateAreas"]; 
+    
+    //testing size
+    // kml.text(appArea.length + " app area Length \n");
+    // kml.text(hazardArea.length + " hazard area Length \n"); 
+    // kml.text(vRAArea.length + " vras area Length \n");
+    
+    // kml.text(JSON.stringify(info)); 
 	
 	// App area 
 	for(var i = 0; i < appArea.length; i++){
@@ -510,6 +485,14 @@ function kml(info){
             kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(appAreaLng) + "," + JSON.stringify(appAreaLat) + ",0");
 	    }
 	    kml.text("\n\t\t\t\t\t\t"); 
+	    // holes array 
+	   // for(var i = 0; i < info["appArea"]["ApplicationArea"][0]["holes"].length; i++){
+	   //     var appAreaHolesLng = info["appArea"]["ApplicationArea"][0]["holes"][i]["lng"];
+    //         var appAreaHolesLat = info["appArea"]["ApplicationArea"][0]["holes"][i]["lat"];
+            
+    //         kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(appAreaHolesLng) + "," + JSON.stringify(appAreaHolesLat) + ",0");
+	   // }
+	   //kml.text("\n\t\t\t\t\t\t"); 
 	    
 	    kml.endElement(); //5. end coordinate tag 
 	    kml.endElement(); // 4. end linear ring tag 
@@ -552,6 +535,14 @@ function kml(info){
             kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(hazardLng) + "," + JSON.stringify(hazardLat) + ",0");
 	    }
 	    kml.text("\n\t\t\t\t\t\t"); 
+	    // holes array 
+	   // for(var i = 0; i < info["appArea"]["Hazards"][0]["holes"].length; i++){
+	   //     var hazardHolesLng = info["appArea"]["Hazards"][0][0]["holes"][i]["lng"];
+    //         var hazarddHolesLat = info["appArea"]["Hazards"][0][0]["holes"][i]["lat"];
+            
+    //         kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(hazardHolesLng) + "," + JSON.stringify(hazarddHolesLat) + ",0");
+	   // }
+	   //kml.text("\n\t\t\t\t\t\t"); 
 	    
 	    kml.endElement(); //5. end coordinate tag 
 	    kml.endElement(); // 4. end linear ring tag 
@@ -587,13 +578,24 @@ function kml(info){
 	    kml.startElement("LinearRing"); // 4. linear ring start 
 	    kml.startElement("coordinates"); // 5. coordinate tag start 
 	    
+	    
+	    //object►appArea►VariableRateAreas►0►0►shell►0►lat
+
 	    for(var j = 0; j < info["appArea"]["VariableRateAreas"][0][0]["shell"].length; j++){
             var vRALng = info["appArea"]["VariableRateAreas"][i][0]["shell"][j]["lng"];
             var vRALat = info["appArea"]["VariableRateAreas"][i][0]["shell"][j]["lat"];
             
             kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(vRALng) + "," + JSON.stringify(vRALat) + ",0");
 	    }
-	    kml.text("\n\t\t\t\t\t\t");
+	    kml.text("\n\t\t\t\t\t\t"); 
+	    // holes array 
+	   // for(var i = 0; i < info["appArea"]["Hazards"][0][0]["holes"].length; i++){
+	   //     var vRAHolesLng = info["appArea"]["Hazards"][0][0]["holes"][i]["lng"];
+    //         var vRAHolesLat = info["appArea"]["Hazards"][0][0]["holes"][i]["lat"];
+            
+    //         kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(vRAHolesLng) + "," + JSON.stringify(vRAHolesLat) + ",0");
+	   // }
+	   //kml.text("\n\t\t\t\t\t\t"); 
 	    
 	    kml.endElement(); //5. end coordinate tag 
 	    kml.endElement(); // 4. end linear ring tag 
@@ -614,8 +616,19 @@ function kml(info){
 	    kml.endElement(); // 1. polyon end 
 	    
 	}
+	
 	kml.endElement();
+// 	kml.text(info["appArea"]["ApplicationArea"]);
+	
     return kml.toString(); 
+}
+
+function fileCreate(info){
+    
+    ws.writeFile('KMLMap.kml', info, (err) => {
+      if (err) throw err;
+      console.log('The file has been saved!');
+    });
 }
 
 module.exports = router;
