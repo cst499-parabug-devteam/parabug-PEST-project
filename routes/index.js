@@ -14,6 +14,7 @@ var ejs = require('ejs');
 var XMLWriter = require('xml-writer');
 var ws = require('fs');
 var tmp = require('tmp');
+var promise = require('promise');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -88,8 +89,10 @@ router.post('/', function(req, res, next) {
             email(info, function(response) {
                 if(response.success) {
                     res.send("Email and attachments sent successfully");
+                    res.json({alertMessage : "Success"});
                 } else {
                     res.send("There was an error sending the email");
+                    res.json({alertMessage : "Fail"});
                 }
                 // Cleanup Temp PDF File
                 if(response.pdfPath) {
@@ -100,6 +103,7 @@ router.post('/', function(req, res, next) {
                     fileCleanup(response.kmlPath, function(success) { if(!success) { console.log("There was an error deleting the kml file"); } });
                 }
             });
+            res.json({alertMessage: "Success"});
         } else {
             res.send("Invalid input, email not sent");
         }
