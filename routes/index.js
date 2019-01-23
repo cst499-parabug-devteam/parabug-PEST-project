@@ -83,17 +83,15 @@ router.post('/', function(req, res, next) {
             tempPoly = jsonToJstsGeom(temp[i][0]);
             if(tempPoly != null) { vras.push(tempPoly); }
         }
-        
         if(validateAndFix(appArea, hazards, vras)) {
             // Start email process
             email(info, function(response) {
                 if(response.success) {
-                    res.send("Email and attachments sent successfully");
                     res.json({alertMessage : "Success"});
                 } else {
-                    res.send("There was an error sending the email");
                     res.json({alertMessage : "Fail"});
                 }
+                
                 // Cleanup Temp PDF File
                 if(response.pdfPath) {
                     fileCleanup(response.pdfPath, function(success) { if(!success) { console.log("There was an error deleting the pdf file"); } });
@@ -103,9 +101,8 @@ router.post('/', function(req, res, next) {
                     fileCleanup(response.kmlPath, function(success) { if(!success) { console.log("There was an error deleting the kml file"); } });
                 }
             });
-            res.json({alertMessage: "Success"});
         } else {
-            res.send("Invalid input, email not sent");
+            res.json({alertMessage : "Fail"});
         }
         
     } catch (e) { 

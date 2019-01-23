@@ -707,7 +707,8 @@
     
     function showAlert(json){
       
-      var message = JSON.parse(json);
+        console.log("Json in function showAlert: " + json);
+       var message = JSON.parse(json);
      
       if(message.alertMessage == "Success"){
         JSAlert.alert("Success!", null, JSAlert.Icons.Success)
