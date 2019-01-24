@@ -4,14 +4,9 @@
       <title>Parabug Estimate Solution Tool</title>
       <meta name="viewport" content="initial-scale=1.0">
       <meta charset="utf-8">
-      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSPyVTS3rqfQQ294LN6qbOoZ2j_KsjaEQ&callback=initMap&libraries=drawing,places" defer> </script>
+      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVb91QSKklhit9A4DwFJuP8lcb00OEw_I&callback=initMap&libraries=drawing,places" defer> </script>
       <style>
 
-        .toast-bottom-center {
-          top: 12px;
-          margin: 0 auto;
-          left: 50%;
-        }
 
         html {
           height: 100%;
@@ -683,7 +678,7 @@
         "debug": false,
         "newestOnTop": false,
         "progressBar": false,
-        "positionClass": "toast-bottom-center",
+        "positionClass": "toast-bottom-full-width",
         "preventDuplicates": true,
         "onclick": null,
         "showDuration": "300",
@@ -698,7 +693,9 @@
     
     document.getElementById('additional-info').addEventListener("submit", function(event) {
       if(validate()) {
-          toastr.info("Processing...");
+          toastr.optionsOverride = 'positionclass = "toast-bottom-full-width"';
+          toastr.options.positionClass = "toast-bottom-full-width";
+          toastr.info("Processing...", toastrOptions);
 
         // Prevent default submission (we are building ajax reques)
         event.preventDefault();
