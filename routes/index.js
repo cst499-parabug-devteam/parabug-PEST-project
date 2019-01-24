@@ -5,16 +5,13 @@ var nodeMailer = require('nodemailer');
 var bodyParser = require('body-parser');
 var { google } = require('googleapis');
 var OAuth2 = google.auth.OAuth2;
-var bodyParser = require('body-parser');
 var fs = require('fs');
 let privateKey = require('../private/fakeKey.json');
 var path = require('path');
 var pdf = require('html-pdf');
 var ejs = require('ejs');
 var XMLWriter = require('xml-writer');
-var ws = require('fs');
 var tmp = require('tmp');
-var promise = require('promise');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {

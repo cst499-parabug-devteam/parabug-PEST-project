@@ -221,25 +221,25 @@ class AppArea {
         return true;
     }    
     
-    
     /*
         Returns the total square acreage of the application area
         Minus the hazard area 
         (Validation should happen first, overlaps are not addressed)
     */
     getArea() {
-        var gF = new jsts.geom.GeometryFactory();
-        // Get the application area's area
-        var appArea = AppArea.createJstsPolygon(gF, this.getPoly());
-        var sqAcres = AppArea.caDegreeToSquareAcres(appArea.getArea());
-        
-        var tempPoly, tempAcres;
+        // print path for checking (plugin to external checkers)
+        // var gF = new jsts.geom.GeometryFactory();
+        // var jPoly = AppArea.createJstsPolygon(gF, this.getPoly());
+        // var coords = AppArea.getCoords(jPoly);
+        // console.log(coords);
+        var area = google.maps.geometry.spherical.computeArea(this.getPoly().getPath()); // square meters
+        var tempArea = 0;
         for(var i = 0; i < this.getNumHazard(); i++) {
-            tempPoly = AppArea.createJstsPolygon(gF, this.getHazard(i).getPoly());
-            tempAcres = AppArea.caDegreeToSquareAcres(tempPoly.getArea());
-            sqAcres -= tempAcres;
+            tempArea = google.maps.geometry.spherical.computeArea(this.getHazard(i).getPoly().getPath()); // square meters
+            area -= tempArea;
         }
-        if(sqAcres < 0.000001) {return 0;}
+        var sqAcres = area / 4046.8564224; // to square acres 
+        if(sqAcres < 0.00001) { return 0; }
         return sqAcres;
     }
     
@@ -609,17 +609,6 @@ class AppArea {
             console.log(e);
         }
         return false;
-    }
-    
-    /*
-        Returns the square acreage given the square degrees
-        Approximation - assumes geo coordinates are on cartesian plane
-    */
-    static caDegreeToSquareAcres(deg) {
-        var radians = deg / Math.PI;
-        var sqKm = radians * 6371;
-        var sqAcres = sqKm * 247.105;
-        return round(sqAcres,2);
     }
     
     /*
