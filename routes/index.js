@@ -251,8 +251,20 @@ function writePDFile(path, info, callback) {
     var email_template = require('path').join(__dirname,'..','public','test_files','email_template.ejs');
     // Path.join is not working without module reference here for some reason
 
-    //check what is being passed through:
     console.log(info);
+
+    var bugName2, bugsPerAcre2, variableRate2;
+
+    //check what is being passed through:
+    if(info.bugName2 === ""){
+        bugName2 = "N/A";
+        bugsPerAcre2 = "N/A";
+        variableRate2 = "N/A";
+    } else {
+        bugName2 = info.bugName2;
+        bugsPerAcre2 = info.bugsPerAcre2;
+        variableRate2 = info.variableRate2;
+    }
     
     ejs.renderFile(email_template, {  
         contact_name: info.contactName, 
@@ -264,7 +276,10 @@ function writePDFile(path, info, callback) {
         row_spacing: info.rowSpacing,
         bugName:info.bugName,
         bugsPerAcre: info.bugsPerAcre,
-        variableRate: info.variableRate
+        variableRate: info.variableRate,
+        bugName2:bugName2,
+        bugsPerAcre2: bugsPerAcre2,
+        variableRate2: variableRate2
     }, function (err, pdfData) {
         if (err) { console.log(err); callback(null);} 
         else {
