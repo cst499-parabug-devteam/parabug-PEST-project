@@ -62,3 +62,9 @@ typings/
 
 # private folder with email info
 private/
+
+# Intellij Settings
+.idea
+
+# DS_Store
+.DS_Store
