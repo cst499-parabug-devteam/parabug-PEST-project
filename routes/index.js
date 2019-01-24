@@ -110,7 +110,7 @@ router.post('/', function(req, res, next) {
         
     } catch (e) { 
         console.log(e);
-        res.send("Error");
+        res.json({alertMessage : "Fail"});
     }
 });
 
