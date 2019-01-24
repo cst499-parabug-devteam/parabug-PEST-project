@@ -250,6 +250,9 @@ function writeKMLFile(path, content, callback) {
 function writePDFile(path, info, callback) {
     var email_template = require('path').join(__dirname,'..','public','test_files','email_template.ejs');
     // Path.join is not working without module reference here for some reason
+
+    //check what is being passed through:
+    console.log(info);
     
     ejs.renderFile(email_template, {  
         contact_name: info.contactName, 
@@ -258,7 +261,10 @@ function writePDFile(path, info, callback) {
         crop: info.crop,
         billing_address: info.billingAddress, 
         notes: info.notes, 
-        row_spacing: info.rowSpacing
+        row_spacing: info.rowSpacing,
+        bugName:info.bugName,
+        bugsPerAcre: info.bugsPerAcre,
+        variableRate: info.variableRate
     }, function (err, pdfData) {
         if (err) { console.log(err); callback(null);} 
         else {
