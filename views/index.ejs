@@ -626,8 +626,15 @@
           acres = round(acres,3);
           document.getElementById('num-acres').value = acres;
           var bpa = document.getElementById('num-bugs-per-acre').value;
-          var pm = document.getElementById('variable-rate').value;
-          var totalBugs = appArea.getTotalBugs(bpa,pm);
+          var vr = document.getElementById('variable-rate').value;
+          var totalBugs = appArea.getTotalBugs(bpa,vr);
+          
+          if(document.getElementById('add-bug-toggle').checked) {
+            var bpa2 = document.getElementById('num-bugs-per-acre2').value;
+            var vr2 = document.getElementById('variable-rate2').value;
+            totalBugs += appArea.getTotalBugs(bpa2,vr2);
+          }
+          
           document.getElementById('num-bugs').value = round(totalBugs,0);
         } else {
           document.getElementById('num-acres').value = 0;
@@ -672,6 +679,7 @@
         var data = {
           "appArea" : applicationArea,
           "acres" : formData.get('num-acres'),
+          "bugName" : formData.get('bug-name'),
           "bugsPerAcre" : formData.get('bugs-per-acre'),
           "variableRate": formData.get('variable-rate'),
           "numBugs" : formData.get('num-bugs'),
@@ -683,6 +691,14 @@
           "rowSpacing" : formData.get('row_spacing'),
           "notes": formData.get('notes')
         };
+        
+        if(document.getElementById('add-bug-toggle').checked) {
+          data.bugName2 = formData.get('bug-name2');
+          data.bugsPerAcre2 = formData.get('bugs-per-acre2');
+          data.variableRate2 = formData.get('variable-rate2');
+        }
+        
+        // Check bug names for empty strings?
         
         // Ajax request
         var xhttp = new XMLHttpRequest();
@@ -706,9 +722,9 @@
     
     function showAlert(json){
       
-        console.log("Json in function showAlert: " + json);
-       var message = JSON.parse(json);
-     
+      console.log("Json in function showAlert: " + json);
+      var message = JSON.parse(json);
+      
       if(message.alertMessage == "Success"){
         JSAlert.alert("Success!", null, JSAlert.Icons.Success)
       } else {
@@ -808,6 +824,7 @@
     });
     
     document.getElementById('add-bug-toggle').addEventListener('click', function() {
+      updateStats();
       if(this.checked) {
         document.getElementById('add-bug-display').style.display = "inline-block";
       } else {

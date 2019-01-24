@@ -42,8 +42,12 @@ var data = {
                 }]
             ]
     "acres",
+    "bugName"
     "bugsPerAcre",
     "variableRate",
+    "bugName2",
+    "bugsPerAcre2",
+    "variableRate2",
     "numBugs",
     "contactName",
     "contactPhone",
@@ -82,6 +86,8 @@ router.post('/', function(req, res, next) {
         }
         if(validateAndFix(appArea, hazards, vras)) {
             // Start email process
+            // console.log("Info: %o", info);
+            
             email(info, function(response) {
                 if(response.success) {
                     res.json({alertMessage : "Success"});

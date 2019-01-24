@@ -232,13 +232,13 @@ class AppArea {
         // var jPoly = AppArea.createJstsPolygon(gF, this.getPoly());
         // var coords = AppArea.getCoords(jPoly);
         // console.log(coords);
-        var area = google.maps.geometry.spherical.computeArea(this.getPoly().getPath()); // square meters
+        
+        var sqAcres = AppArea.googlePathToAcreage(this.getPoly().getPath());
         var tempArea = 0;
         for(var i = 0; i < this.getNumHazard(); i++) {
-            tempArea = google.maps.geometry.spherical.computeArea(this.getHazard(i).getPoly().getPath()); // square meters
-            area -= tempArea;
+            tempArea = AppArea.googlePathToAcreage(this.getHazard(i).getPoly().getPath());
+            sqAcres -= tempArea;
         }
-        var sqAcres = area / 4046.8564224; // to square acres 
         if(sqAcres < 0.00001) { return 0; }
         return sqAcres;
     }
@@ -304,20 +304,17 @@ class AppArea {
         return this.poly;
     }
     
-    getTotalBugs(standard, variablePercent) {
+    getTotalBugs(standard, variableRate) {
         if(this.getPoly() == null) {return 0;}
-        var mult = variablePercent/100;
-        var appArea = this.getArea();
-        var tempAcres, tempPoly;
+        var appArea = this.getArea(); // get app area in acres
+        var tempAcres;
         var vrArea = 0;
-        var gF = new jsts.geom.GeometryFactory();
         for(var i = 0; i < this.getNumVariableRateAreas(); i++) {
-            tempPoly = AppArea.createJstsPolygon(gF, this.getVariableRateArea(i).getPoly());
-            tempAcres = AppArea.caDegreeToSquareAcres(tempPoly.getArea());
+            tempAcres = AppArea.googlePathToAcreage(this.getVariableRateArea(i).getPoly().getPath());
             appArea -= tempAcres;
             vrArea += tempAcres;
         }
-        return ((appArea*standard)+(vrArea*mult*standard));
+        return ((appArea*standard)+(vrArea*variableRate));
     }
     
     removeHazard(index) {
@@ -609,6 +606,14 @@ class AppArea {
             console.log(e);
         }
         return false;
+    }
+    
+    
+    static googlePathToAcreage(path) {
+        var area = google.maps.geometry.spherical.computeArea(path); // square meters
+        var sqAcres = area / 4046.8564224; // to square acres 
+        if(sqAcres < 0.00001) { return 0; }
+        return sqAcres;
     }
     
     /*
