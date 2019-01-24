@@ -86,7 +86,7 @@ router.post('/', function(req, res, next) {
         }
         if(validateAndFix(appArea, hazards, vras)) {
             // Start email process
-            // console.log("Info: %o", info);
+
             
             email(info, function(response) {
                 if(response.success) {
@@ -250,8 +250,6 @@ function writeKMLFile(path, content, callback) {
 function writePDFile(path, info, callback) {
     var email_template = require('path').join(__dirname,'..','public','test_files','email_template.ejs');
     // Path.join is not working without module reference here for some reason
-
-    console.log(info);
 
     var bugName2, bugsPerAcre2, variableRate2;
 
