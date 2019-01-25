@@ -86,15 +86,13 @@ router.post('/', function(req, res, next) {
         }
         if(validateAndFix(appArea, hazards, vras)) {
             // Start email process
-
-            
             email(info, function(response) {
                 if(response.success) {
                     res.json({alertMessage : "Success"});
                 } else {
                     res.json({alertMessage : "Fail"});
                 }
-                
+
                 // Cleanup Temp PDF File
                 if(response.pdfPath) {
                     fileCleanup(response.pdfPath, function(success) { if(!success) { console.log("There was an error deleting the pdf file"); } });
@@ -105,7 +103,7 @@ router.post('/', function(req, res, next) {
                 }
             });
         } else {
-            res.json({alertMessage : "Fail"});
+            res.json({alertMessage : "invalid"});
         }
         
     } catch (e) { 
@@ -144,7 +142,7 @@ function email(info, callback) {
                     
                     //NO-REPLY@SENDMAIL.COM METHOD:
                     var noreply_email = "no-reply@parabug.xyz";
-                    var parabug_email_path = "parabug.xyz@gmail.com";
+                    var parabug_email_path = "info@parabug.solutions";
                     
                     
                     //set up transporter - OAUTH

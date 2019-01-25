@@ -307,8 +307,8 @@
   <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
   <script type="text/javascript" src="/js/classes.js"></script>
  <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/css/toastr.css" rel="stylesheet"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/js/toastr.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
   <script>
     // GLOBAL VARIABLES
     var map;
@@ -672,32 +672,12 @@
 
 
 
-    //toastr options
-    var toastrOptions = {
-        "closeButton": false,
-        "debug": false,
-        "newestOnTop": false,
-        "progressBar": false,
-        "positionClass": "toast-bottom-full-width",
-        "preventDuplicates": true,
-        "onclick": null,
-        "showDuration": "300",
-        "hideDuration": "1000",
-        "timeOut": "5000",
-        "extendedTimeOut": "1000",
-        "showEasing": "swing",
-        "hideEasing": "linear",
-        "showMethod": "fadeIn",
-        "hideMethod": "fadeOut"
-    };
-    
+    toastr.options.positionClass = "toast-top-center";
     document.getElementById('additional-info').addEventListener("submit", function(event) {
       if(validate()) {
-          toastr.optionsOverride = 'positionclass = "toast-bottom-full-width"';
-          toastr.options.positionClass = "toast-bottom-full-width";
-          toastr.info("Processing...", toastrOptions);
-
-        // Prevent default submission (we are building ajax reques)
+          //toastr.optionsOverride({progressBar: 'true'});
+          toastr.info("Processing...");
+        // Prevent default submission (we are building ajax requests)
         event.preventDefault();
         
         // Create form data object to easily get form values
@@ -742,8 +722,6 @@
         xhttp.open("POST", "/", true);
         xhttp.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
         xhttp.send(JSON.stringify(data));
-        
-      
       } else {
         event.preventDefault();
         console.log("Did not submit");
@@ -754,10 +732,12 @@
     function showAlert(json){
       var message = JSON.parse(json);
       
-      if(message.alertMessage == "Success"){
-          toastr.success("Request Complete!", toastrOptions);
+      if(message.alertMessage === "Success"){
+          toastr.success("Request Complete!");
+      } else if (message.alertMessage === "invalid"){
+          toastr.warning("Please Fill Out the Map Application Area.")
       } else {
-        toastr.error("Failed. Please reload the page and try again.", toastrOptions);
+          toastr.error("Request Failed. Please Try Again.");
       }
     }
     
