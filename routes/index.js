@@ -88,15 +88,13 @@ router.post('/', function(req, res, next) {
         }
         if(validateAndFix(appArea, hazards, vras)) {
             // Start email process
-            // console.log("Info: %o", info);
-            
             email(info, function(response) {
                 if(response.success) {
                     res.json({alertMessage : "Success"});
                 } else {
                     res.json({alertMessage : "Fail"});
                 }
-                
+
                 // Cleanup Temp PDF File
                 if(response.pdfPath) {
                     fileCleanup(response.pdfPath, function(success) { if(!success) { console.log("There was an error deleting the pdf file"); } });
@@ -107,7 +105,7 @@ router.post('/', function(req, res, next) {
                 }
             });
         } else {
-            res.json({alertMessage : "Fail"});
+            res.json({alertMessage : "invalid"});
         }
         
     } catch (e) { 
@@ -123,7 +121,7 @@ function email(info, callback) {
         // Generate PDF File
         tmp.file({ dir: email_files, prefix: 'pdf-', postfix: '.pdf'}, function _tempFileCreated(pdfErr, pdfPath, pdfFd) {
             // Set pdf path to be returned and deleted later
-            //return_msg.pdfPath = pdfPath;
+            return_msg.pdfPath = pdfPath;
             
             if(pdfErr) { console.log("There was an issue creating the pdf"); callback(return_msg); return;} // Error
             
@@ -137,11 +135,7 @@ function email(info, callback) {
                 // ------------------------------------------------ SEND EMAIL WITH ATTACHMENTS HERE ------------------------------------------------
                 // Write data to attachment files
                 writeToAttachments(info, kmlPath, pdfPath, function(pdfData) { // Returns pdf data for email formatting
-                    if(true) { // FOR TESTING
-                        return_msg.success = true;
-                        callback(return_msg);
-                    }
-                    else if(pdfData==null) { 
+                    if(pdfData==null) { 
                         // Error while writing to files, don't send email
                         callback(return_msg);
                     } 
@@ -151,7 +145,6 @@ function email(info, callback) {
                         //NO-REPLY@SENDMAIL.COM METHOD:
                         var noreply_email = "no-reply@parabug.xyz";
                         var parabug_email_path = "parabug.xyz@gmail.com";
-                        
                         
                         //set up transporter - OAUTH
                         var transporter = nodeMailer.createTransport({
@@ -226,7 +219,7 @@ function email(info, callback) {
                 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SEND EMAIL WITH ATTACHMENTS HERE ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             });
         });
-    } catch (e) {
+    } catch(e) {
         callback(return_msg);
     }
 }
@@ -258,7 +251,7 @@ function writeKMLFile(path, content, callback) {
 function writePDFile(path, info, callback) {
     var email_template = require('path').join(__dirname,'..','public','test_files','email_template.ejs');
     // Path.join is not working without module reference here for some reason
-    
+
     // Parse Numbers
     info["appAcres"] = parseFloat(info["appAcres"], 10);
     info["hazardAcres"] = parseFloat(info["hazardAcres"], 10);

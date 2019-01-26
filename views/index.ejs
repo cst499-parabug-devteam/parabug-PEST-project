@@ -4,8 +4,10 @@
       <title>Parabug Estimate Solution Tool</title>
       <meta name="viewport" content="initial-scale=1.0">
       <meta charset="utf-8">
-      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSPyVTS3rqfQQ294LN6qbOoZ2j_KsjaEQ&callback=initMap&libraries=drawing,places" defer> </script>
+      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVb91QSKklhit9A4DwFJuP8lcb00OEw_I&callback=initMap&libraries=drawing,places" defer> </script>
       <style>
+
+
         html {
           height: 100%;
           margin: 0px;
@@ -304,8 +306,9 @@
   <!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
   <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
   <script type="text/javascript" src="/js/classes.js"></script>
-  <script src="https://unpkg.com/js-alert/dist/jsalert.min.js"></script>
  <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
   <script>
     // GLOBAL VARIABLES
     var map;
@@ -666,10 +669,15 @@
     percentMultiplier.addEventListener('change', updateStats);
     percentMultiplier.addEventListener('paste', updateStats);
     percentMultiplier.addEventListener('input', updateStats);
-    
+
+
+
+    toastr.options.positionClass = "toast-top-center";
     document.getElementById('additional-info').addEventListener("submit", function(event) {
       if(validate()) {
-        // Prevent default submission (we are building ajax reques)
+          //toastr.optionsOverride({progressBar: 'true'});
+          toastr.info("Processing...");
+        // Prevent default submission (we are building ajax requests)
         event.preventDefault();
         
         // Create form data object to easily get form values
@@ -691,7 +699,10 @@
           "billingAdress" : formData.get('billing_address'),
           "crop" : formData.get('crop'),
           "rowSpacing" : formData.get('row_spacing'),
-          "notes": formData.get('notes')
+          "notes": formData.get('notes'),
+          "bugName2": formData.get('bug-name2'),
+          "bugsPerAcre2" : formData.get('bugs-per-acre2'),
+          "variableRate2" : formData.get('variable-rate2')
         };
         
         if(document.getElementById('add-bug-toggle').checked) {
@@ -713,8 +724,6 @@
         xhttp.open("POST", "/", true);
         xhttp.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
         xhttp.send(JSON.stringify(data));
-        
-      
       } else {
         event.preventDefault();
         console.log("Did not submit");
@@ -723,14 +732,14 @@
     });
     
     function showAlert(json){
-      
-      console.log("Json in function showAlert: " + json);
       var message = JSON.parse(json);
       
-      if(message.alertMessage == "Success"){
-        JSAlert.alert("Success!", null, JSAlert.Icons.Success)
+      if(message.alertMessage === "Success"){
+          toastr.success("Request Complete!");
+      } else if (message.alertMessage === "invalid"){
+          toastr.warning("Please Fill Out the Map Application Area.")
       } else {
-        JSAlert.alert("Failed. Please reload the page and try again.", null, JSAlert.Icons.Failed)
+          toastr.error("Request Failed. Please Try Again.");
       }
     }
     
