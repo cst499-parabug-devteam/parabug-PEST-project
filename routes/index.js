@@ -41,8 +41,10 @@ var data = {
                     "holes"
                 }]
             ]
-    "acres",
-    "bugName"
+    "appAcres",
+    "hazardAcres",
+    "vraAcres", 
+    "bugName",
     "bugsPerAcre",
     "variableRate",
     "bugName2",
@@ -110,117 +112,123 @@ router.post('/', function(req, res, next) {
         
     } catch (e) { 
         console.log(e);
-        res.json({alertMessage : "Fail"});
+        res.send("Error");
     }
 });
 
 function email(info, callback) {
     var email_files = path.join(__dirname, "..", "email_files");
     var return_msg = { success: false };
+    try {
+        // Generate PDF File
+        tmp.file({ dir: email_files, prefix: 'pdf-', postfix: '.pdf'}, function _tempFileCreated(pdfErr, pdfPath, pdfFd) {
+            // Set pdf path to be returned and deleted later
+            //return_msg.pdfPath = pdfPath;
+            
+            if(pdfErr) { console.log("There was an issue creating the pdf"); callback(return_msg); return;} // Error
+            
+            // Generate KML File
+            tmp.file({ dir: email_files, prefix: 'kml-', postfix: '.kml'}, function _tempFileCreated(kmlErr, kmlPath, kmlFd) {
+                // Set kml path to be returned and deleted later
+                return_msg.kmlPath = kmlPath;
+                
+                if(kmlErr) { console.log("There was an issue creating the kml"); callback(return_msg); return;} // Error
+                
+                // ------------------------------------------------ SEND EMAIL WITH ATTACHMENTS HERE ------------------------------------------------
+                // Write data to attachment files
+                writeToAttachments(info, kmlPath, pdfPath, function(pdfData) { // Returns pdf data for email formatting
+                    if(true) { // FOR TESTING
+                        return_msg.success = true;
+                        callback(return_msg);
+                    }
+                    else if(pdfData==null) { 
+                        // Error while writing to files, don't send email
+                        callback(return_msg);
+                    } 
+                    else {
+                        // Atachments were created and written to, send the email
+                        
+                        //NO-REPLY@SENDMAIL.COM METHOD:
+                        var noreply_email = "no-reply@parabug.xyz";
+                        var parabug_email_path = "parabug.xyz@gmail.com";
+                        
+                        
+                        //set up transporter - OAUTH
+                        var transporter = nodeMailer.createTransport({
+                            host: 'smtp.gmail.com',
+                            port: 465,
+                            secure: true, // use SSL
+                            auth: {
+                                type: "OAuth2",
+                                user: privateKey.user,
+                                clientId: privateKey.c_id,
+                                clientSecret: privateKey.c_secret,
+                                refreshToken: privateKey.refreshToken,
+                                accessToken: privateKey.accessToken,
+                                expires: 1484314697598
+                            }
+                        });
+                        
+                        //setup second transporter:
+                        var parabugTransporter = nodeMailer.createTransport({
+                            host: 'smtp.gmail.com',
+                            port: 465,
+                            secure: true, // use SSL
+                            auth: {
+                                type: "OAuth2",
+                                user: privateKey.user,
+                                clientId: privateKey.c_id,
+                                clientSecret: privateKey.c_secret,
+                                refreshToken: privateKey.refreshToken,
+                                accessToken: privateKey.accessToken,
+                                expires: 1484314697598
+                            }
+                        });
     
-    // Generate PDF File
-    tmp.file({ dir: email_files, prefix: 'pdf-', postfix: '.pdf'}, function _tempFileCreated(pdfErr, pdfPath, pdfFd) {
-        // Set pdf path to be returned and deleted later
-        return_msg.pdfPath = pdfPath;
-        
-        if(pdfErr) { console.log("There was an issue creating the pdf"); callback(return_msg); return;} // Error
-        
-        // Generate KML File
-        tmp.file({ dir: email_files, prefix: 'kml-', postfix: '.kml'}, function _tempFileCreated(kmlErr, kmlPath, kmlFd) {
-            // Set kml path to be returned and deleted later
-            return_msg.kmlPath = kmlPath;
-            
-            if(kmlErr) { console.log("There was an issue creating the kml"); callback(return_msg); return;} // Error
-            
-            // ------------------------------------------------ SEND EMAIL WITH ATTACHMENTS HERE ------------------------------------------------
-            // Write data to attachment files
-            writeToAttachments(info, kmlPath, pdfPath, function(pdfData) { // Returns pdf data for email formatting
-                if(pdfData==null) { 
-                    // Error while writing to files, don't send email
-                    callback(return_msg);
-                } 
-                else {
-                    // Atachments were created and written to, send the email
-                    
-                    //NO-REPLY@SENDMAIL.COM METHOD:
-                    var noreply_email = "no-reply@parabug.xyz";
-                    var parabug_email_path = "parabug.xyz@gmail.com";
-                    
-                    
-                    //set up transporter - OAUTH
-                    var transporter = nodeMailer.createTransport({
-                        host: 'smtp.gmail.com',
-                        port: 465,
-                        secure: true, // use SSL
-                        auth: {
-                            type: "OAuth2",
-                            user: privateKey.user,
-                            clientId: privateKey.c_id,
-                            clientSecret: privateKey.c_secret,
-                            refreshToken: privateKey.refreshToken,
-                            accessToken: privateKey.accessToken,
-                            expires: 1484314697598
-                        }
-                    });
-                    
-                    //setup second transporter:
-                    var parabugTransporter = nodeMailer.createTransport({
-                        host: 'smtp.gmail.com',
-                        port: 465,
-                        secure: true, // use SSL
-                        auth: {
-                            type: "OAuth2",
-                            user: privateKey.user,
-                            clientId: privateKey.c_id,
-                            clientSecret: privateKey.c_secret,
-                            refreshToken: privateKey.refreshToken,
-                            accessToken: privateKey.accessToken,
-                            expires: 1484314697598
-                        }
-                    });
-
-                    let parabugMailOptions = {
-                        from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
-                        to: " <" + parabug_email_path + ">", // list of receivers
-                        subject: "Parabug Estimate Request", // Subject line
-                        text: info.notes, // plain text body
-                        html: pdfData,
-                        attachments: [ { path: kmlPath }, { path: pdfPath } ]
-                    };
-                    
-                    let mailOptions = {
-                        from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
-                        to: " <" + info.contactEmail + ">", // list of receivers
-                        subject: "Parabug Estimate Request", // Subject line
-                        text: info.notes, // plain text body
-                        html: pdfData,
-                        attachments: [ { path: pdfPath } ]
-                    };
-                    
-                    // Send user email
-                    transporter.sendMail(mailOptions, function (err, info) {
-                        if (err) { console.log(err); callback(return_msg); } 
-                        else { 
-                            console.log('User Message sent: ' + info.response);
-                            
-                            // Send Parabug emal
-                            parabugTransporter.sendMail(parabugMailOptions, function (err, info) {
-                                if (err) { console.log(err); callback(false); } 
-                                else { 
-                                    console.log('Parabug Message sent: ' + info.response); 
-                                    return_msg.success = true;
-                                    callback(return_msg);
-                                }
-                            });
-                        }
-                    });
-                    transporter.close();
-                    parabugTransporter.close();
-                }
+                        let parabugMailOptions = {
+                            from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
+                            to: " <" + parabug_email_path + ">", // list of receivers
+                            subject: "Parabug Estimate Request", // Subject line
+                            text: info.notes, // plain text body
+                            html: pdfData,
+                            attachments: [ { path: kmlPath }, { path: pdfPath } ]
+                        };
+                        
+                        let mailOptions = {
+                            from: '"Requested Parabug Estimate Quote"' + "<" + parabug_email_path + ">", // sender address
+                            to: " <" + info.contactEmail + ">", // list of receivers
+                            subject: "Parabug Estimate Request", // Subject line
+                            text: info.notes, // plain text body
+                            html: pdfData,
+                            attachments: [ { path: pdfPath } ]
+                        };
+                        
+                        // Send user email
+                        transporter.sendMail(mailOptions, function (err, info) {
+                            if (err) { console.log(err); callback(return_msg); } 
+                            else { 
+                                console.log('User Message sent: ' + info.response);
+                                // Send Parabug emal
+                                parabugTransporter.sendMail(parabugMailOptions, function (err, info) {
+                                    if (err) { console.log(err); callback(false); } 
+                                    else { 
+                                        console.log('Parabug Message sent: ' + info.response); 
+                                        return_msg.success = true;
+                                        callback(return_msg);
+                                    }
+                                });
+                            }
+                        });
+                        transporter.close();
+                        parabugTransporter.close();
+                    }
+                });
+                // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SEND EMAIL WITH ATTACHMENTS HERE ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             });
-            // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SEND EMAIL WITH ATTACHMENTS HERE ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         });
-    });
+    } catch (e) {
+        callback(return_msg);
+    }
 }
 
 function writeToAttachments(info, kmlPath, pdfPath, callback) {
@@ -251,15 +259,55 @@ function writePDFile(path, info, callback) {
     var email_template = require('path').join(__dirname,'..','public','test_files','email_template.ejs');
     // Path.join is not working without module reference here for some reason
     
-    ejs.renderFile(email_template, {  
+    // Parse Numbers
+    info["appAcres"] = parseFloat(info["appAcres"], 10);
+    info["hazardAcres"] = parseFloat(info["hazardAcres"], 10);
+    info["vraAcres"] = parseFloat(info["vraAcres"], 10);
+    info["bugsPerAcre"] = parseInt(info["bugsPerAcre"], 10);
+    info["variableRate"] = parseInt(info["variableRate"], 10);
+    
+    
+    if((info["bugName"] == null) || (info["bugName"] === "")) { info["bugName"] = "Bug 1"; }
+    if(info["bugName2"] == null) {
+        info["bugName2"] = "Bug 2";
+        info["bugsPerAcre2"] = 0;
+        info["variableRate2"] = 0;
+    } else {
+        // Parse Numbers
+        info["bugsPerAcre2"] = parseInt(info["bugsPerAcre2"], 10);
+        info["variableRate2"] = parseInt(info["variableRate2"], 10);
+    }
+    if(info["bugName2"] === "") { info["bugName2"] = "Bug 2"; }
+    
+    var standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
+    var standardBugs = ((info.bugsPerAcre + info.bugsPerAcre2) * standardAcres);
+    var vraBugs = ((info.variableRate + info.variableRate2) * info.vraAcres);
+    var sumBugs = standardBugs + vraBugs;
+    
+    var data = {  
         contact_name: info.contactName, 
         contact_email: info.contactEmail, 
         contact_phone: info.contactPhone, 
         crop: info.crop,
         billing_address: info.billingAddress, 
         notes: info.notes, 
-        row_spacing: info.rowSpacing
-    }, function (err, pdfData) {
+        row_spacing: info.rowSpacing,
+        bug1: info.bugName,
+        bug2: info.bugName2,
+        standardAcres: round(standardAcres,3),
+        standardBPA1: info.bugsPerAcre,
+        standardBPA2: info.bugsPerAcre2,
+        standardBugs: round(standardBugs, 0),
+        vraAcres: round(info.vraAcres,3),
+        vraBPA1: info.variableRate,
+        vraBPA2: info.variableRate2,
+        vraBugs: round(vraBugs,0),
+        hazardAcres: round(info.hazardAcres,3),
+        appAcres: round(info.appAcres,3),
+        sumBugs: round(sumBugs,0)
+    };
+    
+    ejs.renderFile(email_template, data, function (err, pdfData) {
         if (err) { console.log(err); callback(null);} 
         else {
             pdf.create(pdfData).toFile(path, function(err, res) {
@@ -350,6 +398,11 @@ function jsonToJstsGeom(json) {
     // Get rid of self-intersections now
     if(!result.isSimple()) {return null;} 
     return result;
+}
+
+// http://www.jacklmoore.com/notes/rounding-in-javascript/
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
 
 function trimPolygon(jstsInner, jstsOuter) {
@@ -495,143 +548,139 @@ function validateAndFix(appArea, hazards, vras) {
 }
 
 function kml(info){
-	var kml = new XMLWriter(true);
-	kml.startDocument().startElement('kml').writeAttribute('xmlns', 'http://www.opengis.net/kml/2.2');
-	
-	kml.startElement("Document");
-	
     var appArea = info["appArea"]["ApplicationArea"][0]["shell"];
     var hazardArea = info["appArea"]["Hazards"];
-    var vRAArea = info["appArea"]["VariableRateAreas"]; 
-	
-	// App area 
-	for(var i = 0; i < appArea.length; i++){
-	    kml.startElement("Placemark"); // 1. polygon start 
-	    
-	    kml.startElement("name").writeCData("App Area").endElement();
-	    kml.startElement("description").writeCData("Application Area for biologicals").endElement();
-	    
-	    kml.startElement("Polygon"); // 2. polygon start 
-	    kml.writeElement("extrude", "1");
-	    kml.writeElement("altitudeMode", "clampToGround"); 
-	    
-	    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
-	    kml.startElement("LinearRing"); // 4. linear ring start 
-	    kml.startElement("coordinates"); // 5. coordinate tag start 
-	   
-	   // Shell array 
-	    for(var i = 0; i < info["appArea"]["ApplicationArea"]["0"]["shell"].length; i++){
-            var appAreaLng = info["appArea"]["ApplicationArea"][0]["shell"][i]["lng"];
-            var appAreaLat = info["appArea"]["ApplicationArea"][0]["shell"][i]["lat"];
-            
-            kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(appAreaLng) + "," + JSON.stringify(appAreaLat) + ",0");
-	    }
-	    kml.text("\n\t\t\t\t\t\t"); 
-	    
-	    kml.endElement(); //5. end coordinate tag 
-	    kml.endElement(); // 4. end linear ring tag 
-	    kml.endElement(); // 3, end 'hole' tag
-	    kml.endElement(); // 2, polygon end 
-	    
-	    kml.startElement("Style"); // start style tag 
-	    kml.startElement("PolyStyle"); // start polystyle tag
-	    kml.startElement("color"); // start color tag 
-	    kml.text("#ff00ffff"); 
-	    kml.endElement(); // end color tag 
-	    kml.startElement("outline"); // start outline tag
-	    kml.text("0"); 
-	    kml.endElement(); // end outline tag 
-	    kml.endElement(); // end polystyle tag
-	    kml.endElement(); // end style tag
-	    
-	    kml.endElement(); // 1. polyon end 
-	    
-	}
-	// Hazard Area 
-	for(var i = 0; i < hazardArea.length; i++){
-	    kml.startElement("Placemark"); // 1. polygon start 
-	    
-	    kml.startElement("name").writeCData("Hazards").endElement();
-	    kml.startElement("description").writeCData("Areas that have hazards in them").endElement();
-	    
-	    kml.startElement("Polygon"); // 2. polygon start 
-	    kml.writeElement("extrude", "1");
-	    kml.writeElement("altitudeMode", "clampToGround"); 
-	    
-	    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
-	    kml.startElement("LinearRing"); // 4. linear ring start 
-	    kml.startElement("coordinates"); // 5. coordinate tag start 
-	    
-	    for(var j = 0; j < info["appArea"]["Hazards"][0][0]["shell"].length; j++){
-            var hazardLng = info["appArea"]["Hazards"][i][0]["shell"][j]["lng"];
-            var hazardLat = info["appArea"]["Hazards"][i][0]["shell"][j]["lat"];
-            
-            kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(hazardLng) + "," + JSON.stringify(hazardLat) + ",0");
-	    }
-	    kml.text("\n\t\t\t\t\t\t"); 
-	    
-	    kml.endElement(); //5. end coordinate tag 
-	    kml.endElement(); // 4. end linear ring tag 
-	    kml.endElement(); // 3, end 'hole' tag
-	    kml.endElement(); // 2, polygon end 
-	    
-	    kml.startElement("Style"); // start style tag 
-	    kml.startElement("PolyStyle"); // start polystyle tag
-	    kml.startElement("color"); // start color tag 
-	    kml.text("ff0000cc"); 
-	    kml.endElement(); // end color tag 
-	    kml.startElement("outline"); // start outline tag
-	    kml.text("0"); 
-	    kml.endElement(); // end outline tag 
-	    kml.endElement(); // end polystyle tag
-	    kml.endElement(); // end style tag
-	    
-	    kml.endElement(); // 1. polyon end 
-	    
-	}
-	// variable rate area 
-	for(var i = 0; i < vRAArea.length; i++){
-	    kml.startElement("Placemark"); // 1. polygon start 
-	    
-	    kml.startElement("name").writeCData("VRA").endElement();
-	    kml.startElement("description").writeCData("Variable rate area/s").endElement();
-	    
-	    kml.startElement("Polygon"); // 2. polygon start 
-	    kml.writeElement("extrude", "1");
-	    kml.writeElement("altitudeMode", "clampToGround"); 
-	    
-	    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
-	    kml.startElement("LinearRing"); // 4. linear ring start 
-	    kml.startElement("coordinates"); // 5. coordinate tag start 
-	    
-	    for(var j = 0; j < info["appArea"]["VariableRateAreas"][0][0]["shell"].length; j++){
-            var vRALng = info["appArea"]["VariableRateAreas"][i][0]["shell"][j]["lng"];
-            var vRALat = info["appArea"]["VariableRateAreas"][i][0]["shell"][j]["lat"];
-            
-            kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(vRALng) + "," + JSON.stringify(vRALat) + ",0");
-	    }
-	    kml.text("\n\t\t\t\t\t\t");
-	    
-	    kml.endElement(); //5. end coordinate tag 
-	    kml.endElement(); // 4. end linear ring tag 
-	    kml.endElement(); // 3, end 'hole' tag
-	    kml.endElement(); // 2, polygon end 
-	    
-	    kml.startElement("Style"); // start style tag 
-	    kml.startElement("PolyStyle"); // start polystyle tag
-	    kml.startElement("color"); // start color tag 
-	    kml.text("64A0A0A0"); 
-	    kml.endElement(); // end color tag 
-	    kml.startElement("outline"); // start outline tag
-	    kml.text("0"); 
-	    kml.endElement(); // end outline tag 
-	    kml.endElement(); // end polystyle tag
-	    kml.endElement(); // end style tag
-	    
-	    kml.endElement(); // 1. polyon end 
-	    
-	}
-	kml.endElement();
+    var vRAArea = info["appArea"]["VariableRateAreas"];
+    if(info["bugName"] === "") { info["bugName"] = "Not Specified"; }
+    if((info["bugName2"] != null) && (info["bugName2"] === "")) { info["bugName2"] = "Not Specified"; }
+    if(info["notes"] === "") { info["notes"] = "N/A"; }
+    var description = "";
+    var i, j, temp;
+    
+    var kml = new XMLWriter(true);
+    kml.startDocument().startElement('kml').writeAttribute('xmlns', 'http://www.opengis.net/kml/2.2');
+    kml.startElement("Document");
+    
+    // ------------------------------------------ App area ------------------------------------------
+    kml.startElement("Placemark");          // 1. polygon start 
+    kml.startElement("name").writeCData("Application Area").endElement();
+    
+    // Set Description
+    description = "Application Area \n\t\t\t\t\t\tBug: "+info["bugName"]+", "+info["bugsPerAcre"]+" per acre";
+    if(info["bugName2"] != null) { description += "\n\t\t\t\t\t\tBug2: "+info["bugName2"]+", "+info["bugsPerAcre2"]+" per acre"; }
+    description+="\n\t\t\t\t\t\tCrop: "+info["crop"]+" with row spacing of "+info["rowSpacing"]+"ft\n\t\t\t\t\t\tNotes:\n\t\t\t\t\t\t" 
+        + info["notes"];
+    kml.startElement("description").writeCData(description).endElement();
+    
+    kml.startElement("Polygon");            // 2. polygon start 
+    kml.writeElement("extrude", "1");
+    kml.writeElement("altitudeMode", "clampToGround"); 
+    kml.startElement("outerBoundaryIs");    // 3. start 'hole' tag
+    kml.startElement("LinearRing");         // 4. linear ring start 
+    kml.startElement("coordinates");        // 5. coordinate tag start 
+    
+    // Shell array
+    for(j = 0; j < appArea.length; j++){
+        kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(appArea[j]["lng"]) + "," + JSON.stringify(appArea[j]["lat"]) + ",0");
+    }
+    kml.text("\n\t\t\t\t\t\t"); 
+    
+    kml.endElement();       // 5. end coordinate tag 
+    kml.endElement();       // 4. end linear ring tag 
+    kml.endElement();       // 3, end 'hole' tag
+    kml.endElement();       // 2, polygon end 
+    kml.startElement("Style");      // start style tag 
+    kml.startElement("PolyStyle");  // start polystyle tag
+    kml.startElement("color");      // start color tag 
+    kml.text("#bb00ffff"); 
+    kml.endElement();               // end color tag 
+    kml.startElement("outline");    // start outline tag
+    kml.text("0"); 
+    kml.endElement();               // end outline tag 
+    kml.endElement();               // end polystyle tag
+    kml.endElement();               // end style tag
+    kml.endElement();       // 1. polyon end 
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ App area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    
+    // ----------------------------------------- Hazard area -----------------------------------------
+    for(i = 0; i < hazardArea.length; i++){
+        kml.startElement("Placemark");          // 1. polygon start 
+        kml.startElement("name").writeCData("Hazard Area").endElement();
+        kml.startElement("description").writeCData("Hazard Area").endElement();
+        kml.startElement("Polygon");            // 2. polygon start 
+        kml.writeElement("extrude", "1");
+        kml.writeElement("altitudeMode", "clampToGround"); 
+        kml.startElement("outerBoundaryIs");    // 3. start 'hole' tag
+        kml.startElement("LinearRing");         // 4. linear ring start 
+        kml.startElement("coordinates");        // 5. coordinate tag start 
+        
+        temp = info["appArea"]["Hazards"][i][0]["shell"];
+        for(j = 0; j < temp.length; j++){
+            kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(temp[j]["lng"]) + "," + JSON.stringify(temp[j]["lat"]) + ",0");
+        }
+        kml.text("\n\t\t\t\t\t\t"); 
+        
+        kml.endElement();       // 5. end coordinate tag 
+        kml.endElement();       // 4. end linear ring tag 
+        kml.endElement();       // 3. end 'hole' tag
+        kml.endElement();       // 2. polygon end 
+        kml.startElement("Style");      // start style tag 
+        kml.startElement("PolyStyle");  // start polystyle tag
+        kml.startElement("color");      // start color tag 
+        kml.text("990000cc"); 
+        kml.endElement();               // end color tag 
+        kml.startElement("outline");    // start outline tag
+        kml.text("0"); 
+        kml.endElement();               // end outline tag 
+        kml.endElement();               // end polystyle tag
+        kml.endElement();               // end style tag
+        kml.endElement();       // 1. polyon end 
+    }
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Hazard area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    
+    // ------------------------------------- Variable Rate Area -------------------------------------
+    for(i = 0; i < vRAArea.length; i++){
+        kml.startElement("Placemark");          // 1. polygon start 
+        kml.startElement("name").writeCData("Variable Rate Area").endElement();
+        
+        // Set Description
+        description = "Variable Rate Area \n\t\t\t\t\t\tBug: "+info["bugName"]+", "+info["variableRate"]+" per acre";
+        if(info["bugName2"]!= null) { description += "\n\t\t\t\t\t\tBug2: "+info["bugName2"]+", "+info["variableRate2"]+" per acre"; }
+        kml.startElement("description").writeCData(description).endElement();
+    
+        kml.startElement("description").writeCData(description).endElement();
+        kml.startElement("Polygon");            // 2. polygon start 
+        kml.writeElement("extrude", "1");
+        kml.writeElement("altitudeMode", "clampToGround"); 
+        kml.startElement("outerBoundaryIs");    // 3. start 'hole' tag
+        kml.startElement("LinearRing");         // 4. linear ring start 
+        kml.startElement("coordinates");        // 5. coordinate tag start 
+        
+        temp =  info["appArea"]["VariableRateAreas"][i][0]["shell"];
+        for(j = 0; j < temp.length; j++){
+            kml.text("\n\t\t\t\t\t\t\t" + JSON.stringify(temp[j]["lng"]) + "," + JSON.stringify(temp[j]["lat"]) + ",0");
+        }
+        kml.text("\n\t\t\t\t\t\t");
+        
+        kml.endElement();   // 5. end coordinate tag 
+        kml.endElement();   // 4. end linear ring tag 
+        kml.endElement();   // 3. end 'hole' tag
+        kml.endElement();   // 2. polygon end 
+        kml.startElement("Style");      // start style tag 
+        kml.startElement("PolyStyle");  // start polystyle tag
+        kml.startElement("color");      // start color tag 
+        kml.text("bbA0A0A0"); 
+        kml.endElement();               // end color tag 
+        kml.startElement("outline");    // start outline tag
+        kml.text("0"); 
+        kml.endElement();               // end outline tag 
+        kml.endElement();               // end polystyle tag
+        kml.endElement();               // end style tag
+        kml.endElement();   // 1. polyon end 
+    }
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Variable Rate Area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    
+    kml.endElement();
     return kml.toString(); 
 }
 

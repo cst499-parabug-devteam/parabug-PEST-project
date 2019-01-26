@@ -221,24 +221,46 @@ class AppArea {
         return true;
     }    
     
+    
+    /*
+        Returns the total square acreage of the application area
+    */
+    getArea() {
+        var sqAcres = AppArea.googlePathToAcreage(this.getPoly().getPath());
+        if(sqAcres < 0.00001) { return 0; }
+        return sqAcres;
+    }
+    
+    /*
+        Returns the sum of square acreage of the hazard areas
+    */
+    getHazardArea() {
+        var tempArea = 0;
+        for(var i = 0; i < this.getNumHazard(); i++) {
+            tempArea += AppArea.googlePathToAcreage(this.getHazard(i).getPoly().getPath());
+        }
+        return tempArea;
+    }
+    
+    /*
+        Returns the sum of square acreage of the variable rate areas
+    */
+    getVRAArea() {
+        var tempArea = 0;
+        for(var i = 0; i < this.getNumVariableRateAreas(); i++) {
+            tempArea += AppArea.googlePathToAcreage(this.getVariableRateArea(i).getPoly().getPath());
+        }
+        return tempArea;
+    }
+    
     /*
         Returns the total square acreage of the application area
         Minus the hazard area 
         (Validation should happen first, overlaps are not addressed)
     */
-    getArea() {
-        // print path for checking (plugin to external checkers)
-        // var gF = new jsts.geom.GeometryFactory();
-        // var jPoly = AppArea.createJstsPolygon(gF, this.getPoly());
-        // var coords = AppArea.getCoords(jPoly);
-        // console.log(coords);
-        
+    getAdjustedArea() {
         var sqAcres = AppArea.googlePathToAcreage(this.getPoly().getPath());
-        var tempArea = 0;
-        for(var i = 0; i < this.getNumHazard(); i++) {
-            tempArea = AppArea.googlePathToAcreage(this.getHazard(i).getPoly().getPath());
-            sqAcres -= tempArea;
-        }
+        sqAcres -= this.getHazardArea();
         if(sqAcres < 0.00001) { return 0; }
         return sqAcres;
     }
@@ -306,14 +328,9 @@ class AppArea {
     
     getTotalBugs(standard, variableRate) {
         if(this.getPoly() == null) {return 0;}
-        var appArea = this.getArea(); // get app area in acres
-        var tempAcres;
-        var vrArea = 0;
-        for(var i = 0; i < this.getNumVariableRateAreas(); i++) {
-            tempAcres = AppArea.googlePathToAcreage(this.getVariableRateArea(i).getPoly().getPath());
-            appArea -= tempAcres;
-            vrArea += tempAcres;
-        }
+        var appArea = this.getAdjustedArea(); // get app area in acres
+        var vrArea = this.getVRAArea();
+        appArea -= vrArea;
         return ((appArea*standard)+(vrArea*variableRate));
     }
     

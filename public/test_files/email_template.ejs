@@ -430,7 +430,55 @@
                         <!--[if mso]></td></tr></table><![endif]-->
                       </div>
 
-
+                    
+                    <style type="text/css">
+                    .tg  {border-collapse:collapse;border-spacing:0;}
+                    .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+                    .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
+                    .tg .tg-baqh{text-align:center;vertical-align:top}
+                    </style>
+                    <table class="tg">
+                      <tr>
+                        <th class="tg-baqh" colspan="5"> Application Area </th>
+                      </tr>
+                      <tr>
+                        <td class="tg-baqh"></td>
+                        <td class="tg-baqh">Size (Acres)</td>
+                        <td class="tg-baqh"><%= bug1%> (Per Acre)</td>
+                        <td class="tg-baqh"><%= bug2%> (Per Acre)</td>
+                        <td class="tg-baqh">Total Bugs</td>
+                      </tr>
+                      <tr>
+                        <td class="tg-baqh">Standard Rate Area</td>
+                        <td class="tg-baqh"><%= standardAcres %></td>
+                        <td class="tg-baqh"><%= standardBPA1 %></td>
+                        <td class="tg-baqh"><%= standardBPA2 %></td>
+                        <td class="tg-baqh"><%= standardBugs %></td>
+                      </tr>
+                      <tr>
+                        <td class="tg-baqh">Variable Rate Area</td>
+                        <td class="tg-baqh"><%= vraAcres %></td>
+                        <td class="tg-baqh"><%= vraBPA1 %></td>
+                        <td class="tg-baqh"><%= vraBPA2 %></td>
+                        <td class="tg-baqh"><%= vraBugs %></td>
+                      </tr>
+                      <tr>
+                        <td class="tg-baqh">Hazard Area</td>
+                        <td class="tg-baqh"><%= hazardAcres %></td>
+                        <td class="tg-baqh">0</td>
+                        <td class="tg-baqh">0</td>
+                        <td class="tg-baqh">0</td>
+                      </tr>
+                      <tr>
+                        <td class="tg-baqh">Sum</td>
+                        <td class="tg-baqh"><%= appAcres %></td>
+                        <td class="tg-baqh">-</td>
+                        <td class="tg-baqh">-</td>
+                        <td class="tg-baqh"><%= sumBugs %></td>
+                      </tr>
+                    </table>
+                    
+                    
 
                       <table border="0" cellpadding="0" cellspacing="0" width="100%" class="divider " style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 100%;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
                         <tbody>

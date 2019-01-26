@@ -622,7 +622,7 @@
       try {
         if(appArea != null) {
           // Update stat display
-          var acres = appArea.getArea();
+          var acres = appArea.getAdjustedArea();
           acres = round(acres,3);
           document.getElementById('num-acres').value = acres;
           var bpa = document.getElementById('num-bugs-per-acre').value;
@@ -678,7 +678,9 @@
         var applicationArea = appArea.toEasyFormat();
         var data = {
           "appArea" : applicationArea,
-          "acres" : formData.get('num-acres'),
+          "appAcres" : appArea.getArea(),
+          "hazardAcres" : appArea.getHazardArea(),
+          "vraAcres" : appArea.getVRAArea(),
           "bugName" : formData.get('bug-name'),
           "bugsPerAcre" : formData.get('bugs-per-acre'),
           "variableRate": formData.get('variable-rate'),
