@@ -650,7 +650,9 @@
     }
 
     function validate() {
-        if(appArea==null) {console.log("App area was null");return false;}
+        if(appArea==null) {console.log("App area was null");
+        toastr.error("Chosen Area Invalid. Please Try Again.");
+        return false;}
         if(!appArea.validateAndFix()) {
             appArea==null;
             return false;
