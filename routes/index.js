@@ -143,8 +143,7 @@ function email(info, callback) {
                         // Atachments were created and written to, send the email
                         
                         //NO-REPLY@SENDMAIL.COM METHOD:
-                        var noreply_email = "no-reply@parabug.xyz";
-                        var parabug_email_path = "parabug.xyz@gmail.com";
+                        var parabug_email_path = "info@parabug.solutions";
                         
                         //set up transporter - OAUTH
                         var transporter = nodeMailer.createTransport({
