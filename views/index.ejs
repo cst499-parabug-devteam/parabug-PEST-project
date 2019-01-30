@@ -650,7 +650,9 @@
     }
 
     function validate() {
-        if(appArea==null) {console.log("App area was null");return false;}
+        if(appArea==null) {console.log("App area was null");
+        toastr.error("Chosen Area Invalid. Please Try Again.");
+        return false;}
         if(!appArea.validateAndFix()) {
             appArea==null;
             return false;
@@ -696,7 +698,7 @@
           "contactName" : formData.get('contact_name'),
           "contactPhone" : formData.get('contact_phone'),
           "contactEmail" : formData.get('contact_email'),
-          "billingAdress" : formData.get('billing_address'),
+          "billingAddress" : formData.get('billing_address'),
           "crop" : formData.get('crop'),
           "rowSpacing" : formData.get('row_spacing'),
           "notes": formData.get('notes'),
