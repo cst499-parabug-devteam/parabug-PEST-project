@@ -6,12 +6,24 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Features](#features)
 - [Usage](#usage)
 - [Contributors](#contributors)
 - [Acknowledgements](#acknowledgements)
 
 ## Introduction
 
-The Parabug Estimate Solution Tool was designed to streamline contact information and preliminary data directly from the client to the company.
+The Parabug Estimate Solution Tool was designed to streamline contact information and preliminary data directly from the client to the company. Built with NodeJS and Javascript, it can be used on both mobile and desktop platforms.
 
+## Usage
+
+To be Developed Soon...
+
+## Contributors
+
+Christopher Williams
+Christian Martinez
+Shaikh Sultani
+
+## Acknowledgements
+
+We would like to thank Chandler Bennett and Parabug for their support!
