@@ -20,9 +20,9 @@ To be Developed Soon...
 
 ## Contributors
 
-Christopher Williams
-Christian Martinez
-Shaikh Sultani
+ + [Christopher Williams](https://github.com/ChristopherLeeWilliams)
+ + [Christian Martinez](https://github.com/chrisumartinez)
+ + [Shaikh Sultani](https://github.com/shsultani)
 
 ## Acknowledgements
 
