@@ -4,7 +4,7 @@
       <title>Parabug Estimate Solution Tool</title>
       <meta name="viewport" content="initial-scale=1.0">
       <meta charset="utf-8">
-      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCVb91QSKklhit9A4DwFJuP8lcb00OEw_I&callback=initMap&libraries=drawing,places" defer> </script>
+      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSPyVTS3rqfQQ294LN6qbOoZ2j_KsjaEQ&callback=initMap&libraries=drawing,places" defer> </script>
       <style>
 
 
@@ -306,7 +306,7 @@
   <!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
   <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
   <script type="text/javascript" src="/js/classes.js"></script>
- <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
   <script>
@@ -650,9 +650,7 @@
     }
 
     function validate() {
-        if(appArea==null) {console.log("App area was null");
-        toastr.error("Chosen Area Invalid. Please Try Again.");
-        return false;}
+        if(appArea==null) {console.log("App area was null");return false;}
         if(!appArea.validateAndFix()) {
             appArea==null;
             return false;
@@ -698,7 +696,7 @@
           "contactName" : formData.get('contact_name'),
           "contactPhone" : formData.get('contact_phone'),
           "contactEmail" : formData.get('contact_email'),
-          "billingAddress" : formData.get('billing_address'),
+          "billingAdress" : formData.get('billing_address'),
           "crop" : formData.get('crop'),
           "rowSpacing" : formData.get('row_spacing'),
           "notes": formData.get('notes'),
