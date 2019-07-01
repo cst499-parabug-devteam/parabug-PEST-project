@@ -1,186 +1,3 @@
-<<<<<<< HEAD
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>Parabug Estimate Solution Tool</title>
-      <meta name="viewport" content="initial-scale=1.0">
-      <meta charset="utf-8">
-      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDitClMVJevw5A4FUgjEn9Y0foHzVZfi7Y&callback=initMap&libraries=drawing,places" defer> </script>
-      <style>
-
-
-        html {
-          height: 100%;
-          margin: 0px;
-          padding: 0px;
-        }
-        
-        body {
-          height: 100%;
-          margin: 0px;
-          padding: 0px;
-          display: grid;
-          grid-template-rows: 80%;
-        }
-        
-        .map-container {
-          padding: 15px;
-        }
-        
-        .sidebar {
-          padding: 10px;
-        }
-        
-        #add-bug-display {
-          display: none;
-        }
-        
-        /* Move reset button above google logo */
-        #reset-btn {
-          position: absolute;
-          margin-left: -72px;
-          margin-bottom: 85px;
-        }
-        
-        /* Move center button above google logo */
-        #center-btn {
-          position: absolute;
-          margin-left: -76px;
-          margin-bottom: 25px;
-        }
-        
-        #map {
-          height: 100%;
-          border: 2px solid black;
-        }
-        
-        #pac-input {
-          background-color: #fff;
-          font-family: Roboto;
-          font-size: 15px;
-          font-weight: 300;
-          margin-left: 10px;
-          margin-top: 10px;
-          padding: 0 11px 0 13px;
-          text-overflow: ellipsis;
-          width: 15%;
-          line-height: 32px;
-          border:'2px solid #fff';
-        }
-        
-        #pac-input:focus {
-          border-color: #4d90fe;
-        }
-        
-        #mode-control-container {
-          display: grid;
-          grid-template-columns: 30% 70%;
-          grid-template-rows: 100%;
-        }
-        
-        #additional-info {
-          font-family: Roboto;
-          font-size: 15px;
-          font-weight: 400;
-          line-height: 32px;
-        }
-        
-        #stat-display {
-          text-align: center;
-          margin: -11px 15px 0px 15px;
-          padding: 10px 0px 10px 0px;
-          /*background-color: grey;*/
-        }
-        
-        .stat-item {
-          display: inline-block;
-        }
-        
-        .stat-text {
-          display: inline-block;
-          min-width: 80px;
-          margin: 5px;
-          text-align: right;
-        }
-        
-        .stat-input {
-          display: inline-block;
-          min-width: 140px;
-          margin: 5px;
-        }
-        
-        .stat-input-checkbox {
-          display: inline-block;
-          min-width: 140px;
-          margin: 5px;
-          vertical-align: middle;
-          text-align: left;
-        }
-        
-        /* Read only inputs */
-        .read-only {
-          background-color: lightgrey;
-        }
-        
-        #user-info-display {
-          margin: 0px 15px 0px 15px;
-          padding: 10px;
-          /*background-color: lightblue;*/
-          text-align: center;
-        }
-        
-        #user-info-display>h2 {
-          margin-bottom: 5px;
-        }
-        
-        .form-element {
-          margin-top: 10px;
-          vertical-align: middle;
-        }
-        
-        .form-text {
-          display: inline-block;
-          min-width: 120px;
-          vertical-align: middle;
-        }
-        
-        .form-input {
-          display: inline-block;
-          line-height: 40px;
-          vertical-align: middle;
-        }
-        
-        .align-input {
-            display: inline-block;
-            text-align: left;
-        }
-        
-        #crosshair-center {
-          vertical-align: center;
-          text-align: center;
-          display: none;
-        }
-        
-        #mobile-div {
-          display: inline-block;
-          background-color: #fff;
-          border: 2px solid #fff;
-          border-radius: 3px;
-          cursor: pointer;
-          text-align: center;
-          vertical-align: center;
-          font-family: Roboto,Arial,sans-serif;
-          font-size: 15px;
-          padding:2px;
-          margin-bottom: 12px;
-        }
-        #mobile-mode-div {
-          display: inline-block;
-        }
-        #mobile-options-div {
-          display: none;
-        }
-=======
 <!DOCTYPE html>
 <html>
   <head>
@@ -188,13 +5,183 @@
     <meta name="viewport" content="initial-scale=1.0" />
     <meta charset="utf-8" />
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSPyVTS3rqfQQ294LN6qbOoZ2j_KsjaEQ&callback=initMap&libraries=drawing,places"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDitClMVJevw5A4FUgjEn9Y0foHzVZfi7Y&callback=initMap&libraries=drawing,places"
       defer
     ></script>
->>>>>>> ace3822979c42c89a86016abd44b3334699775db
-
     <style>
       html {
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+      }
+
+      body {
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+        display: grid;
+        grid-template-rows: 80%;
+      }
+
+      .map-container {
+        padding: 15px;
+      }
+
+      .sidebar {
+        padding: 10px;
+      }
+
+      #add-bug-display {
+        display: none;
+      }
+
+      /* Move reset button above google logo */
+      #reset-btn {
+        position: absolute;
+        margin-left: -72px;
+        margin-bottom: 85px;
+      }
+
+      /* Move center button above google logo */
+      #center-btn {
+        position: absolute;
+        margin-left: -76px;
+        margin-bottom: 25px;
+      }
+
+      #map {
+        height: 100%;
+        border: 2px solid black;
+      }
+
+      #pac-input {
+        background-color: #fff;
+        font-family: Roboto;
+        font-size: 15px;
+        font-weight: 300;
+        margin-left: 10px;
+        margin-top: 10px;
+        padding: 0 11px 0 13px;
+        text-overflow: ellipsis;
+        width: 15%;
+        line-height: 32px;
+        border: "2px solid #fff";
+      }
+
+      #pac-input:focus {
+        border-color: #4d90fe;
+      }
+
+      #mode-control-container {
+        display: grid;
+        grid-template-columns: 30% 70%;
+        grid-template-rows: 100%;
+      }
+
+      #additional-info {
+        font-family: Roboto;
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 32px;
+      }
+
+      #stat-display {
+        text-align: center;
+        margin: -11px 15px 0px 15px;
+        padding: 10px 0px 10px 0px;
+        /*background-color: grey;*/
+      }
+
+      .stat-item {
+        display: inline-block;
+      }
+
+      .stat-text {
+        display: inline-block;
+        min-width: 80px;
+        margin: 5px;
+        text-align: right;
+      }
+
+      .stat-input {
+        display: inline-block;
+        min-width: 140px;
+        margin: 5px;
+      }
+
+      .stat-input-checkbox {
+        display: inline-block;
+        min-width: 140px;
+        margin: 5px;
+        vertical-align: middle;
+        text-align: left;
+      }
+
+      /* Read only inputs */
+      .read-only {
+        background-color: lightgrey;
+      }
+
+      #user-info-display {
+        margin: 0px 15px 0px 15px;
+        padding: 10px;
+        /*background-color: lightblue;*/
+        text-align: center;
+      }
+
+      #user-info-display > h2 {
+        margin-bottom: 5px;
+      }
+
+      .form-element {
+        margin-top: 10px;
+        vertical-align: middle;
+      }
+
+      .form-text {
+        display: inline-block;
+        min-width: 120px;
+        vertical-align: middle;
+      }
+
+      .form-input {
+        display: inline-block;
+        line-height: 40px;
+        vertical-align: middle;
+      }
+
+      .align-input {
+        display: inline-block;
+        text-align: left;
+      }
+
+      #crosshair-center {
+        vertical-align: center;
+        text-align: center;
+        display: none;
+      }
+
+      #mobile-div {
+        display: inline-block;
+        background-color: #fff;
+        border: 2px solid #fff;
+        border-radius: 3px;
+        cursor: pointer;
+        text-align: center;
+        vertical-align: center;
+        font-family: Roboto, Arial, sans-serif;
+        font-size: 15px;
+        padding: 2px;
+        margin-bottom: 12px;
+      }
+      #mobile-mode-div {
+        display: inline-block;
+      }
+      #mobile-options-div {
+        display: none;
+      }
+
+      <style > html {
         height: 100%;
         margin: 0px;
         padding: 0px;
