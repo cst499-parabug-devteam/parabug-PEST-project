@@ -1,11 +1,31 @@
-### Node Express template project
+<h1 align = "center> Parabug Estimate Solutions Tool </h1><br>
+<p align = "center">
+  <img src = "https://imgur.com/7zsRApl.jpg" width = "450" />
+ </p>
 
-This project is based on a GitLab [Project Template](https://docs.gitlab.com/ee/gitlab-basics/create-project.html).
+<https://parabug.xyz/>
 
-Improvements can be proposed in the [original project](https://gitlab.com/gitlab-org/project-templates/express).
+## Table of Contents
 
-### CI/CD with Auto DevOps
+- [Introduction](#introduction)
+- [Usage](#usage)
+- [Contributors](#contributors)
+- [Acknowledgements](#acknowledgements)
 
-This template is compatible with [Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/).
+## Introduction
 
-If Auto DevOps is not already enabled for this project, you can [turn it on](https://docs.gitlab.com/ee/topics/autodevops/#enabling-auto-devops) in the project settings.
+The Parabug Estimate Solution Tool was designed to streamline contact information and preliminary data directly from the client to the company. Built with NodeJS and Javascript, it can be used on both mobile and desktop platforms.
+
+## Usage
+
+To be Developed Soon...
+
+## Contributors
+
+ + [Christopher Williams](https://github.com/ChristopherLeeWilliams)
+ + [Christian Martinez](https://github.com/chrisumartinez)
+ + [Shaikh Sultani](https://github.com/shsultani)
+
+## Acknowledgements
+
+We would like to thank Chandler Bennett and Parabug for their support!
