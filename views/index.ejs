@@ -8,6 +8,7 @@
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDitClMVJevw5A4FUgjEn9Y0foHzVZfi7Y&callback=initMap&libraries=drawing,places"
       defer
     ></script>
+
     <style>
       html {
         height: 100%;
@@ -174,9 +175,11 @@
         padding: 2px;
         margin-bottom: 12px;
       }
+
       #mobile-mode-div {
         display: inline-block;
       }
+
       #mobile-options-div {
         display: none;
       }
@@ -312,8 +315,9 @@
 
       .form-text {
         display: inline-block;
-        min-width: 120px;
+        min-width: 140px;
         vertical-align: middle;
+        font-size: 16px;
       }
 
       .form-input {
@@ -346,9 +350,11 @@
         padding: 2px;
         margin-bottom: 12px;
       }
+
       #mobile-mode-div {
         display: inline-block;
       }
+
       #mobile-options-div {
         display: none;
       }
@@ -356,8 +362,157 @@
       hr {
         border: none;
       }
+
+      .form-fieldset {
+        border-top: 0.5px solid black;
+        border-radius: 5px;
+        margin-bottom: 12px;
+        padding: 2px 12px 12px 12px;
+      }
+
+      .form-fieldset legend {
+        font-size: 20px;
+        font-weight: bold;
+      }
+
+      .required {
+        color: red;
+      }
+
+      .helpful-tips {
+        cursor: help;
+      }
+
+      .click-tip {
+        cursor: pointer;
+        border-bottom: dotted 1px black;
+      }
+
+      /* The Modal (background) */
+      .modal {
+        display: none;
+        /* Hidden by default */
+        position: fixed;
+        /* Stay in place */
+        z-index: 1;
+        /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%;
+        /* Full width */
+        height: 100%;
+        /* Full height */
+        overflow: auto;
+        /* Enable scroll if needed */
+        background-color: rgb(0, 0, 0);
+        /* Fallback color */
+        background-color: rgba(0, 0, 0, 0.4);
+        /* Black w/ opacity */
+        -webkit-animation-name: fadeIn;
+        /* Fade in the background */
+        -webkit-animation-duration: 0.4s;
+        animation-name: fadeIn;
+        animation-duration: 0.4s;
+      }
+
+      /* Modal Content */
+      .modal-content {
+        position: fixed;
+        bottom: 0;
+        background-color: #fefefe;
+        width: 100%;
+        -webkit-animation-name: slideIn;
+        -webkit-animation-duration: 0.4s;
+        animation-name: slideIn;
+        animation-duration: 0.4s;
+      }
+
+      /* The Close Button */
+      .modal-close {
+        color: white;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+
+      .modal-close:hover,
+      .modal-close:focus {
+        color: #000;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .modal-header {
+        padding: 2px 16px;
+        background-color: #4395cc;
+        color: white;
+      }
+
+      .modal-body {
+        padding: 2px 16px;
+      }
+
+      #modal-header {
+        text-align: center;
+        font-size: 32px;
+        font-weight: bold;
+        line-height: 46px;
+      }
+
+      #modal-body {
+        padding: 10px;
+        text-align: center;
+        font-size: 24px;
+        line-height: 28px;
+      }
+
+      /* Add Animation */
+      @-webkit-keyframes slideIn {
+        from {
+          bottom: -300px;
+          opacity: 0;
+        }
+
+        to {
+          bottom: 0;
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          bottom: -300px;
+          opacity: 0;
+        }
+
+        to {
+          bottom: 0;
+          opacity: 1;
+        }
+      }
+
+      @-webkit-keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
     </style>
   </head>
+
   <body>
     <div class="map-container">
       <input
@@ -473,7 +628,7 @@
         <label
           class="stat-text"
           for="num-acres"
-          title="Estimated number acres = application area - sum(hazard areas)"
+          title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in corrected acreage value"
           >Acres:</label
         >
         <div class="stat-input">
@@ -543,91 +698,233 @@
 
     <div id="user-info-display">
       <img id="logo-img" src="/img/logo-sml.jpg" />
-      <h2>User Information</h2>
+      <br />
+
       <div class="align-input">
-        <!--Contact Name-->
-        <div class="form-element">
-          <div class="form-text">Contact Name:</div>
-          <div class="form-input">
-            <input
-              type="text"
-              name="contact_name"
-              id="contact-name"
-              size="60"
-              required
-            />
+        <fieldset class="form-fieldset" id="user-info-fields">
+          <legend>User Information</legend>
+          <!--Contact Name-->
+          <div class="form-element">
+            <div class="form-text">
+              Contact Name<span class="required">*</span>
+            </div>
+            <div class="form-input">
+              <input
+                type="text"
+                name="contact_name"
+                id="contact-name"
+                style="width:30em"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <!--Contact Phone-->
-        <div class="form-element">
-          <div class="form-text">Contact Phone:</div>
-          <div class="form-input">
-            <input
-              type="text"
-              name="contact_phone"
-              id="contact-phone"
-              size="60"
-              required
-            />
+          <!--Contact Phone-->
+          <div class="form-element">
+            <div class="form-text">
+              Contact Phone<span class="required">*</span>
+            </div>
+            <div class="form-input">
+              <input
+                type="text"
+                name="contact_phone"
+                id="contact-phone"
+                style="width:30em"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <!--Contact Email-->
-        <div class="form-element">
-          <div class="form-text">Contact Email:</div>
-          <div class="form-input">
-            <input
-              type="text"
-              name="contact_email"
-              id="contact-email"
-              size="60"
-              required
-            />
+          <!--Contact Email-->
+          <div class="form-element">
+            <div class="form-text">
+              Contact Email<span class="required">*</span>
+            </div>
+            <div class="form-input">
+              <input
+                type="text"
+                name="contact_email"
+                id="contact-email"
+                style="width:30em"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <!--Billing Address-->
-        <div class="form-element">
-          <div class="form-text">Billing Address:</div>
-          <div class="form-input">
-            <input
-              type="text"
-              name="billing_address"
-              id="billing-address"
-              size="60"
-              required
-            />
+          <!--Billing Address-->
+          <div class="form-element">
+            <div class="form-text">
+              Billing Address<span class="required">*</span>
+            </div>
+            <div class="form-input">
+              <input
+                type="text"
+                name="billing_address"
+                id="billing-address"
+                style="width:30em"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <!--Crop-->
-        <div class="form-element">
-          <label class="form-text" for="crop">Crop:</label>
-          <div class="form-input">
-            <input type="text" name="crop" id="crop" size="60" required />
+        </fieldset>
+
+        <fieldset class="form-fieldset" id="application-area-fields">
+          <legend>Application Area</legend>
+
+          <!--Crop-->
+          <div class="form-element">
+            <label class="form-text">
+              <span class="click-tip" onclick="showTip('crop')">Crop</span>
+              <span class="required">*</span>
+            </label>
+            <div class="form-input">
+              <input
+                type="text"
+                name="crop"
+                id="crop"
+                style="width:30em"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <!--Row Spacing-->
-        <div class="form-element">
-          <label class="form-text" for="row-spacing">Row Spacing (ft):</label>
-          <div class="form-input">
-            <input type="number" name="row_spacing" id="row-spacing" required />
+
+          <!--Row Spacing-->
+          <div class="form-element">
+            <label class="form-text">
+              <span class="click-tip" onclick="showTip('row-spacing')"
+                >Spacing (ft)</span
+              >
+              <span class="required">*</span></label
+            >
+            <div class="form-input">
+              <input
+                type="number"
+                step="0.01"
+                name="row_spacing"
+                id="row-spacing"
+                style="width:30em"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <div class="form-element">
-          <label class="form-text" for="notes">Notes:</label>
-          <div class="form-input">
-            <textarea name="notes" id="notes" rows="3" cols="60"></textarea>
+
+          <!-- Ranch Name -->
+          <div class="form-element">
+            <label class="form-text" for="ranch-name">Ranch Name</label>
+            <div class="form-input">
+              <input
+                type="text"
+                name="ranch-name"
+                id="ranch-name"
+                style="width:30em"
+              />
+            </div>
           </div>
+
+          <!-- Corrected Acreage -->
+          <div class="form-element">
+            <label class="form-text">
+              <span class="click-tip" onclick="showTip('corrected-acreage')"
+                >Corrected Acreage</span
+              >
+            </label>
+            <div class="form-input">
+              <input
+                type="number"
+                step="0.01"
+                name="corrected-acreage"
+                id="corrected-acreage"
+                style="width:30em"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-fieldset" id="user-preference-fields">
+          <legend>Preferences</legend>
+
+          <!-- Desired Application Date -->
+          <div class="form-element">
+            <label class="form-text">
+              <span class="click-tip" onclick="showTip('application-date')">
+                Application Date
+              </span>
+            </label>
+            <div class="form-input">
+              <input
+                type="date"
+                name="application-date"
+                id="application-date"
+                style="width:30em"
+              />
+            </div>
+          </div>
+
+          <!-- Operator Preference -->
+          <div class="form-element">
+            <label class="form-text">
+              <span class="click-tip" onclick="showTip('operator')">
+                Operator
+              </span>
+            </label>
+            <div class="form-input">
+              <input
+                type="text"
+                name="operator"
+                id="operator"
+                style="width:30em"
+              />
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="form-element">
+            <label class="form-text">
+              <span class="click-tip" onclick="showTip('notes')">Notes</span>
+            </label>
+            <div class="form-input">
+              <textarea
+                name="notes"
+                id="notes"
+                rows="3"
+                style="width:30em; max-width: 30em;"
+              ></textarea>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Help -->
+        <div style="padding-left: 10px;">
+          <div style="cursor:help">Required<span class="required">*</span></div>
+          <span class="click-tip"> Click elements for more information </span
+          ><br />
         </div>
       </div>
+
       <div class="form-element" id="submitRequest">
         <div class="form-input">
-          <input type="submit" value="Submit Request" />
+          <input
+            style="font-size: 16px;"
+            type="submit"
+            value="Submit Request"
+          />
         </div>
       </div>
     </div>
   </form>
+
+  <!-- The Modal -->
+  <div id="tip-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-close" id="modal-close">&times;</span>
+        <div id="modal-header"></div>
+      </div>
+      <div class="modal-body">
+        <div id="modal-body"></div>
+        <br />
+      </div>
+    </div>
+  </div>
 </html>
 
-<!--<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.6.0/jsts.min.js"></script>-->
 <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
 <script type="text/javascript" src="/js/classes.js"></script>
 <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
@@ -637,6 +934,62 @@
 />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
+  let modal = document.getElementById("tip-modal");
+  document
+    .getElementById("modal-close")
+    .addEventListener("click", function(event) {
+      modal.style.display = "none";
+    });
+
+  function showTip(id) {
+    let header = "";
+    let text = "";
+    switch (id) {
+      case "application-date":
+        header = "Application Date";
+        text = "Enter a preferred date in which the job will take place";
+        break;
+      case "corrected-acreage":
+        header = "Corrected Acreage";
+        text =
+          "If exact field acreage is known, this number will be used in place of the estimate above." +
+          "<br>Note: if this number is given, variable rate areas and hazard areas will not be incorporated into initial bug estimates. Map data will still be sent";
+        break;
+      case "crop":
+        header = "Crop Type";
+        text = "The crop(s) contained in the field specified";
+        break;
+      case "notes":
+        header = "Notes";
+        text = "Enter any additional information desired";
+        break;
+      case "operator":
+        header = "Preferred Operator";
+        text = "Enter the name of a preferred Parabug operator, if desired";
+        break;
+      case "row-spacing":
+        header = "Row Spacing";
+        text =
+          "The spacing, in feet, between each row of crops in the field specified";
+        break;
+      default:
+        text = "tip not found";
+        return;
+        break;
+    }
+
+    modal.style.display = "block";
+    document.getElementById("modal-header").innerHTML = header;
+    document.getElementById("modal-body").innerHTML = text;
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    };
+  }
+
   // GLOBAL VARIABLES
   var map;
   var drawingManager;
@@ -1063,6 +1416,7 @@
 
         var applicationArea = appArea.toEasyFormat();
         var data = {
+          // Map Data
           appArea: applicationArea,
           appAcres: appArea.getArea(),
           hazardAcres: appArea.getHazardArea(),
@@ -1071,12 +1425,19 @@
           bugsPerAcre: formData.get("bugs-per-acre"),
           variableRate: formData.get("variable-rate"),
           numBugs: formData.get("num-bugs"),
+          // User Information Input
           contactName: formData.get("contact_name"),
           contactPhone: formData.get("contact_phone"),
           contactEmail: formData.get("contact_email"),
           billingAddress: formData.get("billing_address"),
+          // Application Area Input
           crop: formData.get("crop"),
           rowSpacing: formData.get("row_spacing"),
+          ranchName: formData.get("ranch-name"),
+          correctedAcreage: formData.get("corrected-acreage"),
+          // Preferences Input
+          applicationDate: formData.get("application-date"),
+          operator: formData.get("operator"),
           notes: formData.get("notes")
         };
 

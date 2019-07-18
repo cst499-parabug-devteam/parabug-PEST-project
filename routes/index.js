@@ -44,23 +44,27 @@ var data = {
                     "holes"
                 }]
             ]
-    "appAcres",
-    "hazardAcres",
-    "vraAcres", 
-    "bugName",
-    "bugsPerAcre",
-    "variableRate",
-    "bugName2",
-    "bugsPerAcre2",
-    "variableRate2",
-    "numBugs",
-    "contactName",
-    "contactPhone",
-    "contactEmail",
-    "billingAddress",
-    "crop",
-    "rowSpacing",
-    "notes"
+    appAcres,
+    hazardAcres,
+    vraAcres,
+    bugName,
+    bugsPerAcre,
+    variableRate,
+    numBugs,
+    // User Information Input
+    contactName,
+    contactPhone,
+    contactEmail,
+    billingAddress,
+    // Application Area Input
+    crop,
+    rowSpacing,
+    ranchName,
+    correctedAcreage,
+    // Preferences Input
+    applicationDate,
+    operator,
+    notes
 };
 */
 
@@ -242,6 +246,7 @@ function email(info, callback) {
                     expires: 1484314697598
                   }
                 });
+
                 let parabugMailOptions = {
                   from:
                     '"Requested Parabug Estimate Quote"' +
@@ -277,6 +282,7 @@ function email(info, callback) {
                   } else {
                     console.log("User Message sent: " + info.response);
                     // Send Parabug emal
+
                     parabugTransporter.sendMail(parabugMailOptions, function(
                       err,
                       info
@@ -369,8 +375,6 @@ function writePDFile(path, info, callback) {
   );
 
   var standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
-  // var standardBugs = (info.bugsPerAcre + info.bugsPerAcre2) * standardAcres;
-  // var vraBugs = (info.variableRate + info.variableRate2) * info.vraAcres;
   var standardBugs = (bug1.bpa + bug2.bpa) * standardAcres;
   var vraBugs = (bug1.vr + bug2.vr) * info.vraAcres;
   var sumBugs = standardBugs + vraBugs;
@@ -398,8 +402,20 @@ function writePDFile(path, info, callback) {
     hazardAcres: round(info.hazardAcres, 3),
     appAcres: round(info.appAcres, 3),
     deployableAcres: round(deployableAcres, 3),
-    sumBugs: round(sumBugs, 0)
+    sumBugs: round(sumBugs, 0),
+
+    ranchName: info.ranchName,
+    applicationDate: info.applicationDate,
+    operator: info.operator,
+    correctedAcreage: info.correctedAcreage
   };
+
+  // Check if corrected acreage was supplied, if so provide additional bug estaimate
+  if (info.correctedAcreage != null) {
+    let correctedAcreage = parseFloat(info.correctedAcreage);
+    let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
+    data.sumBugsCorrected = round(sumBugsCorrected, 0);
+  }
 
   ejs.renderFile(email_template, data, function(err, pdfData) {
     if (err) {

@@ -1,246 +1,183 @@
 <!doctype html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <style>
-
-        #notes{
-            font-size: 12px !important;
-            text-indent: 25px !important;
-        }
-        .invoice-box {
-            max-width: 800px;
+        body {
             margin: 0px;
-            padding: 0px;
-            border: 1px solid #eee;
-            box-shadow: 0 0 10px rgba(0, 0, 0, .15);
-            font-size: 16px;
-            line-height: 16px;
-            font-family: 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
-            color: #555;
-        }
-
-        .invoice-box table {
             width: 100%;
-            line-height: inherit;
-            text-align: left;
+            padding: 10px;
         }
 
-        .invoice-box table td {
-            padding: 0px;
-            vertical-align: top;
+        .logo-header {
+            text-align: center;
         }
 
-        .invoice-box table tr td:nth-child(2) {
-            text-align: right;
+        .logo-header img {
+            width: 100%;
+            max-width: 336px;
         }
 
-        .invoice-box table tr.top table td {
-            padding-bottom: 0px;
+        #notes {
+            font-size: 18px;
+            text-indent: 25px;
         }
 
-        .invoice-box table tr.top table td.title {
-            font-size: 17px;
-            line-height: 0px;
-            color: #333;
+        .text-info {
+            line-height: 24px;
+            font-size: 20px;
+            margin: 6px 10px 6px 10px;
         }
 
-        .invoice-box table tr.information table td {
-            padding-bottom: 0px;
+
+        table {
+            text-align: center;
+            width: 88%;
+            margin-left: 6%;
+            margin-right: 6%;
+            border-collapse: collapse;
         }
 
-        .invoice-box table tr.heading td {
-            background: #eee;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
-        }
-
-        .invoice-box table tr.details td {
-            padding-bottom: 0px;
-        }
-
-        .invoice-box table tr.item td{
-            border-bottom: 1px solid #eee;
-        }
-
-        .invoice-box table tr.item.last td {
-            border-bottom: none;
-        }
-
-        .invoice-box table tr.total td:nth-child(2) {
-            border-top: 2px solid #eee;
-            font-weight: bold;
-        }
-
-        @media only screen and (max-width: 600px) {
-            .invoice-box table tr.top table td {
-                width: 100%;
-                display: block;
-                text-align: center;
-            }
-
-            .invoice-box table tr.information table td {
-                width: 100%;
-                display: block;
-                text-align: center;
-            }
-        }
-
-        /** RTL **/
-        .rtl {
-            direction: rtl;
-            font-family: Tahoma, 'Helvetica Neue', 'Helvetica', Helvetica, Arial, sans-serif;
-        }
-
-        .rtl table {
-            text-align: right;
-        }
-
-        .rtl table tr td:nth-child(2) {
-            text-align: left;
+        table,
+        th,
+        td {
+            font-size: 18px;
+            border: 1px solid black;
+            line-height: 24px;
         }
     </style>
 </head>
 
 <body>
-<div class="invoice-box">
-    <table cellpadding="0" cellspacing="0">
-        <tr class="top">
-            <td colspan="2">
-                <table>
-                    <tr>
-                        <td class="title">
-                            <img src="https://imgur.com/7zsRApl.jpg" style="width:100%; max-width:300px;">
-                        </td>
-                    </tr>
-                </table>
-            </td>
+    <div class="logo-header"> <img src="https://parabug.xyz/img/logo-sml.jpg"> </div>
+
+
+    <div class="text-info">Contact Name: <%= contact_name %> </div>
+    <div class="text-info">Contact Email: <%= contact_email %> </div>
+    <div class="text-info">Contact Phone: <%= contact_phone %> </div>
+    <div class="text-info">Billing Address: <%= billing_address %> </div>
+    <div class="text-info">Crop: <%= crop %> </div>
+    <div class="text-info">Row Spacing: <%= row_spacing %> ft </div>
+
+    <% if(ranchName ){ %>
+    <div class="text-info">Ranch: <%= ranchName %> </div>
+    <% } %>
+
+    <% if(applicationDate ){ %>
+    <div class="text-info">Preferred Application Date: <%= applicationDate %> </div>
+    <% } %>
+
+    <% if( operator){ %>
+    <div class="text-info">Preferred Operator: <%= operator %> </div>
+    <% } %>
+
+    <div class="text-info">Notes:</br>
+        <div id="notes"> <%= notes %> </div>
+    </div><br>
+
+
+    <% if(correctedAcreage){ %>
+    <table>
+        <tr>
+            <th colspan="4"> Application Area (Corrected Acreage)</th>
         </tr>
+        <tr>
+            <td>Size (Acres - Manual)</td>
+            <td><%= bug1%> (Per Acre)</td>
 
-        <tr class="information">
-            <td colspan="2">
-                <table>
-                    <tr>
+            <% if(bug2){ %>
+            <td><%= bug2%> (Per Acre)</td>
+            <% } %>
 
-
-                        <td>
-                            <p style="margin: 0;font-size: 10px;line-height: 0px"  ></p>Contact Name: <%= contact_name %> </p>
-                            <p style="margin: 0;font-size: 10px;line-height: 0px"  ></p>Contact Email: <%= contact_email %> </p>
-                            <p style="margin: 0;font-size: 10px;line-height: 0px" ></p>Contact Phone: <%= contact_phone %> </p>
-                            <p style="margin: 0;font-size: 10px;line-height: 0px" ></p>Billing Address: <%= billing_address %> </p>
-                            <p style="margin: 0;font-size: 10px;line-height: 0px" ></p>Crop: <%= crop %> </p>
-                            <p style="margin: 0;font-size: 10px;line-height: 0px" ></p>Row Spacing: <%= row_spacing %> </p>
-                            <p style="margin: 0;font-size: 4px;line-height: 0px"></p>Notes: </p>
-                            <p id = "notes"> <%=notes%>%> </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
+            <td>Total Bugs</td>
         </tr>
+        <tr>
+            <td><%= correctedAcreage %></td>
+            <td><%= standardBPA1 %></td>
 
+            <% if(bug2){ %>
+            <td><%= standardBPA2 %></td>
+            <% } %>
+
+            <td><%= sumBugsCorrected %></td>
+        </tr>
     </table>
+    <br><br>
+    <% } %>
 
-    <style type="text/css">
-        .tg  {border-collapse:collapse;border-spacing:0;}
-        .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-        .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:black;}
-        .tg .tg-baqh{text-align:center;vertical-align:top}
-    </style>
-    
     <table class="tg">
         <tr>
-            <th class="tg-baqh" colspan="5"> Application Area </th>
+            <th colspan="5"> Application Area (Raw Map Data)</th>
         </tr>
         <tr>
-            <td class="tg-baqh"></td>
-            <td class="tg-baqh">Size (Acres)</td>
-            <td class="tg-baqh"><%= bug1%> (Per Acre)</td>
+            <td></td>
+            <td>Size (Acres)</td>
+            <td><%= bug1%> (Per Acre)</td>
 
             <% if(bug2){ %>
-                <td class="tg-baqh"><%= bug2%> (Per Acre)</td>
+            <td><%= bug2%> (Per Acre)</td>
             <% } %>
 
-            <td class="tg-baqh">Total Bugs</td>
+            <td>Total Bugs</td>
         </tr>
         <tr>
-            <td class="tg-baqh">Standard Rate Area</td>
-            <td class="tg-baqh"><%= standardAcres %></td>
-            <td class="tg-baqh"><%= standardBPA1 %></td>
+            <td>Standard Rate Area</td>
+            <td><%= standardAcres %></td>
+            <td><%= standardBPA1 %></td>
 
             <% if(bug2){ %>
-                <td class="tg-baqh"><%= standardBPA2 %></td>
+            <td><%= standardBPA2 %></td>
             <% } %>
 
-            <td class="tg-baqh"><%= standardBugs %></td>
+            <td><%= standardBugs %></td>
         </tr>
         <tr>
-            <td class="tg-baqh">Variable Rate Area</td>
-            <td class="tg-baqh"><%= vraAcres %></td>
+            <td>Variable Rate Area</td>
+            <td><%= vraAcres %></td>
 
             <% if(vraAcres > 0){ %>
-                <td class="tg-baqh"><%= vraBPA1 %></td>
-                <% if(bug2){ %>
-                    <td class="tg-baqh"><%= vraBPA2 %></td>
-                <% } %>
-                <td class="tg-baqh"><%= vraBugs %></td>
-              <% } else{ %>  
-                <td class="tg-baqh">-</td>
-                <% if(bug2){ %>
-                    <td class="tg-baqh">-</td>
-                <% } %>                
-                <td class="tg-baqh">-</td>
-             <% } %>
+            <td><%= vraBPA1 %></td>
+            <% if(bug2){ %>
+            <td><%= vraBPA2 %></td>
+            <% } %>
+            <td><%= vraBugs %></td>
+            <% } else{ %>
+            <td>-</td>
+            <% if(bug2){ %>
+            <td>-</td>
+            <% } %>
+            <td>-</td>
+            <% } %>
 
 
         </tr>
         <tr>
-            <td class="tg-baqh">Hazard Area</td>
-            <td class="tg-baqh"><%= hazardAcres %></td>
-            <td class="tg-baqh">-</td>
+            <td>Hazard Area</td>
+            <td><%= hazardAcres %></td>
+            <td>-</td>
 
             <% if(bug2){ %>
-                <td class="tg-baqh">-</td>
+            <td>-</td>
             <% } %>
-            <td class="tg-baqh">-</td>
+            <td>-</td>
         </tr>
         <tr>
-            <td class="tg-baqh">Sum</td>
-            <td class="tg-baqh"><%= deployableAcres %></td>
-            <td class="tg-baqh">-</td>
+            <td>Sum</td>
+            <td><%= deployableAcres %></td>
+            <td>-</td>
 
             <% if(bug2){ %>
-                <td class="tg-baqh">-</td>
+            <td>-</td>
             <% } %>
-            <td class="tg-baqh"><%= sumBugs %></td>
+            <td><%= sumBugs %></td>
         </tr>
     </table>
-
-
-
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" class="divider " style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;min-width: 100%;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-        <tbody>
-        <tr style="vertical-align: top">
-            <td class="divider_inner" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-right: 10px;padding-left: 10px;padding-top: 10px;padding-bottom: 10px;min-width: 100%;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                <table class="divider_content" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;table-layout: fixed;border-spacing: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;vertical-align: top;border-top: 1px solid #BBBBBB;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                    <tbody>
-                    <tr style="vertical-align: top">
-                        <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;mso-line-height-rule: exactly;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%">
-                            <span></span>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-
-
-<div>
-    Created: <br>
-    <%= new Date();%>
-</div>
-
-</div>
+    <div>
+        <br>
+        Created: <br>
+        <%= new Date();%>
+    </div>
 </body>
+
 </html>
