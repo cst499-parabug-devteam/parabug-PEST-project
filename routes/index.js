@@ -713,7 +713,8 @@ function kml(info) {
   kml.startElement("Placemark"); // 1. polygon start
   kml
     .startElement("name")
-    .writeCData("Application Area")
+    // .writeCData("Application Area")
+    .text("Application Area")
     .endElement();
 
   // Set Description
@@ -740,7 +741,8 @@ function kml(info) {
     info["notes"];
   kml
     .startElement("description")
-    .writeCData(description)
+    // .writeCData(description)
+    .text(description)
     .endElement();
 
   kml.startElement("Polygon"); // 2. polygon start
@@ -784,11 +786,13 @@ function kml(info) {
     kml.startElement("Placemark"); // 1. polygon start
     kml
       .startElement("name")
-      .writeCData("Hazard Area")
+      // .writeCData("Hazard Area")
+      .text("Hazard Area")
       .endElement();
     kml
       .startElement("description")
-      .writeCData("Hazard Area")
+      // .writeCData("Hazard Area")
+      .text("Hazard Area")
       .endElement();
     kml.startElement("Polygon"); // 2. polygon start
     kml.writeElement("extrude", "1");
@@ -832,7 +836,8 @@ function kml(info) {
     kml.startElement("Placemark"); // 1. polygon start
     kml
       .startElement("name")
-      .writeCData("Variable Rate Area")
+      // .writeCData("Variable Rate Area")
+      .text("Variable Rate Area")
       .endElement();
 
     // Set Description
@@ -852,13 +857,10 @@ function kml(info) {
     }
     kml
       .startElement("description")
-      .writeCData(description)
+      // .writeCData(description)
+      .text(description)
       .endElement();
 
-    kml
-      .startElement("description")
-      .writeCData(description)
-      .endElement();
     kml.startElement("Polygon"); // 2. polygon start
     kml.writeElement("extrude", "1");
     kml.writeElement("altitudeMode", "clampToGround");
