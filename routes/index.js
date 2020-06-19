@@ -13,62 +13,17 @@ var ejs = require("ejs");
 var XMLWriter = require("xml-writer");
 var tmp = require("tmp");
 
+const BUFFER = 0.0000005;
+
 /* GET home page. */
-router.get("/", function(req, res, next) {
+router.get("/", function (req, res, next) {
   res.render("index", {
     title: "Express",
     api_key: process.env.GOOGLE_MAPS_API_KEY
   });
 });
 
-// DATA FORMAT
-/*
-var data = {
-    "appArea",
-        "ApplicationArea",
-            [{
-                "shell": [{lat,lng}], <- take first shell (should only have 1)
-                "holes": [ [{lat,lng}] ]
-            }]
-        "Hazards",
-            [
-                [{
-                    "shell",
-                    "holes"
-                }]
-            ]
-        "VariableRateAreas"
-            [
-                [{
-                    "shell",
-                    "holes"
-                }]
-            ]
-    appAcres,
-    hazardAcres,
-    vraAcres,
-    bugName,
-    bugsPerAcre,
-    variableRate,
-    numBugs,
-    // User Information Input
-    contactName,
-    contactPhone,
-    contactEmail,
-    billingAddress,
-    // Application Area Input
-    crop,
-    rowSpacing,
-    ranchName,
-    correctedAcreage,
-    // Preferences Input
-    applicationDate,
-    operator,
-    notes
-};
-*/
-
-router.post("/", function(req, res, next) {
+router.post("/", function (req, res, next) {
   try {
     // Test Data (req.body)
     var info = req.body;
@@ -99,7 +54,7 @@ router.post("/", function(req, res, next) {
     }
     if (validateAndFix(appArea, hazards, vras)) {
       // Start email process
-      email(info, function(response) {
+      email(info, function (response) {
         if (response.success) {
           res.json({ alertMessage: "Success" });
         } else {
@@ -108,7 +63,7 @@ router.post("/", function(req, res, next) {
 
         // Cleanup Temp PDF File
         if (response.pdfPath) {
-          fileCleanup(response.pdfPath, function(success) {
+          fileCleanup(response.pdfPath, function (success) {
             if (!success) {
               console.log("There was an error deleting the pdf file");
             }
@@ -116,7 +71,7 @@ router.post("/", function(req, res, next) {
         }
         // Cleanup Temp KML File
         if (response.kmlPath) {
-          fileCleanup(response.kmlPath, function(success) {
+          fileCleanup(response.kmlPath, function (success) {
             if (!success) {
               console.log("There was an error deleting the kml file");
             }
@@ -172,6 +127,15 @@ function checkBug(name, bpa, vr, defaultName) {
   return result;
 }
 
+function deleteNonPolys(polyArr) {
+  for (var i = polyArr.length - 1; i >= 0; i--) {
+    if (numUniqueCoordinates(polyArr[i]) < 3) {
+      polyArr.splice(i, 1);
+    }
+  }
+  return polyArr;
+}
+
 function email(info, callback) {
   var email_files = path.join(__dirname, "..", "email_files");
   var return_msg = { success: false };
@@ -204,14 +168,13 @@ function email(info, callback) {
 
             // ------------------------------------------------ SEND EMAIL WITH ATTACHMENTS HERE ------------------------------------------------
             // Write data to attachment files
-            writeToAttachments(info, kmlPath, pdfPath, function(pdfData) {
+            writeToAttachments(info, kmlPath, pdfPath, function (pdfData) {
               // Returns pdf data for email formatting
               if (pdfData == null) {
                 // Error while writing to files, don't send email
                 callback(return_msg);
               } else {
                 // Atachments were created and written to, send the email
-
                 //NO-REPLY@SENDMAIL.COM METHOD:
                 var parabug_email_path = "info@parabug.solutions";
 
@@ -275,7 +238,7 @@ function email(info, callback) {
 
                 // Send user email
                 // For testing, comment out
-                transporter.sendMail(mailOptions, function(err, info) {
+                transporter.sendMail(mailOptions, function (err, info) {
                   if (err) {
                     console.log(err);
                     callback(return_msg);
@@ -283,7 +246,7 @@ function email(info, callback) {
                     console.log("User Message sent: " + info.response);
                     // Send Parabug emal
 
-                    parabugTransporter.sendMail(parabugMailOptions, function(
+                    parabugTransporter.sendMail(parabugMailOptions, function (
                       err,
                       info
                     ) {
@@ -313,131 +276,10 @@ function email(info, callback) {
   }
 }
 
-function writeToAttachments(info, kmlPath, pdfPath, callback) {
-  var kmlData = kml(info);
-  writeKMLFile(kmlPath, kmlData, function(success) {
-    if (!success) {
-      console.log("Error writing to kml file");
-      callback(null);
-    } else {
-      writePDFile(pdfPath, info, function(pdfData) {
-        if (pdfData == null) {
-          console.log("Error writing to pdf file");
-          callback(null);
-        } else {
-          console.log("Wrote to both files successfully");
-          callback(pdfData);
-        }
-      });
-    }
-  });
-}
-
-function writeKMLFile(path, content, callback) {
-  fs.appendFile(path, content, function(err) {
-    if (err) {
-      console.log(err);
-      callback(false);
-      return;
-    }
-    callback(true);
-  });
-}
-
-// Returns null if fail or pdfData (ejs render from template)
-function writePDFile(path, info, callback) {
-  var email_template = require("path").join(
-    __dirname,
-    "..",
-    "public",
-    "test_files",
-    "email_template.ejs"
-  );
-  // Path.join is not working without module reference here for some reason
-
-  // Parse Numbers
-  info["appAcres"] = parseFloat(info["appAcres"], 10);
-  info["hazardAcres"] = parseFloat(info["hazardAcres"], 10);
-  info["vraAcres"] = parseFloat(info["vraAcres"], 10);
-
-  // Check values, on per bug basis
-  let bug1 = checkBug(
-    info.bugName,
-    info.bugsPerAcre,
-    info.variableRate,
-    "bug1"
-  );
-  let bug2 = checkBug(
-    info.bugName2,
-    info.bugsPerAcre2,
-    info.variableRate2,
-    "bug2"
-  );
-
-  var standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
-  var standardBugs = (bug1.bpa + bug2.bpa) * standardAcres;
-  var vraBugs = (bug1.vr + bug2.vr) * info.vraAcres;
-  var sumBugs = standardBugs + vraBugs;
-
-  var deployableAcres = info["appAcres"] - info["hazardAcres"];
-
-  var data = {
-    contact_name: info.contactName,
-    contact_email: info.contactEmail,
-    contact_phone: info.contactPhone,
-    crop: info.crop,
-    billing_address: info.billingAddress,
-    notes: info.notes,
-    row_spacing: info.rowSpacing,
-    bug1: bug1.name,
-    bug2: bug2.name,
-    standardAcres: round(standardAcres, 3),
-    standardBPA1: bug1.bpa,
-    standardBPA2: bug2.bpa,
-    standardBugs: round(standardBugs, 0),
-    vraAcres: round(info.vraAcres, 3),
-    vraBPA1: bug1.vr,
-    vraBPA2: bug2.vr,
-    vraBugs: round(vraBugs, 0),
-    hazardAcres: round(info.hazardAcres, 3),
-    appAcres: round(info.appAcres, 3),
-    deployableAcres: round(deployableAcres, 3),
-    sumBugs: round(sumBugs, 0),
-
-    ranchName: info.ranchName,
-    applicationDate: info.applicationDate,
-    operator: info.operator,
-    correctedAcreage: info.correctedAcreage
-  };
-
-  // Check if corrected acreage was supplied, if so provide additional bug estaimate
-  if (info.correctedAcreage != null) {
-    let correctedAcreage = parseFloat(info.correctedAcreage);
-    let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
-    data.sumBugsCorrected = round(sumBugsCorrected, 0);
-  }
-
-  ejs.renderFile(email_template, data, function(err, pdfData) {
-    if (err) {
-      console.log(err);
-      callback(null);
-    } else {
-      pdf.create(pdfData).toFile(path, function(err, res) {
-        if (err) {
-          callback(null);
-        } else {
-          callback(pdfData);
-        }
-        console.log(res);
-      });
-    }
-  });
-}
-
 function fileCleanup(path, callback) {
-  fs.exists(path, function(exists) {
+  fs.exists(path, function (exists) {
     if (exists) {
-      fs.unlink(path, function(err) {
+      fs.unlink(path, function (err) {
         if (err) {
           console.log(err);
           callback(false);
@@ -449,31 +291,6 @@ function fileCleanup(path, callback) {
     }
     callback(true);
   });
-}
-
-function numUniqueCoordinates(jstsPoly) {
-  var coords = jstsPoly.getCoordinates();
-  var unique = [];
-  var newCoord;
-  for (var i = 0; i < coords.length; i++) {
-    newCoord = {
-      lat: coords[i].x,
-      lng: coords[i].y
-    };
-    if (unique.indexOf(newCoord) == -1) {
-      unique.push(newCoord);
-    }
-  }
-  return unique.length;
-}
-
-function deleteNonPolys(polyArr) {
-  for (var i = polyArr.length - 1; i >= 0; i--) {
-    if (numUniqueCoordinates(polyArr[i]) < 3) {
-      polyArr.splice(i, 1);
-    }
-  }
-  return polyArr;
 }
 
 function getDifference(jstsPoly, jstsPolyRemove) {
@@ -520,28 +337,342 @@ function jsonToJstsGeom(json) {
   return result;
 }
 
-// http://www.jacklmoore.com/notes/rounding-in-javascript/
+function jstsCoordsToShellHoles(coords) {
+  let shell = [];
+  let holes = [];
+  let shellComplete = false;
+
+  for (let i = 0; i < coords.length; i++) {
+    if (!shellComplete) {
+      shell.push(coords[i]);
+      if ((i != 0) && (coords[0].equals(coords[i]))) {
+        shellComplete = true;
+      }
+    } else {
+      holes.push(coords[i]);
+    }
+  }
+  return { shell, holes };
+}
+
+function kml(info) {
+  var appArea = info["appArea"]["ApplicationArea"][0]["shell"];
+  var hazardArea = info["appArea"]["Hazards"];
+  var vRAArea = info["appArea"]["VariableRateAreas"];
+
+  // Multipliers control the change of rate
+  // When going from the standard rate to variable rate
+  let bug1Multiplier = 0;
+  let bug2Multiplier = 0;
+
+  try {
+    let vr = parseInt(info["bugsPerAcre"]);
+    let sr = parseInt(info["variableRate"]);
+    if (vr > 0) {
+      bug1Multiplier = sr / vr;
+    }
+    if (info["bugsPerAcre2"]) {
+      vr = parseInt(info["bugsPerAcre2"]);
+      sr = parseInt(info["variableRate2"]);
+      if (vr > 0) {
+        bug2Multiplier = sr / vr;
+      }
+    }
+  } catch (e) {
+    console.log("Error when setting multipliers");
+    console.log(e);
+  }
+
+
+  if (info["bugName"] === "") {
+    info["bugName"] = "Not Specified";
+  }
+  if (info["bugName2"] != null && info["bugName2"] === "") {
+    info["bugName2"] = "Not Specified";
+  }
+  if (info["notes"] === "") {
+    info["notes"] = "N/A";
+  }
+  var description = "";
+  var i, j, temp;
+
+  var kml = new XMLWriter(true);
+  kml
+    .startDocument()
+    .startElement("kml")
+    .writeAttribute("xmlns", "http://www.opengis.net/kml/2.2");
+  kml.startElement("Document");
+
+  // ------------------------------------------ App area ------------------------------------------
+  kml.startElement("Placemark"); // 1. polygon start
+  kml
+    .startElement("name")
+    // .writeCData("Application Area")
+    .text("Application Area")
+    .endElement();
+
+  // Set Description
+  description =
+    "Application Area \n\t\t\t\t\t\tBug: " +
+    info["bugName"] +
+    ", " +
+    info["bugsPerAcre"] +
+    " per acre";
+  if (info["bugName2"] != null) {
+    description +=
+      "\n\t\t\t\t\t\tBug2: " +
+      info["bugName2"] +
+      ", " +
+      info["bugsPerAcre2"] +
+      " per acre";
+  }
+  description +=
+    "\n\t\t\t\t\t\tCrop: " +
+    info["crop"] +
+    " with row spacing of " +
+    info["rowSpacing"] +
+    "ft\n\t\t\t\t\t\tNotes:\n\t\t\t\t\t\t" +
+    info["notes"];
+  kml
+    .startElement("description")
+    // .writeCData(description)
+    .text(description)
+    .endElement();
+  kml.writeElement("Multiplier", String(bug1Multiplier) + "," + String(bug2Multiplier));
+
+  kml.startElement("Polygon"); // 2. polygon start
+  kml.writeElement("extrude", "1");
+  kml.writeElement("altitudeMode", "clampToGround");
+  kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
+  kml.startElement("LinearRing"); // 4. linear ring start
+  kml.startElement("coordinates"); // 5. coordinate tag start
+
+  // Shell array
+  for (j = 0; j < appArea.length; j++) {
+    kml.text(
+      "\n\t\t\t\t\t\t\t" +
+      JSON.stringify(appArea[j]["lng"]) +
+      "," +
+      JSON.stringify(appArea[j]["lat"]) +
+      ",0"
+    );
+  }
+  kml.text("\n\t\t\t\t\t\t");
+
+  kml.endElement(); // 5. end coordinate tag
+  kml.endElement(); // 4. end linear ring tag
+  kml.endElement(); // 3, end 'hole' tag
+  kml.endElement(); // 2, polygon end
+  kml.startElement("Style"); // start style tag
+  kml.startElement("PolyStyle"); // start polystyle tag
+  kml.startElement("color"); // start color tag
+  kml.text("#bb00ffff");
+  kml.endElement(); // end color tag
+  kml.startElement("outline"); // start outline tag
+  kml.text("0");
+  kml.endElement(); // end outline tag
+  kml.endElement(); // end polystyle tag
+  kml.endElement(); // end style tag
+  kml.endElement(); // 1. polyon end
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ App area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  // ----------------------------------------- Hazard area -----------------------------------------
+  for (i = 0; i < hazardArea.length; i++) {
+    kml.startElement("Placemark"); // 1. polygon start
+    kml
+      .startElement("name")
+      // .writeCData("Hazard Area")
+      .text("Hazard Area")
+      .endElement();
+    kml
+      .startElement("description")
+      // .writeCData("Hazard Area")
+      .text("Hazard Area")
+      .endElement();
+    kml.startElement("Polygon"); // 2. polygon start
+    kml.writeElement("extrude", "1");
+    kml.writeElement("altitudeMode", "clampToGround");
+    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
+    kml.startElement("LinearRing"); // 4. linear ring start
+    kml.startElement("coordinates"); // 5. coordinate tag start
+
+    temp = info["appArea"]["Hazards"][i][0]["shell"];
+    for (j = 0; j < temp.length; j++) {
+      kml.text(
+        "\n\t\t\t\t\t\t\t" +
+        JSON.stringify(temp[j]["lng"]) +
+        "," +
+        JSON.stringify(temp[j]["lat"]) +
+        ",0"
+      );
+    }
+    kml.text("\n\t\t\t\t\t\t");
+
+    kml.endElement(); // 5. end coordinate tag
+    kml.endElement(); // 4. end linear ring tag
+    kml.endElement(); // 3. end 'hole' tag
+    kml.endElement(); // 2. polygon end
+    kml.startElement("Style"); // start style tag
+    kml.startElement("PolyStyle"); // start polystyle tag
+    kml.startElement("color"); // start color tag
+    kml.text("990000cc");
+    kml.endElement(); // end color tag
+    kml.startElement("outline"); // start outline tag
+    kml.text("0");
+    kml.endElement(); // end outline tag
+    kml.endElement(); // end polystyle tag
+    kml.endElement(); // end style tag
+    kml.endElement(); // 1. polyon end
+  }
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Hazard area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  // ------------------------------------- Variable Rate Area -------------------------------------
+  for (i = 0; i < vRAArea.length; i++) {
+    kml.startElement("Placemark"); // 1. polygon start
+    kml
+      .startElement("name")
+      // .writeCData("Variable Rate Area")
+      .text("Variable Rate Area")
+      .endElement();
+
+    // Set Description
+    description =
+      "Variable Rate Area \n\t\t\t\t\t\tBug: " +
+      info["bugName"] +
+      ", " +
+      info["variableRate"] +
+      " per acre";
+    if (info["bugName2"] != null) {
+      description +=
+        "\n\t\t\t\t\t\tBug2: " +
+        info["bugName2"] +
+        ", " +
+        info["variableRate2"] +
+        " per acre";
+    }
+    kml
+      .startElement("description")
+      // .writeCData(description)
+      .text(description)
+      .endElement();
+
+    kml.startElement("Polygon"); // 2. polygon start
+    kml.writeElement("extrude", "1");
+    kml.writeElement("altitudeMode", "clampToGround");
+    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
+    kml.startElement("LinearRing"); // 4. linear ring start
+    kml.startElement("coordinates"); // 5. coordinate tag start
+
+    temp = info["appArea"]["VariableRateAreas"][i][0]["shell"];
+    for (j = 0; j < temp.length; j++) {
+      kml.text(
+        "\n\t\t\t\t\t\t\t" +
+        JSON.stringify(temp[j]["lng"]) +
+        "," +
+        JSON.stringify(temp[j]["lat"]) +
+        ",0"
+      );
+    }
+    kml.text("\n\t\t\t\t\t\t");
+
+    kml.endElement(); // 5. end coordinate tag
+    kml.endElement(); // 4. end linear ring tag
+    kml.endElement(); // 3. end 'hole' tag
+    kml.endElement(); // 2. polygon end
+    kml.startElement("Style"); // start style tag
+    kml.startElement("PolyStyle"); // start polystyle tag
+    kml.startElement("color"); // start color tag
+    kml.text("bbA0A0A0");
+    kml.endElement(); // end color tag
+    kml.startElement("outline"); // start outline tag
+    kml.text("0");
+    kml.endElement(); // end outline tag
+    kml.endElement(); // end polystyle tag
+    kml.endElement(); // end style tag
+    kml.endElement(); // 1. polyon end
+  }
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Variable Rate Area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  kml.endElement();
+  return kml.toString();
+}
+
+function numUniqueCoordinates(jstsPoly) {
+  var coords = jstsPoly.getCoordinates();
+  var unique = [];
+  var newCoord;
+  for (var i = 0; i < coords.length; i++) {
+    newCoord = {
+      lat: coords[i].x,
+      lng: coords[i].y
+    };
+    if (unique.indexOf(newCoord) == -1) {
+      unique.push(newCoord);
+    }
+  }
+  return unique.length;
+}
+
 function round(value, decimals) {
   return Number(Math.round(value + "e" + decimals) + "e-" + decimals);
 }
 
-function trimPolygon(jstsInner, jstsOuter) {
-  jstsInner.normalize();
-  jstsOuter.normalize();
-  if (!jstsInner.intersects(jstsOuter)) {
-    return null;
-  }
-  var intersection = jstsInner.intersection(jstsOuter);
+function simplifyHazards(hazards) {
+  let gF = new jsts.geom.GeometryFactory();
 
-  var result = [];
-  if (intersection.getNumGeometries() == 1) {
-    result.push(intersection);
-    return result;
+  // Simplify Hazard Areas
+  let newHazards = [];
+  for (let i = 0; i < hazards.length; i++) {
+    let hazard = hazards[i];
+    if (hazard) {
+      let hazardCoords = jstsCoordsToShellHoles(hazard.getCoordinates());
+      for (let j = 1; j < hazardCoords.shell.length - 1; j++) {
+        let shellWithPoint = hazardCoords.shell.slice();
+        let shellWithoutPoint = shellWithPoint.slice();
+        shellWithoutPoint.splice(j, 1);
+        if (shellWithPoint.length > 2 && shellWithoutPoint.length > 2) {
+          let polygonWithPoint = gF.createPolygon(gF.createLinearRing(shellWithPoint), gF.createLinearRing(hazardCoords.holes));
+          let polygonWithoutPoint = gF.createPolygon(gF.createLinearRing(shellWithoutPoint), gF.createLinearRing(hazardCoords.holes));
+          let polygonWithPointBuffered = polygonWithPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
+          let polygonWithoutPointBuffered = polygonWithoutPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
+          if (polygonWithPointBuffered.covers(polygonWithoutPoint) && polygonWithoutPointBuffered.covers(polygonWithPoint)) {
+            hazardCoords.shell = shellWithoutPoint.slice();
+          }
+        }
+      }
+      newHazards.push([].concat(hazardCoords.shell).concat(hazardCoords.holes));
+    }
   }
-  for (var i = 0; i < intersection.getNumGeometries(); i++) {
-    result.push(intersection.getGeometryN(i));
+  return newHazards;
+}
+
+function simplifyVariableRateAreas(vras) {
+  let gF = new jsts.geom.GeometryFactory();
+
+  // Simplify Hazard Areas
+  let newVras = [];
+  for (let i = 0; i < newVras.length; i++) {
+    let vra = vras[i];
+    if (vra) {
+      let vraCoords = jstsCoordsToShellHoles(vra.getCoordinates());
+      for (let j = 1; j < vraCoords.shell.length - 1; j++) {
+        let shellWithPoint = vraCoords.shell.slice();
+        let shellWithoutPoint = shellWithPoint.slice();
+        shellWithoutPoint.splice(j, 1);
+        if (shellWithPoint.length > 2 && shellWithoutPoint.length > 2) {
+          let polygonWithPoint = gF.createPolygon(gF.createLinearRing(shellWithPoint), gF.createLinearRing(vraCoords.holes));
+          let polygonWithoutPoint = gF.createPolygon(gF.createLinearRing(shellWithoutPoint), gF.createLinearRing(vraCoords.holes));
+          let polygonWithPointBuffered = polygonWithPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
+          let polygonWithoutPointBuffered = polygonWithoutPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
+          if (polygonWithPointBuffered.covers(polygonWithoutPoint) && polygonWithoutPointBuffered.covers(polygonWithPoint)) {
+            vraCoords.shell = shellWithoutPoint.slice();
+          }
+        }
+      }
+      newVras.push([].concat(vraCoords.shell).concat(vraCoords.holes));
+    }
   }
-  return result;
+  return newVras;
 }
 
 function trimPolyArray(polyArr, outerPoly, removePolyArr = null) {
@@ -579,6 +710,25 @@ function trimPolyArray(polyArr, outerPoly, removePolyArr = null) {
     }
   }
   return polyArr;
+}
+
+function trimPolygon(jstsInner, jstsOuter) {
+  jstsInner.normalize();
+  jstsOuter.normalize();
+  if (!jstsInner.intersects(jstsOuter)) {
+    return null;
+  }
+  var intersection = jstsInner.intersection(jstsOuter);
+
+  var result = [];
+  if (intersection.getNumGeometries() == 1) {
+    result.push(intersection);
+    return result;
+  }
+  for (var i = 0; i < intersection.getNumGeometries(); i++) {
+    result.push(intersection.getGeometryN(i));
+  }
+  return result;
 }
 
 function unionPolyArray(polyArr) {
@@ -676,6 +826,8 @@ function validateAndFix(appArea, hazards, vras) {
     newVras = unionPolyArray(newVras);
     newHazards = trimPolyArray(newHazards, appArea);
     newVras = trimPolyArray(newVras, appArea, newHazards);
+    newHazards = simplifyHazards(newHazards);
+    newVras = simplifyVariableRateAreas(newVras);
 
     // All the values at this point should be valid
     return true;
@@ -686,220 +838,125 @@ function validateAndFix(appArea, hazards, vras) {
   }
 }
 
-function kml(info) {
-  var appArea = info["appArea"]["ApplicationArea"][0]["shell"];
-  var hazardArea = info["appArea"]["Hazards"];
-  var vRAArea = info["appArea"]["VariableRateAreas"];
-  if (info["bugName"] === "") {
-    info["bugName"] = "Not Specified";
-  }
-  if (info["bugName2"] != null && info["bugName2"] === "") {
-    info["bugName2"] = "Not Specified";
-  }
-  if (info["notes"] === "") {
-    info["notes"] = "N/A";
-  }
-  var description = "";
-  var i, j, temp;
-
-  var kml = new XMLWriter(true);
-  kml
-    .startDocument()
-    .startElement("kml")
-    .writeAttribute("xmlns", "http://www.opengis.net/kml/2.2");
-  kml.startElement("Document");
-
-  // ------------------------------------------ App area ------------------------------------------
-  kml.startElement("Placemark"); // 1. polygon start
-  kml
-    .startElement("name")
-    // .writeCData("Application Area")
-    .text("Application Area")
-    .endElement();
-
-  // Set Description
-  description =
-    "Application Area \n\t\t\t\t\t\tBug: " +
-    info["bugName"] +
-    ", " +
-    info["bugsPerAcre"] +
-    " per acre";
-  if (info["bugName2"] != null) {
-    description +=
-      "\n\t\t\t\t\t\tBug2: " +
-      info["bugName2"] +
-      ", " +
-      info["bugsPerAcre2"] +
-      " per acre";
-  }
-  description +=
-    "\n\t\t\t\t\t\tCrop: " +
-    info["crop"] +
-    " with row spacing of " +
-    info["rowSpacing"] +
-    "ft\n\t\t\t\t\t\tNotes:\n\t\t\t\t\t\t" +
-    info["notes"];
-  kml
-    .startElement("description")
-    // .writeCData(description)
-    .text(description)
-    .endElement();
-
-  kml.startElement("Polygon"); // 2. polygon start
-  kml.writeElement("extrude", "1");
-  kml.writeElement("altitudeMode", "clampToGround");
-  kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
-  kml.startElement("LinearRing"); // 4. linear ring start
-  kml.startElement("coordinates"); // 5. coordinate tag start
-
-  // Shell array
-  for (j = 0; j < appArea.length; j++) {
-    kml.text(
-      "\n\t\t\t\t\t\t\t" +
-        JSON.stringify(appArea[j]["lng"]) +
-        "," +
-        JSON.stringify(appArea[j]["lat"]) +
-        ",0"
-    );
-  }
-  kml.text("\n\t\t\t\t\t\t");
-
-  kml.endElement(); // 5. end coordinate tag
-  kml.endElement(); // 4. end linear ring tag
-  kml.endElement(); // 3, end 'hole' tag
-  kml.endElement(); // 2, polygon end
-  kml.startElement("Style"); // start style tag
-  kml.startElement("PolyStyle"); // start polystyle tag
-  kml.startElement("color"); // start color tag
-  kml.text("#bb00ffff");
-  kml.endElement(); // end color tag
-  kml.startElement("outline"); // start outline tag
-  kml.text("0");
-  kml.endElement(); // end outline tag
-  kml.endElement(); // end polystyle tag
-  kml.endElement(); // end style tag
-  kml.endElement(); // 1. polyon end
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ App area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-  // ----------------------------------------- Hazard area -----------------------------------------
-  for (i = 0; i < hazardArea.length; i++) {
-    kml.startElement("Placemark"); // 1. polygon start
-    kml
-      .startElement("name")
-      // .writeCData("Hazard Area")
-      .text("Hazard Area")
-      .endElement();
-    kml
-      .startElement("description")
-      // .writeCData("Hazard Area")
-      .text("Hazard Area")
-      .endElement();
-    kml.startElement("Polygon"); // 2. polygon start
-    kml.writeElement("extrude", "1");
-    kml.writeElement("altitudeMode", "clampToGround");
-    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
-    kml.startElement("LinearRing"); // 4. linear ring start
-    kml.startElement("coordinates"); // 5. coordinate tag start
-
-    temp = info["appArea"]["Hazards"][i][0]["shell"];
-    for (j = 0; j < temp.length; j++) {
-      kml.text(
-        "\n\t\t\t\t\t\t\t" +
-          JSON.stringify(temp[j]["lng"]) +
-          "," +
-          JSON.stringify(temp[j]["lat"]) +
-          ",0"
-      );
+function writeKMLFile(path, content, callback) {
+  fs.appendFile(path, content, function (err) {
+    if (err) {
+      console.log(err);
+      callback(false);
+      return;
     }
-    kml.text("\n\t\t\t\t\t\t");
+    callback(true);
+  });
+}
 
-    kml.endElement(); // 5. end coordinate tag
-    kml.endElement(); // 4. end linear ring tag
-    kml.endElement(); // 3. end 'hole' tag
-    kml.endElement(); // 2. polygon end
-    kml.startElement("Style"); // start style tag
-    kml.startElement("PolyStyle"); // start polystyle tag
-    kml.startElement("color"); // start color tag
-    kml.text("990000cc");
-    kml.endElement(); // end color tag
-    kml.startElement("outline"); // start outline tag
-    kml.text("0");
-    kml.endElement(); // end outline tag
-    kml.endElement(); // end polystyle tag
-    kml.endElement(); // end style tag
-    kml.endElement(); // 1. polyon end
+// Returns null if fail or pdfData (ejs render from template)
+function writePDFile(path, info, callback) {
+  var email_template = require("path").join(
+    __dirname,
+    "..",
+    "public",
+    "test_files",
+    "email_template.ejs"
+  );
+  // Path.join is not working without module reference here for some reason
+
+  // Parse Numbers
+  info["appAcres"] = parseFloat(info["appAcres"], 10);
+  info["hazardAcres"] = parseFloat(info["hazardAcres"], 10);
+  info["vraAcres"] = parseFloat(info["vraAcres"], 10);
+
+  // Check values, on per bug basis
+  let bug1 = checkBug(
+    info.bugName,
+    info.bugsPerAcre,
+    info.variableRate,
+    "bug1"
+  );
+  let bug2 = checkBug(
+    info.bugName2,
+    info.bugsPerAcre2,
+    info.variableRate2,
+    "bug2"
+  );
+
+  var standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
+  var standardBugs = (bug1.bpa + bug2.bpa) * standardAcres;
+  var vraBugs = (bug1.vr + bug2.vr) * info.vraAcres;
+  var sumBugs = standardBugs + vraBugs;
+
+  var deployableAcres = info["appAcres"] - info["hazardAcres"];
+
+  var data = {
+    contact_name: info.contactName,
+    contact_email: info.contactEmail,
+    contact_phone: info.contactPhone,
+    crop: info.crop,
+    billing_address: info.billingAddress,
+    notes: info.notes,
+    row_spacing: info.rowSpacing,
+    bug1: bug1.name,
+    bug2: bug2.name,
+    standardAcres: round(standardAcres, 3),
+    standardBPA1: bug1.bpa,
+    standardBPA2: bug2.bpa,
+    standardBugs: round(standardBugs, 0),
+    vraAcres: round(info.vraAcres, 3),
+    vraBPA1: bug1.vr,
+    vraBPA2: bug2.vr,
+    vraBugs: round(vraBugs, 0),
+    hazardAcres: round(info.hazardAcres, 3),
+    appAcres: round(info.appAcres, 3),
+    deployableAcres: round(deployableAcres, 3),
+    sumBugs: round(sumBugs, 0),
+
+    ranchName: info.ranchName,
+    applicationDate: info.applicationDate,
+    operator: info.operator,
+    correctedAcreage: info.correctedAcreage
+  };
+
+  // Check if corrected acreage was supplied, if so provide additional bug estaimate
+  if (info.correctedAcreage != null) {
+    let correctedAcreage = parseFloat(info.correctedAcreage);
+    let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
+    data.sumBugsCorrected = round(sumBugsCorrected, 0);
   }
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Hazard area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  // ------------------------------------- Variable Rate Area -------------------------------------
-  for (i = 0; i < vRAArea.length; i++) {
-    kml.startElement("Placemark"); // 1. polygon start
-    kml
-      .startElement("name")
-      // .writeCData("Variable Rate Area")
-      .text("Variable Rate Area")
-      .endElement();
-
-    // Set Description
-    description =
-      "Variable Rate Area \n\t\t\t\t\t\tBug: " +
-      info["bugName"] +
-      ", " +
-      info["variableRate"] +
-      " per acre";
-    if (info["bugName2"] != null) {
-      description +=
-        "\n\t\t\t\t\t\tBug2: " +
-        info["bugName2"] +
-        ", " +
-        info["variableRate2"] +
-        " per acre";
+  ejs.renderFile(email_template, data, function (err, pdfData) {
+    if (err) {
+      console.log(err);
+      callback(null);
+    } else {
+      pdf.create(pdfData).toFile(path, function (err, res) {
+        if (err) {
+          callback(null);
+        } else {
+          callback(pdfData);
+        }
+        console.log(res);
+      });
     }
-    kml
-      .startElement("description")
-      // .writeCData(description)
-      .text(description)
-      .endElement();
+  });
+}
 
-    kml.startElement("Polygon"); // 2. polygon start
-    kml.writeElement("extrude", "1");
-    kml.writeElement("altitudeMode", "clampToGround");
-    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
-    kml.startElement("LinearRing"); // 4. linear ring start
-    kml.startElement("coordinates"); // 5. coordinate tag start
-
-    temp = info["appArea"]["VariableRateAreas"][i][0]["shell"];
-    for (j = 0; j < temp.length; j++) {
-      kml.text(
-        "\n\t\t\t\t\t\t\t" +
-          JSON.stringify(temp[j]["lng"]) +
-          "," +
-          JSON.stringify(temp[j]["lat"]) +
-          ",0"
-      );
+function writeToAttachments(info, kmlPath, pdfPath, callback) {
+  var kmlData = kml(info);
+  writeKMLFile(kmlPath, kmlData, function (success) {
+    if (!success) {
+      console.log("Error writing to kml file");
+      callback(null);
+    } else {
+      writePDFile(pdfPath, info, function (pdfData) {
+        if (pdfData == null) {
+          console.log("Error writing to pdf file");
+          callback(null);
+        } else {
+          console.log("Wrote to both files successfully");
+          callback(pdfData);
+        }
+      });
     }
-    kml.text("\n\t\t\t\t\t\t");
-
-    kml.endElement(); // 5. end coordinate tag
-    kml.endElement(); // 4. end linear ring tag
-    kml.endElement(); // 3. end 'hole' tag
-    kml.endElement(); // 2. polygon end
-    kml.startElement("Style"); // start style tag
-    kml.startElement("PolyStyle"); // start polystyle tag
-    kml.startElement("color"); // start color tag
-    kml.text("bbA0A0A0");
-    kml.endElement(); // end color tag
-    kml.startElement("outline"); // start outline tag
-    kml.text("0");
-    kml.endElement(); // end outline tag
-    kml.endElement(); // end polystyle tag
-    kml.endElement(); // end style tag
-    kml.endElement(); // 1. polyon end
-  }
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Variable Rate Area ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-  kml.endElement();
-  return kml.toString();
+  });
 }
 
 module.exports = router;
