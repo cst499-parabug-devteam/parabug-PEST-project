@@ -52,8 +52,6 @@ html {
 }
 
 .form-fieldset {
-  border-top: 0.5px solid black;
-  border-radius: 5px;
   margin-bottom: 12px;
   padding: 2px 12px 12px 12px;
 }
