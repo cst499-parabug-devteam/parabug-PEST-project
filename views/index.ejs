@@ -15,8 +15,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="/js/jsts.1.6.1.js"></script>
-    <script src="/js/classes.js"></script>
     <script src="/js/togeojson.js"></script>
+    <script async src="/js/classes.js"></script>
   </head>
 
   <body>
@@ -309,6 +309,7 @@
       </div>
     </div>
     <script>
+      "use strict"
       /* GLOBAL VARIABLES */
       let map;
       let drawingManager;
@@ -402,7 +403,21 @@
         }
         map.setCenter(center);
       }
-    
+      
+      function deleteSubPoly() {
+        if ((appArea != null) && (appArea.deleteIdentifier != null)) {
+          // console.log(appArea.deleteIdentifier);
+          index = appArea.getIndexOfIdentifier(appArea.deleteIdentifier.id, appArea.deleteIdentifier.type);
+          if (appArea.deleteIdentifier.type == "hazard") {
+              appArea.removeHazard(index);
+          } else if (appArea.deleteIdentifier.type = "variable") {
+              appArea.removeVariableRateArea(index);
+          }
+          appArea.resetGlobals();
+          updateStats();
+        }
+      }
+
       function draw(path) {
         let mode = drawModeControl.getCurrent();
         switch (mode) {
@@ -526,7 +541,7 @@
         google.maps.event.addListener(drawingManager, "polygoncomplete", function(p) {
           draw(p.getPath());
           p.setMap(null);
-          path = null;
+          // path = null;
         });
     
         map.setTilt(0);
@@ -784,6 +799,46 @@
         console.log("No subpoly contained spot");
       }
     
+      function promptAndDelete(identifier) {
+          // Named instance variable for AppArea is assumed to be appArea
+          // check if drawing mode is set to delete
+          if (drawModeControl.getCurrent() != "Delete") { return; } // also instanced variable (drawModeControl)
+
+          if (appArea == null) { return; }
+          var index = appArea.getIndexOfIdentifier(identifier.id, identifier.type);
+          if (index == -1) { return; }
+          var centroid;
+
+          if (identifier.type == "hazard") {
+              centroid = appArea.getHazard(index).getCentroid();
+          } else if (identifier.type == "variable") {
+              centroid = appArea.getVariableRateArea(index).getCentroid();
+          } else { return; }
+
+          // function to clear markers and infowindow
+          appArea.resetGlobals();
+
+          appArea.deleteIdentifier = identifier;
+
+          var marker = new google.maps.Marker({
+              position: centroid,
+              map: appArea.getMap()
+          });
+
+          var infoWindow = new google.maps.InfoWindow({ content: "" });
+
+
+          // Couldn't pass values easily in content string, utilizing global variable instead
+          infoWindow.setContent('<button type="button" onClick="deleteSubPoly()">Delete</button>');
+          google.maps.event.addListener(infoWindow, 'closeclick', function () {
+              appArea.resetGlobals();
+          });
+
+          infoWindow.open(appArea.getMap(), marker);
+          appArea.marker = marker;
+          appArea.infoWindow = infoWindow;
+      }
+
       function resetDisplaySettings() {
         let appAreaColor = "#FFFF00";
         let appAreaOpacity = 0.6;
@@ -844,6 +899,10 @@
         });
       }
     
+      function round(value, decimals) {
+          return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
+      }
+
       function showAlert(json) {
         let message = JSON.parse(json);
         if (message.alertMessage === "Success") {

@@ -1,3 +1,4 @@
+"use strict";
 class Hazard {
     constructor(map, poly) {
         // map is a google maps map object
@@ -51,15 +52,9 @@ class VariableRateArea {
 }
 
 class AppArea {
-    static buffer = .0000005;
-    static fill = "#FFFF00";
-    static opacity = 0.6;
-    static hazardFill = "#FF0000";
-    static hazardOpacity = 0.7;
-    static vrFill = "#CCCCCC";
-    static vrOpacity = 0.6;
-
-    constructor(map, path, hazards = [], vRAs = []) {
+    constructor(map, path, hazards, vRAs) {
+        hazards = (hazards) ? hazards : [];
+        vRAs = (vRAs) ? vRAs : [];
         // map is a google maps map object
         this.map = map;
         // hazards contains an array of inner polygons
@@ -85,7 +80,8 @@ class AppArea {
         this.poly.setMap(this.map);
     }
 
-    addHazard(path, holes = []) {
+    addHazard(path, holes) {
+        holes = (holes) ? holes : [];
         var allPaths = holes;
         allPaths.unshift(path);
 
@@ -101,7 +97,8 @@ class AppArea {
         return true;
     }
 
-    addVariableRate(path, holes = []) {
+    addVariableRate(path, holes) {
+        holes = (holes) ? holes : [];
         var allPaths = holes;
         allPaths.unshift(path);
 
@@ -282,6 +279,7 @@ class AppArea {
     }
 
     getIndexOfIdentifier(id, type = null) {
+        type = (type) ? type : null;
         var both = false;
         if (type == null) {
             both = true;
@@ -335,7 +333,7 @@ class AppArea {
 
     getTotalBugs(standard, variableRate) {
         if (this.getPoly() == null) { return 0; }
-        var appArea = this.getAdjustedArea(); // get app area in acres
+        let appArea = this.getAdjustedArea(); // get app area in acres
         var vrArea = this.getVRAArea();
         appArea -= vrArea;
         return ((appArea * standard) + (vrArea * variableRate));
@@ -391,7 +389,8 @@ class AppArea {
         this.deleteIdentifier = null;
     }
 
-    setVariableRateArea(index, path, holes = []) {
+    setVariableRateArea(index, path, holes) {
+        holes = (holes) ? holes : [];
         if (index < this.variableRateAreas.length) {
             this.variableRateAreas[index].del();
             this.variableRateAreas[index] = null;
@@ -529,7 +528,7 @@ class AppArea {
 
             temp = AppArea.createJstsPolygon(gF, this.getPoly());
             temp = AppArea.getGeoShellsHoles(temp);
-            var appArea = AppArea.shellsHolesToCoords(temp);
+            let appArea = AppArea.shellsHolesToCoords(temp);
 
             var hazards = [];
             for (var i = 0; i < this.getNumHazard(); i++) {
@@ -1007,66 +1006,10 @@ class AppArea {
     }
 }
 
-/*      FUNCTIONS      */
-
-function promptAndDelete(identifier) {
-    // Havent found a good way to add event listeners to children polygons, and delete themselves
-    // after clicking, so using a named instance variable for now
-    // Named instance variable for AppArea is assumed to be appArea
-
-    // check if drawing mode is set to delete
-    if (drawModeControl.getCurrent() != "Delete") { return; } // also instanced variable (drawModeControl)
-
-    if (appArea == null) { return; }
-    var index = appArea.getIndexOfIdentifier(identifier.id, identifier.type);
-    if (index == -1) { return; }
-    var centroid;
-
-    if (identifier.type == "hazard") {
-        centroid = appArea.getHazard(index).getCentroid();
-    } else if (identifier.type == "variable") {
-        centroid = appArea.getVariableRateArea(index).getCentroid();
-    } else { return; }
-
-    // function to clear markers and infowindow
-    appArea.resetGlobals();
-
-    appArea.deleteIdentifier = identifier;
-
-    var marker = new google.maps.Marker({
-        position: centroid,
-        map: appArea.getMap()
-    });
-
-    var infoWindow = new google.maps.InfoWindow({ content: "" });
-
-
-    // Couldn't pass values easily in content string, utilizing global variable instead
-    infoWindow.setContent('<button type="button" onClick="deleteSubPoly()">Delete</button>');
-    google.maps.event.addListener(infoWindow, 'closeclick', function () {
-        appArea.resetGlobals();
-    });
-
-    infoWindow.open(appArea.getMap(), marker);
-    appArea.marker = marker;
-    appArea.infoWindow = infoWindow;
-}
-
-function deleteSubPoly() {
-    if ((appArea != null) && (appArea.deleteIdentifier != null)) {
-        // console.log(appArea.deleteIdentifier);
-        index = appArea.getIndexOfIdentifier(appArea.deleteIdentifier.id, appArea.deleteIdentifier.type);
-        if (appArea.deleteIdentifier.type == "hazard") {
-            appArea.removeHazard(index);
-        } else if (appArea.deleteIdentifier.type = "variable") {
-            appArea.removeVariableRateArea(index);
-        }
-        appArea.resetGlobals();
-        updateStats();
-    }
-}
-
-// http://www.jacklmoore.com/notes/rounding-in-javascript/
-function round(value, decimals) {
-    return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
-}
+AppArea.buffer = 0.0000005;
+AppArea.fill = "#FFFF00";
+AppArea.opacity = 0.6;
+AppArea.hazardFill = "#FF0000";
+AppArea.hazardOpacity = 0.7;
+AppArea.vrFill = "#CCCCCC";
+AppArea.vrOpacity = 0.6;
