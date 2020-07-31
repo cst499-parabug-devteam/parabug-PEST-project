@@ -8,674 +8,136 @@
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
       defer
     ></script>
-
-    <style>
-      html {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-      }
-
-      body {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-        display: grid;
-        grid-template-rows: 80%;
-      }
-
-      .map-container {
-        padding: 15px;
-      }
-
-      .sidebar {
-        padding: 10px;
-      }
-
-      #add-bug-display {
-        display: none;
-      }
-
-      /* Move reset button above google logo */
-      #reset-btn {
-        position: absolute;
-        margin-left: -72px;
-        margin-bottom: 85px;
-      }
-
-      /* Move center button above google logo */
-      #center-btn {
-        position: absolute;
-        margin-left: -76px;
-        margin-bottom: 25px;
-      }
-
-      #map {
-        height: 100%;
-        border: 2px solid black;
-      }
-
-      #pac-input {
-        background-color: #fff;
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 300;
-        margin-left: 10px;
-        margin-top: 10px;
-        padding: 0 11px 0 13px;
-        text-overflow: ellipsis;
-        width: 15%;
-        line-height: 32px;
-        border: "2px solid #fff";
-      }
-
-      #pac-input:focus {
-        border-color: #4d90fe;
-      }
-
-      #mode-control-container {
-        display: grid;
-        grid-template-columns: 30% 70%;
-        grid-template-rows: 100%;
-      }
-
-      #additional-info {
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 400;
-        line-height: 32px;
-      }
-
-      #stat-display {
-        text-align: center;
-        margin: -11px 15px 0px 15px;
-        padding: 10px 0px 10px 0px;
-        /*background-color: grey;*/
-      }
-
-      .stat-item {
-        display: inline-block;
-      }
-
-      .stat-text {
-        display: inline-block;
-        min-width: 80px;
-        margin: 5px;
-        text-align: right;
-      }
-
-      .stat-input {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-      }
-
-      .stat-input-checkbox {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-        vertical-align: middle;
-        text-align: left;
-      }
-
-      /* Read only inputs */
-      .read-only {
-        background-color: lightgrey;
-      }
-
-      #user-info-display {
-        margin: 0px 15px 0px 15px;
-        padding: 10px;
-        /*background-color: lightblue;*/
-        text-align: center;
-      }
-
-      #user-info-display > h2 {
-        margin-bottom: 5px;
-      }
-
-      .form-element {
-        margin-top: 10px;
-        vertical-align: middle;
-      }
-
-      .form-text {
-        display: inline-block;
-        min-width: 120px;
-        vertical-align: middle;
-      }
-
-      .form-input {
-        display: inline-block;
-        line-height: 40px;
-        vertical-align: middle;
-      }
-
-      .align-input {
-        display: inline-block;
-        text-align: left;
-      }
-
-      #crosshair-center {
-        vertical-align: center;
-        text-align: center;
-        display: none;
-      }
-
-      #mobile-div {
-        display: inline-block;
-        background-color: #fff;
-        border: 2px solid #fff;
-        border-radius: 3px;
-        cursor: pointer;
-        text-align: center;
-        vertical-align: center;
-        font-family: Roboto, Arial, sans-serif;
-        font-size: 15px;
-        padding: 2px;
-        margin-bottom: 12px;
-      }
-
-      #mobile-mode-div {
-        display: inline-block;
-      }
-
-      #mobile-options-div {
-        display: none;
-      }
-
-      <style > html {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-      }
-
-      body {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-        display: grid;
-        grid-template-rows: 80%;
-      }
-
-      .map-container {
-        padding: 15px;
-      }
-
-      .sidebar {
-        padding: 10px;
-      }
-
-      #add-bug-display {
-        display: none;
-      }
-
-      /* Move reset button above google logo */
-      #reset-btn {
-        position: absolute;
-        margin-left: -72px;
-        margin-bottom: 85px;
-      }
-
-      /* Move center button above google logo */
-      #center-btn {
-        position: absolute;
-        margin-left: -76px;
-        margin-bottom: 25px;
-      }
-
-      #map {
-        height: 100%;
-        border: 2px solid black;
-      }
-
-      #pac-input {
-        background-color: #fff;
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 300;
-        margin-left: 10px;
-        margin-top: 10px;
-        padding: 0 11px 0 13px;
-        text-overflow: ellipsis;
-        width: 15%;
-        line-height: 32px;
-        border: "2px solid #fff";
-      }
-
-      #pac-input:focus {
-        border-color: #4d90fe;
-      }
-
-      #mode-control-container {
-        display: grid;
-        grid-template-columns: 30% 70%;
-        grid-template-rows: 100%;
-      }
-
-      #additional-info {
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 400;
-        line-height: 32px;
-      }
-
-      #stat-display {
-        text-align: center;
-        margin: -11px 15px 0px 15px;
-        padding: 10px 0px 10px 0px;
-        /*background-color: grey;*/
-      }
-
-      .stat-item {
-        display: inline-block;
-      }
-
-      .stat-text {
-        display: inline-block;
-        min-width: 80px;
-        margin: 5px;
-        text-align: right;
-      }
-
-      .stat-input {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-      }
-
-      .stat-input-checkbox {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-        vertical-align: middle;
-        text-align: left;
-      }
-
-      /* Read only inputs */
-      .read-only {
-        background-color: lightgrey;
-      }
-
-      #user-info-display {
-        margin: 0px 15px 0px 15px;
-        padding: 10px;
-        /*background-color: lightblue;*/
-        text-align: center;
-      }
-
-      #user-info-display > h2 {
-        margin-bottom: 5px;
-      }
-
-      .form-element {
-        margin-top: 10px;
-        vertical-align: middle;
-      }
-
-      .form-text {
-        display: inline-block;
-        min-width: 140px;
-        vertical-align: middle;
-        font-size: 16px;
-      }
-
-      .form-input {
-        display: inline-block;
-        line-height: 40px;
-        vertical-align: middle;
-      }
-
-      .align-input {
-        display: inline-block;
-        text-align: left;
-      }
-
-      #crosshair-center {
-        vertical-align: center;
-        text-align: center;
-        display: none;
-      }
-
-      #mobile-div {
-        display: inline-block;
-        background-color: #fff;
-        border: 2px solid #fff;
-        border-radius: 3px;
-        cursor: pointer;
-        text-align: center;
-        vertical-align: center;
-        font-family: Roboto, Arial, sans-serif;
-        font-size: 15px;
-        padding: 2px;
-        margin-bottom: 12px;
-      }
-
-      #mobile-mode-div {
-        display: inline-block;
-      }
-
-      #mobile-options-div {
-        display: none;
-      }
-
-      hr {
-        border: none;
-      }
-
-      .form-fieldset {
-        border-top: 0.5px solid black;
-        border-radius: 5px;
-        margin-bottom: 12px;
-        padding: 2px 12px 12px 12px;
-      }
-
-      .form-fieldset legend {
-        font-size: 20px;
-        font-weight: bold;
-      }
-
-      .required {
-        color: red;
-      }
-
-      .helpful-tips {
-        cursor: help;
-      }
-
-      .click-tip {
-        cursor: pointer;
-        border-bottom: dotted 1px black;
-      }
-
-      /* The Modal (background) */
-      .modal {
-        display: none;
-        /* Hidden by default */
-        position: fixed;
-        /* Stay in place */
-        z-index: 1;
-        /* Sit on top */
-        left: 0;
-        top: 0;
-        width: 100%;
-        /* Full width */
-        height: 100%;
-        /* Full height */
-        overflow: auto;
-        /* Enable scroll if needed */
-        background-color: rgb(0, 0, 0);
-        /* Fallback color */
-        background-color: rgba(0, 0, 0, 0.4);
-        /* Black w/ opacity */
-        -webkit-animation-name: fadeIn;
-        /* Fade in the background */
-        -webkit-animation-duration: 0.4s;
-        animation-name: fadeIn;
-        animation-duration: 0.4s;
-      }
-
-      /* Modal Content */
-      .modal-content {
-        position: fixed;
-        bottom: 0;
-        background-color: #fefefe;
-        width: 100%;
-        -webkit-animation-name: slideIn;
-        -webkit-animation-duration: 0.4s;
-        animation-name: slideIn;
-        animation-duration: 0.4s;
-      }
-
-      /* The Close Button */
-      .modal-close {
-        color: white;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-      }
-
-      .modal-close:hover,
-      .modal-close:focus {
-        color: #000;
-        text-decoration: none;
-        cursor: pointer;
-      }
-
-      .modal-header {
-        padding: 2px 16px;
-        background-color: #4395cc;
-        color: white;
-      }
-
-      .modal-body {
-        padding: 2px 16px;
-      }
-
-      #modal-header {
-        text-align: center;
-        font-size: 32px;
-        font-weight: bold;
-        line-height: 46px;
-      }
-
-      #modal-body {
-        padding: 10px;
-        text-align: center;
-        font-size: 24px;
-        line-height: 28px;
-      }
-
-      /* Add Animation */
-      @-webkit-keyframes slideIn {
-        from {
-          bottom: -300px;
-          opacity: 0;
-        }
-
-        to {
-          bottom: 0;
-          opacity: 1;
-        }
-      }
-
-      @keyframes slideIn {
-        from {
-          bottom: -300px;
-          opacity: 0;
-        }
-
-        to {
-          bottom: 0;
-          opacity: 1;
-        }
-      }
-
-      @-webkit-keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-
-        to {
-          opacity: 1;
-        }
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-
-        to {
-          opacity: 1;
-        }
-      }
-    </style>
+    <link rel="stylesheet" type="text/css" href="stylesheets/style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
+    <script type="text/javascript" src="/js/togeojson.js"></script>
+    <script type="text/javascript" src="/js/classes.js"></script>
   </head>
 
   <body>
     <div class="map-container">
-      <input
-        id="pac-input"
-        class="controls"
-        type="text"
-        placeholder="Search..."
-      />
       <div id="map"></div>
+      <input id="pac-input" class="controls" type="text" placeholder="Search..."/>
+      <div class="row" id="advanced-options"> 
+        <div class="col col-auto" id="advanced-options-button-tab">
+          <div id="advanced-options-button">
+            <i class="fa fa-cog" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="col" id="advanced-options-controls">
+          <h4>Draw Settings</h4>
+          <hr>
+          <h6>Application Area</h6>
+          <div>Color: <input type="color" id="app-area-color" value="#FFFF00"></div>
+          <div>Opacity: <input type="range" min="1" max="100" value="60" id="app-area-opacity"><span id="app-area-opacity-display">60%</span></div>
+          <hr>
+          <h6>Hazard Area</h6>
+          <div>Color: <input type="color" id="hazard-area-color" value="#FF0000"></div>
+          <div>Opacity: <input type="range" min="1" max="100" value="70" id="hazard-area-opacity"><span id="hazard-area-opacity-display">70%</span></div>
+          <hr>
+          <h6>Variable Rate Area</h6>
+          <div>Color: <input type="color" id="vr-area-color" value="#CCCCCC"></div>
+          <div>Opacity: <input type="range" min="1" max="100" value="60" id="vr-area-opacity"><span id="vr-area-opacity-display">60%</span></div>
+          <hr>
+          <!-- <h4>Overlay Settings</h4>
+          <hr>
+          <div>Color: <input type="color" id="overlay-color" value="#00FF00"></div>
+          <div>Opacity: <input type="range" min="1" max="100" value="50" id="overlay-opacity"><span id="overlay-opacity-display">50%</span></div> -->
+          <br>
+          <div class="row justify-content-center">
+            <div class="col col-auto"><input type="button" value="Reset" onclick="resetDisplaySettings()"></div>
+            <div class="col col-auto"><input type="button" value="Apply" onclick="applyDisplaySettings()"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </body>
   <form id="additional-info" method="POST">
     <div id="stat-display">
+
       <!--Bug Name-->
       <div class="stat-item">
-        <label class="stat-text" for="bug-name" title="Bug Indicator"
-          >Bug:</label
-        >
+        <label class="stat-text" for="bug-name" title="Bug Indicator">Bug:</label>
         <div class="stat-input">
           <input type="text" name="bug-name" id="bug-name" />
         </div>
       </div>
+
       <!--Bugs Per Acre-->
       <div class="stat-item">
-        <label
-          class="stat-text"
-          for="num-bugs-per-acre"
-          title="Bugs per acre in the application area"
-          >Bugs / Acre:</label
-        >
+        <label class="stat-text" for="num-bugs-per-acre" title="Bugs per acre in the application area">Bugs / Acre:</label>
         <div class="stat-input">
-          <input
-            type="number"
-            name="bugs-per-acre"
-            id="num-bugs-per-acre"
-            min="1"
-            value="10000"
-            required
-          />
-        </div>
-      </div>
-      <!--Variable Rate-->
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="variable-rate"
-          title="Bugs per acre in variable rate areas"
-          >Variable Rate:</label
-        >
-        <div class="stat-input">
-          <input
-            type="number"
-            name="variable-rate"
-            id="variable-rate"
-            value="20000"
-            min="0"
-          />
+          <input type="number" name="bugs-per-acre" id="num-bugs-per-acre" min="1" value="10000" required/>
         </div>
       </div>
 
-      <hr />
+      <!--Variable Rate-->
+      <div class="stat-item">
+        <label class="stat-text" for="variable-rate" title="Bugs per acre in variable rate areas">Variable Rate:</label>
+        <div class="stat-input">
+          <input type="number" name="variable-rate" id="variable-rate" value="20000" min="0"/>
+        </div>
+      </div>
+
+      <br>
       <div id="add-bug-display">
+
         <!--Bug Name 2-->
         <div class="stat-item">
-          <label class="stat-text" for="bug-name2" title="Bug Indicator"
-            >Bug 2:</label
-          >
+          <label class="stat-text" for="bug-name2" title="Bug Indicator"> Bug 2:</label>
           <div class="stat-input">
             <input type="text" name="bug-name2" id="bug-name2" />
           </div>
         </div>
+
         <!--Bugs Per Acre 2-->
         <div class="stat-item">
-          <label
-            class="stat-text"
-            for="num-bugs-per-acre2"
-            title="Bugs per acre in the application area"
-            >Bugs / Acre 2:</label
-          >
+          <label class="stat-text" for="num-bugs-per-acre2" title="Bugs per acre in the application area"> Bugs / Acre 2:</label>
           <div class="stat-input">
-            <input
-              type="number"
-              name="bugs-per-acre2"
-              id="num-bugs-per-acre2"
-              min="1"
-              value="10000"
-              required
-            />
+            <input type="number" name="bugs-per-acre2" id="num-bugs-per-acre2" min="1" value="10000" required/>
           </div>
         </div>
+
         <!--Variable Rate 2-->
         <div class="stat-item">
-          <label
-            class="stat-text"
-            for="variable-rate2"
-            title="Bugs per acre in variable rate areas"
-            >Variable Rate 2:</label
-          >
+          <label class="stat-text" for="variable-rate2" title="Bugs per acre in variable rate areas"> Variable Rate 2:</label>
           <div class="stat-input">
-            <input
-              type="number"
-              name="variable-rate2"
-              id="variable-rate2"
-              value="20000"
-              min="0"
-            />
+            <input type="number" name="variable-rate2" id="variable-rate2" value="20000" min="0"/>
           </div>
-        </div>
-      </div>
-      <hr />
-      <!--Estimated Number of Acres-->
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="num-acres"
-          title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in corrected acreage value"
-          >Acres:</label
-        >
-        <div class="stat-input">
-          <input
-            type="number"
-            name="num-acres"
-            id="num-acres"
-            class="read-only"
-            value="0"
-            readonly
-          />
-        </div>
-      </div>
-      <!--Estimated Total Bugs-->
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="num-bugs"
-          title="Estimated total number of bugs"
-          >Total Bugs:</label
-        >
-        <div class="stat-input">
-          <input
-            type="number"
-            name="num-bugs"
-            id="num-bugs"
-            class="read-only"
-            value="0"
-            readonly
-          />
         </div>
       </div>
 
+      <br>
+
+      <!--Estimated Number of Acres-->
       <div class="stat-item">
-        <label
-          class="stat-text"
-          for="add-bug-toggle"
-          title="Toggle between 1 and 2 bugs for application"
-          >Add Bug:</label
-        >
+        <label class="stat-text" for="num-acres"
+          title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in corrected acreage value">
+          Acres:
+        </label>
+        <div class="stat-input">
+          <input type="number" name="num-acres" id="num-acres" class="read-only" value="0" readonly/>
+        </div>
+      </div>
+
+      <!--Estimated Total Bugs-->
+      <div class="stat-item">
+        <label class="stat-text" for="num-bugs" title="Estimated total number of bugs">Total Bugs:</label>
+        <div class="stat-input">
+          <input type="number" name="num-bugs" id="num-bugs" class="read-only" value="0" readonly/>
+        </div>
+      </div>
+
+      <!-- Add Bug -->
+      <div class="stat-item">
+        <label class="stat-text" for="add-bug-toggle" title="Toggle between 1 and 2 bugs for application">Add Bug:</label>
         <div class="stat-input-checkbox">
-          <input
-            type="checkbox"
-            name="add-bug-toggle"
-            id="add-bug-toggle"
-            value="add-bug"
-          />
+          <input type="checkbox" name="add-bug-toggle" id="add-bug-toggle" value="add-bug"/>
         </div>
       </div>
     </div>
@@ -683,12 +145,7 @@
     <div id="mobile-div">
       <div id="mobile-mode-div">
         <label for="mobile-mode">Crosshair</label>
-        <input
-          type="checkbox"
-          value="mobile"
-          id="mobile-mode"
-          name="mobile-mode"
-        />
+        <input type="checkbox" value="mobile" id="mobile-mode" name="mobile-mode"/>
       </div>
       <div id="mobile-options-div">
         <input type="button" value="Mark / Select" onClick="makeMarker()" />
@@ -703,64 +160,44 @@
       <div class="align-input">
         <fieldset class="form-fieldset" id="user-info-fields">
           <legend>User Information</legend>
+
           <!--Contact Name-->
           <div class="form-element">
             <div class="form-text">
               Contact Name<span class="required">*</span>
             </div>
             <div class="form-input">
-              <input
-                type="text"
-                name="contact_name"
-                id="contact-name"
-                style="width:30em"
-                required
-              />
+              <input type="text" name="contact_name" id="contact-name" required/>
             </div>
           </div>
+
           <!--Contact Phone-->
           <div class="form-element">
             <div class="form-text">
               Contact Phone<span class="required">*</span>
             </div>
             <div class="form-input">
-              <input
-                type="text"
-                name="contact_phone"
-                id="contact-phone"
-                style="width:30em"
-                required
-              />
+              <input type="text" name="contact_phone" id="contact-phone" required/>
             </div>
           </div>
+
           <!--Contact Email-->
           <div class="form-element">
             <div class="form-text">
               Contact Email<span class="required">*</span>
             </div>
             <div class="form-input">
-              <input
-                type="text"
-                name="contact_email"
-                id="contact-email"
-                style="width:30em"
-                required
-              />
+              <input type="text" name="contact_email" id="contact-email" required/>
             </div>
           </div>
+
           <!--Billing Address-->
           <div class="form-element">
             <div class="form-text">
               Billing Address<span class="required">*</span>
             </div>
             <div class="form-input">
-              <input
-                type="text"
-                name="billing_address"
-                id="billing-address"
-                style="width:30em"
-                required
-              />
+              <input type="text" name="billing_address" id="billing-address" required />
             </div>
           </div>
         </fieldset>
@@ -775,33 +212,18 @@
               <span class="required">*</span>
             </label>
             <div class="form-input">
-              <input
-                type="text"
-                name="crop"
-                id="crop"
-                style="width:30em"
-                required
-              />
+              <input type="text" name="crop" id="crop" required/>
             </div>
           </div>
 
           <!--Row Spacing-->
           <div class="form-element">
             <label class="form-text">
-              <span class="click-tip" onclick="showTip('row-spacing')"
-                >Spacing (ft)</span
-              >
-              <span class="required">*</span></label
-            >
+              <span class="click-tip" onclick="showTip('row-spacing')">Spacing (ft)</span>
+              <span class="required">*</span>
+            </label>
             <div class="form-input">
-              <input
-                type="number"
-                step="0.01"
-                name="row_spacing"
-                id="row-spacing"
-                style="width:30em"
-                required
-              />
+              <input type="number" step="0.01" name="row_spacing" id="row-spacing" required/>
             </div>
           </div>
 
@@ -809,30 +231,17 @@
           <div class="form-element">
             <label class="form-text" for="ranch-name">Ranch Name</label>
             <div class="form-input">
-              <input
-                type="text"
-                name="ranch-name"
-                id="ranch-name"
-                style="width:30em"
-              />
+              <input type="text" name="ranch-name" id="ranch-name"/>
             </div>
           </div>
 
           <!-- Corrected Acreage -->
           <div class="form-element">
             <label class="form-text">
-              <span class="click-tip" onclick="showTip('corrected-acreage')"
-                >Corrected Acreage</span
-              >
+              <span class="click-tip" onclick="showTip('corrected-acreage')"> Corrected Acreage </span>
             </label>
             <div class="form-input">
-              <input
-                type="number"
-                step="0.01"
-                name="corrected-acreage"
-                id="corrected-acreage"
-                style="width:30em"
-              />
+              <input type="number" step="0.01" name="corrected-acreage" id="corrected-acreage"/>
             </div>
           </div>
         </fieldset>
@@ -843,34 +252,20 @@
           <!-- Desired Application Date -->
           <div class="form-element">
             <label class="form-text">
-              <span class="click-tip" onclick="showTip('application-date')">
-                Application Date
-              </span>
+              <span class="click-tip" onclick="showTip('application-date')"> Application Date </span>
             </label>
             <div class="form-input">
-              <input
-                type="date"
-                name="application-date"
-                id="application-date"
-                style="width:30em"
-              />
+              <input type="date" name="application-date" id="application-date"/>
             </div>
           </div>
 
           <!-- Operator Preference -->
           <div class="form-element">
             <label class="form-text">
-              <span class="click-tip" onclick="showTip('operator')">
-                Operator
-              </span>
+              <span class="click-tip" onclick="showTip('operator')"> Operator </span>
             </label>
             <div class="form-input">
-              <input
-                type="text"
-                name="operator"
-                id="operator"
-                style="width:30em"
-              />
+              <input type="text" name="operator" id="operator"/>
             </div>
           </div>
 
@@ -880,12 +275,7 @@
               <span class="click-tip" onclick="showTip('notes')">Notes</span>
             </label>
             <div class="form-input">
-              <textarea
-                name="notes"
-                id="notes"
-                rows="3"
-                style="width:30em; max-width: 30em;"
-              ></textarea>
+              <textarea name="notes" id="notes" rows="3"></textarea>
             </div>
           </div>
         </fieldset>
@@ -893,18 +283,14 @@
         <!-- Help -->
         <div style="padding-left: 10px;">
           <div style="cursor:help">Required<span class="required">*</span></div>
-          <span class="click-tip"> Click elements for more information </span
-          ><br />
+          <span class="click-tip"> Click elements for more information </span>
+          <br />
         </div>
       </div>
 
       <div class="form-element" id="submitRequest">
         <div class="form-input">
-          <input
-            style="font-size: 16px;"
-            type="submit"
-            value="Submit Request"
-          />
+          <input style="font-size: 16px;" type="submit" value="Submit Request"/>
         </div>
       </div>
     </div>
@@ -924,84 +310,23 @@
     </div>
   </div>
 </html>
-
-<script type="text/javascript" src="/js/jsts.1.6.1.js"></script>
-<script type="text/javascript" src="/js/classes.js"></script>
-<script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
-<link
-  href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"
-  rel="stylesheet"
-/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script>
-  let modal = document.getElementById("tip-modal");
-  document
-    .getElementById("modal-close")
-    .addEventListener("click", function(event) {
-      modal.style.display = "none";
-    });
-
-  function showTip(id) {
-    let header = "";
-    let text = "";
-    switch (id) {
-      case "application-date":
-        header = "Application Date";
-        text = "Enter a preferred date in which the job will take place";
-        break;
-      case "corrected-acreage":
-        header = "Corrected Acreage";
-        text =
-          "If exact field acreage is known, this number will be used in place of the estimate above." +
-          "<br>Note: if this number is given, variable rate areas and hazard areas will not be incorporated into initial bug estimates. Map data will still be sent";
-        break;
-      case "crop":
-        header = "Crop Type";
-        text = "The crop(s) contained in the field specified";
-        break;
-      case "notes":
-        header = "Notes";
-        text = "Enter any additional information desired";
-        break;
-      case "operator":
-        header = "Preferred Operator";
-        text = "Enter the name of a preferred Parabug operator, if desired";
-        break;
-      case "row-spacing":
-        header = "Row Spacing";
-        text =
-          "The spacing, in feet, between each row of crops in the field specified";
-        break;
-      default:
-        text = "tip not found";
-        return;
-        break;
-    }
-
-    modal.style.display = "block";
-    document.getElementById("modal-header").innerHTML = header;
-    document.getElementById("modal-body").innerHTML = text;
-
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function(event) {
-      if (event.target == modal) {
-        modal.style.display = "none";
-      }
-    };
-  }
-
-  // GLOBAL VARIABLES
-  var map;
-  var drawingManager;
+  
+  /* GLOBAL VARIABLES */
+  let map;
+  let drawingManager;
   var appArea;
-  var infoWindow;
-  var centerMarker;
-  var overlayMarkers = [];
-  var tempShape;
+  let infoWindow;
+  let centerMarker;
+  let overlayMarkers = [];
+  let tempShape;
 
-  // Internal object to help manage toggling between our custom
-  //  drawing modes
-  var drawModeControl = {
+  let fileInput = document.createElement("input");
+  fileInput.setAttribute("type", "file");
+  fileInput.setAttribute("accept", ".kml");
+
+  // Internal object to help manage toggling between our custom drawing modes
+  let drawModeControl = {
     modes: [
       "Drag",
       "Application Area",
@@ -1022,250 +347,99 @@
     }
   };
 
-  function initMap() {
-    map = new google.maps.Map(document.getElementById("map"), {
-      center: { lat: 36.677756, lng: -121.729448 }, // default
-      zoom: 15,
-      mapTypeId: "hybrid",
-      streetViewControl: false,
-      rotateControl: false,
-      mapTypeControlOptions: {
-        style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-      }
-    });
+  // HTML Elements
+  let modal = document.getElementById("tip-modal");
+  let bugsPerAcre = document.getElementById("num-bugs-per-acre");
+  let percentMultiplier = document.getElementById("variable-rate");
+  let bugsPerAcre2 = document.getElementById("num-bugs-per-acre2");
+  let percentMultiplier2 = document.getElementById("variable-rate2");
 
-    var image = {
-      url: "/img/crosshair.png",
-      size: new google.maps.Size(200, 200),
-      origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(100, 100)
-    };
+  /* FUNCTIONS */
 
-    centerMarker = new google.maps.Marker({
-      position: map.getCenter(),
-      icon: image,
-      draggable: true,
-      // map: map,
-      zIndex: 3
-    });
+  function applyDisplaySettings() {
+    let appAreaColor = document.getElementById('app-area-color').value;
+    let appAreaOpacity = document.getElementById('app-area-opacity').value;
+    let hazardAreaColor = document.getElementById('hazard-area-color').value;
+    let hazardAreaOpacity = document.getElementById('hazard-area-opacity').value;
+    let vrAreaColor = document.getElementById('vr-area-color').value;
+    let vrAreaOpacity = document.getElementById('vr-area-opacity').value;
 
-    drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: null,
-      drawingControl: false,
-      map: map,
-      polygonOptions: { editable: true }
-    });
-
-    google.maps.event.addListener(drawingManager, "polygoncomplete", function(
-      p
-    ) {
-      draw(p.getPath());
-      p.setMap(null);
-      path = null;
-    });
-
-    map.setTilt(0);
-
-    //*********************************** User Location ************************************
-    // Try HTML5 geolocation.
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(position) {
-          var pos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          map.setCenter(pos);
-          map.setZoom(15);
-          centerMarker.setPosition(pos);
-        },
-        function() {
-          handleLocationError(true);
+    try {
+      if (appArea) {
+        appArea.poly.setOptions({
+          fillColor: appAreaColor,
+          fillOpacity: (appAreaOpacity/100)
+        });
+        for(let i = 0; i < appArea.getNumHazard(); i++) {
+          appArea.getHazard(i).poly.setOptions({
+            fillColor: hazardAreaColor,
+            fillOpacity: (hazardAreaOpacity/100)
+          });
         }
-      );
-    } else {
-      // Browser doesn't support Geolocation
-      handleLocationError(false);
-    }
-    //********************************* End User Location **********************************
-
-    //************************************* Search Box *************************************
-    // Create the search box and link it to the UI element.
-    var input = document.getElementById("pac-input");
-    var searchBox = new google.maps.places.SearchBox(input);
-    map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
-
-    // Bias the SearchBox results towards current map's viewport.
-    map.addListener("bounds_changed", function() {
-      searchBox.setBounds(map.getBounds());
-    });
-
-    // Listen for the event fired when the user selects a prediction
-    searchBox.addListener("places_changed", function() {
-      var places = searchBox.getPlaces();
-      if (places.length == 0) {
-        return;
-      }
-
-      // For each place, get the location.
-      var bounds = new google.maps.LatLngBounds();
-      places.forEach(function(place) {
-        if (!place.geometry) {
-          console.log("Returned place contains no geometry");
-          return;
+        for(let i = 0; i < appArea.getNumVariableRateAreas(); i++) {
+          appArea.getVariableRateArea(i).poly.setOptions({
+            fillColor: vrAreaColor,
+            fillOpacity: (vrAreaOpacity/100)
+          });
         }
-
-        // Only geocodes have viewport
-        if (place.geometry.viewport) {
-          bounds.union(place.geometry.viewport);
-        } else {
-          bounds.extend(place.geometry.location);
-        }
-      });
-      map.fitBounds(bounds);
-      map.setTilt(0);
-    });
-    //*********************************** End search Box ***********************************
-
-    //*********************************** Custom Controls***********************************
-    //https://developers.google.com/maps/documentation/javascript/examples/control-custom
-    function MapModeControl(divHolder) {
-      // Set CSS for the control border.
-      var controlUI = document.createElement("div");
-      controlUI.style.backgroundColor = "#fff";
-      controlUI.style.border = "2px solid #fff";
-      controlUI.style.borderRadius = "3px";
-      controlUI.style.cursor = "pointer";
-      controlUI.style.marginTop = "10px";
-      controlUI.style.padding = "2px";
-      controlUI.title = "Select Control Mode";
-      controlUI.id = "mode-control-container";
-
-      var modeText = document.createElement("div");
-      modeText.innerHTML = "Mode: ";
-      modeText.style.color = "rgb(25,25,25)";
-      modeText.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeText.style.fontSize = "15px";
-      modeText.style.lineHeight = "30px";
-      modeText.style.marginRight = "10px";
-      modeText.style.fontWeight = "600";
-
-      // Interior
-      var modeSelect = document.createElement("select");
-      modeSelect.style.color = "rgb(25,25,25)";
-      modeSelect.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeSelect.style.fontSize = "15px";
-      modeSelect.style.lineHeight = "30px";
-
-      var mode;
-      for (var i = 0; i < drawModeControl.modes.length; i++) {
-        mode = document.createElement("option");
-        mode.value = i;
-        mode.text = drawModeControl.modes[i];
-        mode.title = drawModeControl.hoverText[i];
-        modeSelect.appendChild(mode);
       }
-      modeSelect.addEventListener("change", function() {
-        var index = modeSelect.selectedIndex;
-        var value = modeSelect.options[index].value;
-        drawToggle(value);
-      });
-
-      controlUI.appendChild(modeText);
-      controlUI.appendChild(modeSelect);
-      divHolder.appendChild(controlUI);
-    }
-
-    var modeSelectionDiv = document.createElement("div");
-    MapModeControl(modeSelectionDiv);
-    modeSelectionDiv.index = 1;
-    map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
-
-    function CenterControl(divHolder) {
-      // Set CSS for the control border.
-      var controlUI = document.createElement("div");
-      controlUI.style.backgroundColor = "#fff";
-      controlUI.style.border = "2px solid #fff";
-      controlUI.style.borderRadius = "3px";
-      controlUI.style.cursor = "pointer";
-      controlUI.style.margin = "10px";
-      controlUI.title = "Center Map on Application Area";
-      controlUI.style.padding = "2px";
-      controlUI.style.textAlign = "center";
-
-      var modeText = document.createElement("div");
-      modeText.innerHTML = "Center";
-      modeText.style.color = "rgb(25,25,25)";
-      modeText.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeText.style.fontSize = "15px";
-      modeText.style.lineHeight = "30px";
-      modeText.style.fontWeight = "600";
-
-      controlUI.appendChild(modeText);
-      divHolder.appendChild(controlUI);
-      divHolder.addEventListener("click", centerMap);
-    }
-
-    var centerDiv = document.createElement("div");
-    centerDiv.id = "center-btn";
-    CenterControl(centerDiv);
-    centerDiv.index = 1;
-    map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(centerDiv);
-
-    function ResetButtonControl(divHolder) {
-      // Set CSS for the control border.
-      var controlUI = document.createElement("div");
-      controlUI.style.backgroundColor = "#fff";
-      controlUI.style.border = "2px solid #fff";
-      controlUI.style.borderRadius = "3px";
-      controlUI.style.cursor = "pointer";
-      controlUI.style.marginTop = "10px";
-      controlUI.style.marginLeft = "10px";
-      controlUI.title = "Reset (Clear Map)";
-      controlUI.style.padding = "2px";
-      controlUI.style.textAlign = "center";
-
-      var modeText = document.createElement("div");
-      modeText.innerHTML = "Reset";
-      modeText.style.color = "rgb(25,25,25)";
-      modeText.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeText.style.fontSize = "15px";
-      modeText.style.lineHeight = "30px";
-      modeText.style.fontWeight = "600";
-
-      controlUI.appendChild(modeText);
-      divHolder.appendChild(controlUI);
-      divHolder.addEventListener("click", resetMap);
-    }
-
-    var resetDiv = document.createElement("div");
-    ResetButtonControl(resetDiv);
-    resetDiv.index = 1;
-    resetDiv.id = "reset-btn";
-    map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(resetDiv);
-
-    var mobileControl = document.getElementById("mobile-div");
-    mobileControl.index = 1;
-    map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(mobileControl);
-    //********************************* End Custom Controls*********************************
-  }
-
-  function handleLocationError(browserHasGeolocation) {
-    var message = browserHasGeolocation
-      ? "Error: The Geolocation service failed."
-      : "Error: Your browser doesn't support geolocation.";
-    console.log(message);
+      // Static Values
+      AppArea.fill = appAreaColor;
+      AppArea.opacity = appAreaOpacity/100;
+      AppArea.hazardFill = hazardAreaColor;
+      AppArea.hazardOpacity = hazardAreaOpacity/100;
+      AppArea.vrFill = vrAreaColor;
+      AppArea.vrOpacity = vrAreaOpacity/100;
+    } catch (e) {
+      console.log(e);
+    }   
   }
 
   function centerMap() {
     if (appArea == null) {
       return;
     }
-    var center = appArea.getCentroid();
+    let center = appArea.getCentroid();
     if (center == null) {
       return;
     }
     map.setCenter(center);
+  }
+
+  function draw(path) {
+    let mode = drawModeControl.getCurrent();
+    switch (mode) {
+      case "Application Area":
+        if (appArea) {
+          try {
+            appArea.del();
+          } catch (e) {
+            // Continue
+          }
+          appArea = new AppArea(map, path);
+        } else {
+          appArea = new AppArea(map, path);
+        }
+        break;
+      case "Hazard":
+        if (appArea == null) {
+          console.log("No application area defined for hazard");
+          return;
+        }
+        appArea.addHazard(path);
+        break;
+      case "Variable Rate Area":
+        if (appArea == null) {
+          console.log("No application area defined for variate rate area");
+          return;
+        }
+        appArea.addVariableRate(path);
+        break;
+      default:
+        break; // unexpected input
+    }
+    let success = validate();
+    updateStats();
   }
 
   function drawToggle(mode) {
@@ -1298,186 +472,244 @@
     }
   }
 
-  function draw(path) {
-    var mode = drawModeControl.getCurrent();
-    switch (mode) {
-      case "Application Area":
-        if (appArea == null) {
-          appArea = new AppArea(map, path);
-        } else {
-          appArea.del();
-          appArea = new AppArea(map, path);
-        }
-        break;
-      case "Hazard":
-        if (appArea == null) {
-          console.log("No application area defined for hazard");
-          return;
-        }
-        appArea.addHazard(path);
-        break;
-      case "Variable Rate Area":
-        if (appArea == null) {
-          console.log("No application area defined for variate rate area");
-          return;
-        }
-        appArea.addVariableRate(path);
-        break;
-      default:
-        break; // unexpected input
+  function finishShape() {
+    if (tempShape != null) {
+      draw(tempShape.getPath());
+      tempShape.setMap(null);
     }
-    var success = validate();
-    updateStats();
+    overlayMarkers = [];
+    tempShape = null;
   }
 
-  function resetMap() {
-    if (appArea != null) {
-      appArea.del();
-    }
-    appArea = null;
-    // Reset stat display
-    document.getElementById("num-acres").value = 0;
-    document.getElementById("num-bugs").value = 0;
+  function handleLocationError(browserHasGeolocation) {
+    let message = browserHasGeolocation
+      ? "Error: The Geolocation service failed."
+      : "Error: Your browser doesn't support geolocation.";
+    console.log(message);
   }
 
-  function updateStats() {
-    try {
-      if (appArea != null) {
-        // Update stat display
-        var acres = appArea.getAdjustedArea();
-        acres = round(acres, 3);
-        document.getElementById("num-acres").value = acres;
-        var bpa = document.getElementById("num-bugs-per-acre").value;
-        var vr = document.getElementById("variable-rate").value;
-        var totalBugs = appArea.getTotalBugs(bpa, vr);
-
-        if (document.getElementById("add-bug-toggle").checked) {
-          var bpa2 = document.getElementById("num-bugs-per-acre2").value;
-          var vr2 = document.getElementById("variable-rate2").value;
-          totalBugs += appArea.getTotalBugs(bpa2, vr2);
-        }
-
-        document.getElementById("num-bugs").value = round(totalBugs, 0);
-      } else {
-        document.getElementById("num-acres").value = 0;
-        document.getElementById("num-bugs").value = 0;
-      }
-    } catch (e) {
-      document.getElementById("num-acres").value = 0;
-      document.getElementById("num-bugs").value = 0;
-    }
+  function importKML() {
+    fileInput.click();
   }
 
-  function validate() {
-    if (appArea == null) {
-      console.log("App area was null");
-      return false;
-    }
-    if (!appArea.validateAndFix()) {
-      appArea == null;
-      return false;
-    }
-    return true;
-  }
-
-  // Make text boxes responsive to user input (update the stats)
-  var bugsPerAcre = document.getElementById("num-bugs-per-acre");
-  bugsPerAcre.addEventListener("change", updateStats);
-  bugsPerAcre.addEventListener("paste", updateStats);
-  bugsPerAcre.addEventListener("input", updateStats);
-
-  var percentMultiplier = document.getElementById("variable-rate");
-  percentMultiplier.addEventListener("change", updateStats);
-  percentMultiplier.addEventListener("paste", updateStats);
-  percentMultiplier.addEventListener("input", updateStats);
-
-  var bugsPerAcre2 = document.getElementById("num-bugs-per-acre2");
-  bugsPerAcre2.addEventListener("change", updateStats);
-  bugsPerAcre2.addEventListener("paste", updateStats);
-  bugsPerAcre2.addEventListener("input", updateStats);
-
-  var percentMultiplier2 = document.getElementById("variable-rate2");
-  percentMultiplier2.addEventListener("change", updateStats);
-  percentMultiplier2.addEventListener("paste", updateStats);
-  percentMultiplier2.addEventListener("input", updateStats);
-
-  toastr.options.positionClass = "toast-top-center";
-  document
-    .getElementById("additional-info")
-    .addEventListener("submit", function(event) {
-      if (validate()) {
-        //toastr.optionsOverride({progressBar: 'true'});
-        toastr.info("Processing...");
-        // Prevent default submission (we are building ajax requests)
-        event.preventDefault();
-
-        // Create form data object to easily get form values
-        var formData = new FormData(document.getElementById("additional-info"));
-
-        var applicationArea = appArea.toEasyFormat();
-        var data = {
-          // Map Data
-          appArea: applicationArea,
-          appAcres: appArea.getArea(),
-          hazardAcres: appArea.getHazardArea(),
-          vraAcres: appArea.getVRAArea(),
-          bugName: formData.get("bug-name"),
-          bugsPerAcre: formData.get("bugs-per-acre"),
-          variableRate: formData.get("variable-rate"),
-          numBugs: formData.get("num-bugs"),
-          // User Information Input
-          contactName: formData.get("contact_name"),
-          contactPhone: formData.get("contact_phone"),
-          contactEmail: formData.get("contact_email"),
-          billingAddress: formData.get("billing_address"),
-          // Application Area Input
-          crop: formData.get("crop"),
-          rowSpacing: formData.get("row_spacing"),
-          ranchName: formData.get("ranch-name"),
-          correctedAcreage: formData.get("corrected-acreage"),
-          // Preferences Input
-          applicationDate: formData.get("application-date"),
-          operator: formData.get("operator"),
-          notes: formData.get("notes")
-        };
-        if (document.getElementById("add-bug-toggle").checked) {
-          data.bugName2 = formData.get("bug-name2");
-          data.bugsPerAcre2 = formData.get("bugs-per-acre2");
-          data.variableRate2 = formData.get("variable-rate2");
-        }
-
-        // Check bug names for empty strings?
-
-        // Ajax request
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-          if (this.readyState == 4 && this.status == 200) {
-            var message = this.responseText;
-            showAlert(message);
-          }
-        };
-        xhttp.open("POST", "/", true);
-        xhttp.setRequestHeader(
-          "Content-Type",
-          "application/json; charset=UTF-8"
-        );
-        xhttp.send(JSON.stringify(data));
-      } else {
-        event.preventDefault();
-        console.log("Did not submit");
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 36.677756, lng: -121.729448 }, // default
+      zoom: 15,
+      mapTypeId: "hybrid",
+      streetViewControl: false,
+      rotateControl: false,
+      mapTypeControlOptions: {
+        style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
       }
     });
 
-  function showAlert(json) {
-    var message = JSON.parse(json);
+    let image = {
+      url: "/img/crosshair.png",
+      size: new google.maps.Size(200, 200),
+      origin: new google.maps.Point(0, 0),
+      anchor: new google.maps.Point(100, 100)
+    };
 
-    if (message.alertMessage === "Success") {
-      toastr.success("Request Complete!");
-    } else if (message.alertMessage === "invalid") {
-      toastr.warning("Please Fill Out the Map Application Area.");
+    centerMarker = new google.maps.Marker({
+      position: map.getCenter(),
+      icon: image,
+      draggable: true,
+      // map: map,
+      zIndex: 3
+    });
+
+    drawingManager = new google.maps.drawing.DrawingManager({
+      drawingMode: null,
+      drawingControl: false,
+      map: map,
+      polygonOptions: { editable: true }
+    });
+
+    google.maps.event.addListener(drawingManager, "polygoncomplete", function(p) {
+      draw(p.getPath());
+      p.setMap(null);
+      path = null;
+    });
+
+    map.setTilt(0);
+
+    //*********************************** User Location ************************************
+    // Try HTML5 geolocation.
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          let pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          map.setCenter(pos);
+          map.setZoom(15);
+          centerMarker.setPosition(pos);
+        },
+        function() {
+          handleLocationError(true);
+        }
+      );
     } else {
-      toastr.error("Request Failed. Please Try Again.");
+      // Browser doesn't support Geolocation
+      handleLocationError(false);
     }
+    //********************************* End User Location **********************************
+
+    //************************************* Search Box *************************************
+    // Create the search box and link it to the UI element.
+    let input = document.getElementById("pac-input");
+    let searchBox = new google.maps.places.SearchBox(input);
+    map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+    // Bias the SearchBox results towards current map's viewport.
+    map.addListener("bounds_changed", function() {
+      searchBox.setBounds(map.getBounds());
+    });
+
+    // Listen for the event fired when the user selects a prediction
+    searchBox.addListener("places_changed", function() {
+      let places = searchBox.getPlaces();
+      if (places.length == 0) {
+        return;
+      }
+
+      // For each place, get the location.
+      let bounds = new google.maps.LatLngBounds();
+      places.forEach(function(place) {
+        if (!place.geometry) {
+          console.log("Returned place contains no geometry");
+          return;
+        }
+
+        // Only geocodes have viewport
+        if (place.geometry.viewport) {
+          bounds.union(place.geometry.viewport);
+        } else {
+          bounds.extend(place.geometry.location);
+        }
+      });
+      map.fitBounds(bounds);
+      map.setTilt(0);
+    });
+    //*********************************** End search Box ***********************************
+
+    //*********************************** Custom Controls***********************************
+    function MapModeControl(divHolder) {
+      // Set CSS for the control border.
+      let controlUI = document.createElement("div");
+      controlUI.style.backgroundColor = "#fff";
+      controlUI.style.border = "2px solid #fff";
+      controlUI.style.borderRadius = "3px";
+      controlUI.style.cursor = "pointer";
+      controlUI.style.marginTop = "10px";
+      controlUI.style.padding = "2px";
+      controlUI.title = "Select Control Mode";
+      controlUI.id = "mode-control-container";
+
+      let modeText = document.createElement("div");
+      modeText.innerHTML = "Mode: ";
+      modeText.style.color = "rgb(25,25,25)";
+      modeText.style.fontFamily = "Roboto,Arial,sans-serif";
+      modeText.style.fontSize = "15px";
+      modeText.style.lineHeight = "30px";
+      modeText.style.marginRight = "10px";
+      modeText.style.fontWeight = "600";
+
+      // Interior
+      let modeSelect = document.createElement("select");
+      modeSelect.style.color = "rgb(25,25,25)";
+      modeSelect.style.fontFamily = "Roboto,Arial,sans-serif";
+      modeSelect.style.fontSize = "15px";
+      modeSelect.style.lineHeight = "30px";
+
+      let mode;
+      for (let i = 0; i < drawModeControl.modes.length; i++) {
+        mode = document.createElement("option");
+        mode.value = i;
+        mode.text = drawModeControl.modes[i];
+        mode.title = drawModeControl.hoverText[i];
+        modeSelect.appendChild(mode);
+      }
+      modeSelect.addEventListener("change", function() {
+        let index = modeSelect.selectedIndex;
+        let value = modeSelect.options[index].value;
+        drawToggle(value);
+      });
+
+      controlUI.appendChild(modeText);
+      controlUI.appendChild(modeSelect);
+      divHolder.appendChild(controlUI);
+    }
+
+    /* Advanced Options Button and Tab*/
+    let advancedOptions = document.getElementById('advanced-options');
+    map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(advancedOptions);
+    document.getElementById("advanced-options-button").click();
+
+    /* Map Modes Control */
+    let modeSelectionDiv = document.createElement("div");
+    MapModeControl(modeSelectionDiv);
+    modeSelectionDiv.index = 1;
+    map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
+
+    function customControl(divHolder, text, callback) {
+      // Set CSS for the control border.
+      let controlUI = document.createElement("div");
+      controlUI.style.backgroundColor = "#fff";
+      controlUI.style.border = "2px solid #fff";
+      controlUI.style.borderRadius = "3px";
+      controlUI.style.cursor = "pointer";
+      controlUI.style.margin = "10px";
+      controlUI.style.padding = "2px";
+      controlUI.style.textAlign = "center";
+
+      let controlText = document.createElement("div");
+      controlText.innerHTML = text;
+      controlText.style.color = "rgb(25,25,25)";
+      controlText.style.fontFamily = "Roboto,Arial,sans-serif";
+      controlText.style.fontSize = "15px";
+      controlText.style.lineHeight = "30px";
+      controlText.style.fontWeight = "600";
+
+      controlUI.appendChild(controlText);
+      divHolder.appendChild(controlUI);
+      callback(divHolder);
+    }
+
+    /* Center Button */
+    let centerDiv = document.createElement("div");
+    centerDiv.id = "center-btn";
+    customControl(centerDiv, "Center", function(div) {
+      div.addEventListener("click", centerMap);
+    });
+    centerDiv.index = 1;
+    map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(centerDiv);
+
+    /* Reset Button */
+    let resetDiv = document.createElement("div");
+    customControl(resetDiv, "Reset", function(div) {
+      div.addEventListener("click", resetMap);
+    });
+    resetDiv.index = 1;
+    resetDiv.id = "reset-btn";
+    map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(resetDiv);
+    
+    /* Import KML Button */
+    // let importDiv = document.createElement("div");
+    // customControl(importDiv, "Import KML", function(div) {
+    //   div.addEventListener("click", importKML);
+    // });
+    // importDiv.index = 1;
+    // importDiv.id = "import-btn";
+    // map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(importDiv);
+
+    /* Mobile Controls (Crosshair) */
+    let mobileControl = document.getElementById("mobile-div");
+    mobileControl.index = 1;
+    map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(mobileControl);
+    //********************************* End Custom Controls*********************************
   }
 
   function makeMarker() {
@@ -1529,11 +761,11 @@
       return;
     }
     // Mobile delete selection fix
-    var temp;
-    for (var i = 0; i < appArea.getNumHazard(); i++) {
+    let temp;
+    for (let i = 0; i < appArea.getNumHazard(); i++) {
       temp = appArea.getHazard(i).getPoly();
       if (google.maps.geometry.poly.containsLocation(latLng, temp)) {
-        var mev = {
+        let mev = {
           stop: null,
           latLng: latLng
         };
@@ -1544,7 +776,7 @@
     for (i = 0; i < appArea.getNumVariableRateAreas(); i++) {
       temp = appArea.getVariableRateArea(i).getPoly();
       if (google.maps.geometry.poly.containsLocation(latLng, temp)) {
-        var mev = {
+        let mev = {
           stop: null,
           latLng: latLng
         };
@@ -1555,15 +787,283 @@
     console.log("No subpoly contained spot");
   }
 
-  function finishShape() {
-    if (tempShape != null) {
-      draw(tempShape.getPath());
-      tempShape.setMap(null);
-    }
-    overlayMarkers = [];
-    tempShape = null;
+  function resetDisplaySettings() {
+    let appAreaColor = "#FFFF00";
+    let appAreaOpacity = 0.6;
+    let hazardAreaColor = "#FF0000";
+    let hazardAreaOpacity = 0.7;
+    let vrAreaColor = "#CCCCCC";
+    let vrAreaOpacity = 0.6;
+
+    document.getElementById('app-area-color').value = appAreaColor;
+    document.getElementById('app-area-opacity').value = appAreaOpacity * 100;
+    document.getElementById('hazard-area-color').value = hazardAreaColor;
+    document.getElementById('hazard-area-opacity').value = hazardAreaOpacity * 100;
+    document.getElementById('vr-area-color').value = vrAreaColor;
+    document.getElementById('vr-area-opacity').value = vrAreaOpacity * 100;
+
+    try {
+      if (appArea) {
+        appArea.poly.setOptions({
+          fillColor: appAreaColor,
+          fillOpacity: appAreaOpacity
+        });
+        for(let i = 0; i < appArea.getNumHazard(); i++) {
+          appArea.getHazard(i).poly.setOptions({
+            fillColor: hazardAreaColor,
+            fillOpacity: hazardAreaOpacity
+          });
+        }
+        for(let i = 0; i < appArea.getNumVariableRateAreas(); i++) {
+          appArea.getVariableRateArea(i).poly.setOptions({
+            fillColor: vrAreaColor,
+            fillOpacity: vrAreaOpacity
+          });
+        }
+      }
+      // Static Values
+      AppArea.fill = appAreaColor;
+      AppArea.opacity = appAreaOpacity/100;
+      AppArea.hazardFill = hazardAreaColor;
+      AppArea.hazardOpacity = hazardAreaOpacity/100;
+      AppArea.vrFill = vrAreaColor;
+      AppArea.vrOpacity = vrAreaOpacity/100;
+    } catch (e) {
+      console.log(e);
+    }   
   }
 
+  function resetMap() {
+    if (appArea != null) {
+      appArea.del();
+    }
+    appArea = null;
+    // Reset stat display
+    document.getElementById("num-acres").value = 0;
+    document.getElementById("num-bugs").value = 0;
+    fileInput.value = null;
+    map.data.forEach(function(feature) {
+      map.data.remove(feature);
+    });
+  }
+
+  function showAlert(json) {
+    let message = JSON.parse(json);
+    if (message.alertMessage === "Success") {
+      toastr.success("Request Complete!");
+    } else if (message.alertMessage === "invalid") {
+      toastr.warning("Please Fill Out the Map Application Area.");
+    } else {
+      toastr.error("Request Failed. Please Try Again.");
+    }
+  }
+
+  function showTip(id) {
+    let header = "";
+    let text = "";
+    switch (id) {
+      case "application-date":
+        header = "Application Date";
+        text = "Enter a preferred date in which the job will take place";
+        break;
+      case "corrected-acreage":
+        header = "Corrected Acreage";
+        text =
+          "If exact field acreage is known, this number will be used in place of the estimate above." +
+          "<br>Note: if this number is given, variable rate areas and hazard areas will not be incorporated into initial bug estimates. Map data will still be sent";
+        break;
+      case "crop":
+        header = "Crop Type";
+        text = "The crop(s) contained in the field specified";
+        break;
+      case "notes":
+        header = "Notes";
+        text = "Enter any additional information desired";
+        break;
+      case "operator":
+        header = "Preferred Operator";
+        text = "Enter the name of a preferred Parabug operator, if desired";
+        break;
+      case "row-spacing":
+        header = "Row Spacing";
+        text =
+          "The spacing, in feet, between each row of crops in the field specified";
+        break;
+      default:
+        text = "tip not found";
+        return;
+        break;
+    }
+
+    modal.style.display = "block";
+    document.getElementById("modal-header").innerHTML = header;
+    document.getElementById("modal-body").innerHTML = text;
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    };
+  }
+
+  function toggleAdvancedOptions() {
+    let controlTab = document.getElementById("advanced-options-control-tab");
+    let btnText = document.getElementById("adv-btn-txt");
+    if (controlTab.display === "none") {
+      controlTab.display = "inline-block";
+      btnText.innerHTML = "Close";
+    } else {
+      controlTab.display = "none";
+      btnText.innerHTML = "Advanced";
+    }
+  }
+
+  function updateStats() {
+    try {
+      if (appArea != null) {
+        // Update stat display
+        let acres = appArea.getAdjustedArea();
+        acres = round(acres, 3);
+        document.getElementById("num-acres").value = acres;
+        let bpa = document.getElementById("num-bugs-per-acre").value;
+        let vr = document.getElementById("variable-rate").value;
+        let totalBugs = appArea.getTotalBugs(bpa, vr);
+
+        if (document.getElementById("add-bug-toggle").checked) {
+          let bpa2 = document.getElementById("num-bugs-per-acre2").value;
+          let vr2 = document.getElementById("variable-rate2").value;
+          totalBugs += appArea.getTotalBugs(bpa2, vr2);
+        }
+
+        document.getElementById("num-bugs").value = round(totalBugs, 0);
+      } else {
+        document.getElementById("num-acres").value = 0;
+        document.getElementById("num-bugs").value = 0;
+      }
+    } catch (e) {
+      document.getElementById("num-acres").value = 0;
+      document.getElementById("num-bugs").value = 0;
+    }
+  }
+
+  function validate() {
+    if (appArea == null) {
+      console.log("App area was null");
+      return false;
+    }
+    if (!appArea.validateAndFix()) {
+      appArea == null;
+      return false;
+    }
+    return true;
+  }
+
+
+  /* EVENT LISTENERS */
+  document.getElementById("modal-close").addEventListener("click", function(event) {
+    modal.style.display = "none";
+  });
+
+  bugsPerAcre.addEventListener("change", updateStats);
+  bugsPerAcre.addEventListener("paste", updateStats);
+  bugsPerAcre.addEventListener("input", updateStats);
+  bugsPerAcre2.addEventListener("change", updateStats);
+  bugsPerAcre2.addEventListener("paste", updateStats);
+  bugsPerAcre2.addEventListener("input", updateStats);
+  percentMultiplier.addEventListener("change", updateStats);
+  percentMultiplier.addEventListener("paste", updateStats);
+  percentMultiplier.addEventListener("input", updateStats);
+  percentMultiplier2.addEventListener("change", updateStats);
+  percentMultiplier2.addEventListener("paste", updateStats);
+  percentMultiplier2.addEventListener("input", updateStats);
+
+  document.getElementById("advanced-options-button").addEventListener("click", function(event) {
+    let controls = document.getElementById("advanced-options-controls");
+    let settingsButton = document.getElementById("advanced-options-button");
+    if (controls.style.display === "none") {
+      controls.style.display = "block";
+      settingsButton.style.marginRight = "0px";
+    } else {
+      controls.style.display = "none";
+      settingsButton.style.marginRight = "12px";
+    }
+  });
+
+  document.getElementById("app-area-opacity").addEventListener("input", function(event) {
+    document.getElementById("app-area-opacity-display").innerHTML = this.value + "%";
+  });
+  document.getElementById("hazard-area-opacity").addEventListener("input", function(event) {
+    document.getElementById("hazard-area-opacity-display").innerHTML = this.value + "%";
+  });
+  document.getElementById("vr-area-opacity").addEventListener("input", function(event) {
+    document.getElementById("vr-area-opacity-display").innerHTML = this.value + "%";
+  });
+  // document.getElementById("overlay-opacity").addEventListener("input", function(event) {
+  //   document.getElementById("overlay-opacity-display").innerHTML = this.value + "%";
+  // });
+
+  toastr.options.positionClass = "toast-top-center";
+  document.getElementById("additional-info").addEventListener("submit", function(event) {
+    if (validate()) {
+      //toastr.optionsOverride({progressBar: 'true'});
+      toastr.info("Processing...");
+      event.preventDefault();
+
+      // Create form data object to easily get form values
+      let formData = new FormData(document.getElementById("additional-info"));
+      let applicationArea = appArea.toEasyFormat();
+      let data = {
+        // Map Data
+        appArea: applicationArea,
+        appAcres: appArea.getArea(),
+        hazardAcres: appArea.getHazardArea(),
+        vraAcres: appArea.getVRAArea(),
+        bugName: formData.get("bug-name"),
+        bugsPerAcre: formData.get("bugs-per-acre"),
+        variableRate: formData.get("variable-rate"),
+        numBugs: formData.get("num-bugs"),
+        // User Information Input
+        contactName: formData.get("contact_name"),
+        contactPhone: formData.get("contact_phone"),
+        contactEmail: formData.get("contact_email"),
+        billingAddress: formData.get("billing_address"),
+        // Application Area Input
+        crop: formData.get("crop"),
+        rowSpacing: formData.get("row_spacing"),
+        ranchName: formData.get("ranch-name"),
+        correctedAcreage: formData.get("corrected-acreage"),
+        // Preferences Input
+        applicationDate: formData.get("application-date"),
+        operator: formData.get("operator"),
+        notes: formData.get("notes")
+      };
+      if (document.getElementById("add-bug-toggle").checked) {
+        data.bugName2 = formData.get("bug-name2");
+        data.bugsPerAcre2 = formData.get("bugs-per-acre2");
+        data.variableRate2 = formData.get("variable-rate2");
+      }
+
+      // Ajax request
+      let xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          let message = this.responseText;
+          showAlert(message);
+        }
+      };
+      xhttp.open("POST", "/", true);
+      xhttp.setRequestHeader(
+        "Content-Type",
+        "application/json; charset=UTF-8"
+      );
+      xhttp.send(JSON.stringify(data));
+    } else {
+      event.preventDefault();
+      console.log("Did not submit");
+    }
+  });
+  
   document.getElementById("mobile-mode").addEventListener("click", function() {
     if (this.checked) {
       drawingManager.setOptions({ drawingMode: null });
@@ -1578,9 +1078,7 @@
     }
   });
 
-  document
-    .getElementById("add-bug-toggle")
-    .addEventListener("click", function() {
+  document.getElementById("add-bug-toggle").addEventListener("click", function() {
       updateStats();
       if (this.checked) {
         document.getElementById("add-bug-display").style.display =

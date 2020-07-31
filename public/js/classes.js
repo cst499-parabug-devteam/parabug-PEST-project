@@ -52,6 +52,12 @@ class VariableRateArea {
 
 class AppArea {
     static buffer = .0000005;
+    static fill = "#FFFF00";
+    static opacity = 0.6;
+    static hazardFill = "#FF0000";
+    static hazardOpacity = 0.7;
+    static vrFill = "#CCCCCC";
+    static vrOpacity = 0.6;
 
     constructor(map, path, hazards = [], vRAs = []) {
         // map is a google maps map object
@@ -72,8 +78,8 @@ class AppArea {
             strokeColor: '#000000',
             strokeOpacity: 1,
             strokeWeight: 1,
-            fillColor: '#FFFF00',
-            fillOpacity: 0.6,
+            fillColor: AppArea.fill,
+            fillOpacity: AppArea.opacity,
             zIndex: 0,
         });
         this.poly.setMap(this.map);
@@ -133,8 +139,8 @@ class AppArea {
             strokeColor: '#000000',
             strokeOpacity: 0.8,
             strokeWeight: 1,
-            fillColor: '#FF0000',
-            fillOpacity: 0.7,
+            fillColor: AppArea.hazardFill,
+            fillOpacity: AppArea.hazardOpacity,
             zIndex: 1,
             identifier: id
         });
@@ -152,8 +158,8 @@ class AppArea {
             strokeColor: '#000000',
             strokeOpacity: 1,
             strokeWeight: 1,
-            fillColor: '#CCCCCC',
-            fillOpacity: 0.6,
+            fillColor: AppArea.vrFill,
+            fillOpacity: AppArea.vrOpacity,
             zIndex: 2,
             identifier: id
         });

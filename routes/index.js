@@ -174,6 +174,11 @@ function email(info, callback) {
                 // Error while writing to files, don't send email
                 callback(return_msg);
               } else {
+                // Local Testing Enable:
+                // return_msg.kmlPath=null;
+                // callback(return_msg);
+                // return;
+
                 // Atachments were created and written to, send the email
                 //NO-REPLY@SENDMAIL.COM METHOD:
                 var parabug_email_path = "info@parabug.solutions";

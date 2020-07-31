@@ -1,8 +1,390 @@
+/* Element CSS */
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  display: grid;
+  grid-template-rows: 80%;
 }
 
-a {
-  color: #00B7FF;
+hr {
+  border: none;
+}
+
+html {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+
+/* Class CSS */
+.align-input {
+  display: inline-block;
+  text-align: left;
+}
+
+.click-tip {
+  cursor: pointer;
+  border-bottom: dotted 1px black;
+}
+
+.div-button {
+  border-radius: 4px;
+  background-color: white;
+  border: none;
+  color: black;
+  font-size: 28px;
+  font-weight: 600;
+  padding: 8px;
+  cursor: pointer;
+  margin-top: 192px;
+}
+
+.form-element {
+  margin-top: 10px;
+  vertical-align: middle;
+}
+
+.form-input {
+  display: inline-block;
+  line-height: 40px;
+  vertical-align: middle;
+}
+
+.form-fieldset {
+  border-top: 0.5px solid black;
+  border-radius: 5px;
+  margin-bottom: 12px;
+  padding: 2px 12px 12px 12px;
+}
+
+.form-fieldset legend {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.form-text {
+  display: inline-block;
+  min-width: 120px;
+  vertical-align: middle;
+}
+
+.helpful-tips {
+  cursor: help;
+}
+
+.map-container {
+  padding: 15px;
+}
+
+.modal {
+  display: none;
+  /* Hidden by default */
+  position: fixed;
+  /* Stay in place */
+  z-index: 1;
+  /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%;
+  /* Full width */
+  height: 100%;
+  /* Full height */
+  overflow: auto;
+  /* Enable scroll if needed */
+  background-color: rgb(0, 0, 0);
+  /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.4);
+  /* Black w/ opacity */
+  -webkit-animation-name: fadeIn;
+  /* Fade in the background */
+  -webkit-animation-duration: 0.4s;
+  animation-name: fadeIn;
+  animation-duration: 0.4s;
+}
+
+.modal-body {
+  padding: 2px 16px;
+}
+
+.modal-close {
+  color: white;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.modal-close:hover,
+.modal-close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal-content {
+  position: fixed;
+  bottom: 0;
+  background-color: #fefefe;
+  width: 100%;
+  -webkit-animation-name: slideIn;
+  -webkit-animation-duration: 0.4s;
+  animation-name: slideIn;
+  animation-duration: 0.4s;
+}
+
+.modal-header {
+  padding: 2px 16px;
+  background-color: #4395cc;
+  color: white;
+}
+
+.read-only {
+  background-color: lightgrey;
+}
+
+.required {
+  color: red;
+}
+
+.sidebar {
+  padding: 10px;
+}
+
+.stat-input {
+  display: inline-block;
+  min-width: 140px;
+  margin: 5px;
+}
+
+.stat-input-checkbox {
+  display: inline-block;
+  min-width: 140px;
+  margin: 5px;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.stat-item {
+  display: inline-block;
+}
+
+.stat-text {
+  display: inline-block;
+  min-width: 80px;
+  margin: 5px;
+  text-align: right;
+}
+
+.upright-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+/* ID CSS */
+#add-bug-display {
+  display: none;
+}
+
+#additional-info {
+  font-family: Roboto;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 32px;
+}
+
+#advanced-options-button {
+  border-radius: 4px;
+  background-color: white;
+  border: none;
+  color: black;
+  font-size: 28px;
+  font-weight: 600;
+  padding: 8px;
+  cursor: pointer;
+}
+
+#advanced-options .col {
+  padding: 2px;
+}
+
+#advanced-options-controls {
+  background-color: white;
+  border-radius: 5px;
+  font-size: 15px;
+  padding: 10px !important;
+  width: 260px;
+  margin-top: -246px;
+}
+
+#advanced-options-controls input {
+  margin: 2px 4px 2px 4px;
+}
+
+#center-btn {
+  position: absolute;
+  margin-left: -76px;
+  margin-bottom: 25px;
+}
+
+#crosshair-center {
+  vertical-align: center;
+  text-align: center;
+  display: none;
+}
+
+#import-btn {
+  position: absolute;
+  margin-left: -68px;
+  margin-bottom: 125px;
+}
+
+#map {
+  height: 100%;
+  border: 2px solid black;
+}
+
+#mobile-div {
+  display: inline-block;
+  background-color: #fff;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+  vertical-align: center;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 15px;
+  padding: 2px;
+  margin-bottom: 12px;
+}
+
+#mobile-mode-div {
+  display: inline-block;
+}
+
+#mobile-options-div {
+  display: none;
+}
+
+#modal-body {
+  padding: 10px;
+  text-align: center;
+  font-size: 24px;
+  line-height: 28px;
+}
+
+#modal-header {
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 46px;
+}
+
+#mode-control-container {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  grid-template-rows: 100%;
+}
+
+#notes {
+  width: 30em;
+  max-width: 30em;
+}
+
+#pac-input {
+  background-color: #fff;
+  font-family: Roboto;
+  font-size: 15px;
+  font-weight: 300;
+  margin-left: 10px;
+  margin-top: 10px;
+  padding: 0 11px 0 13px;
+  text-overflow: ellipsis;
+  width: 15%;
+  line-height: 32px;
+  border: "2px solid #fff";
+}
+
+@media only screen and (max-width: 565px) {
+  #pac-input {
+    position: absolute;
+    left: 0 !important; 
+    top: 50px !important;
+  }
+}
+
+#pac-input:focus {
+  border-color: #4d90fe;
+}
+
+#reset-btn {
+  position: absolute;
+  margin-left: -72px;
+  margin-bottom: 75px;
+}
+
+#stat-display {
+  text-align: center;
+  margin: -11px 15px 0px 15px;
+  padding: 10px 0px 10px 0px;
+  /*background-color: grey;*/
+}
+
+#user-info-display {
+  margin: 0px 15px 0px 15px;
+  padding: 10px;
+  /*background-color: lightblue;*/
+  text-align: center;
+}
+
+#user-info-display input {
+  width: 30em;
+}
+
+#user-info-display > h2 {
+  margin-bottom: 5px;
+}    
+
+/* Add Animation */
+@-webkit-keyframes slideIn {
+  from {
+    bottom: -300px;
+    opacity: 0;
+  }
+
+  to {
+    bottom: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    bottom: -300px;
+    opacity: 0;
+  }
+
+  to {
+    bottom: 0;
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
