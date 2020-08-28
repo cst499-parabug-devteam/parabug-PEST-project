@@ -7,6 +7,12 @@ body {
   grid-template-rows: 80%;
 }
 
+h6 {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
 hr {
   border: none;
 }
@@ -21,6 +27,12 @@ html {
 .align-input {
   display: inline-block;
   text-align: left;
+}
+
+.btn-white {
+  color: #000;
+  background-color: #fff;
+  border-color: #fff;
 }
 
 .click-tip {
@@ -144,6 +156,10 @@ html {
   color: red;
 }
 
+.row {
+  max-width: 100%;
+}
+
 .sidebar {
   padding: 10px;
 }
@@ -210,19 +226,22 @@ html {
   border-radius: 5px;
   font-size: 15px;
   padding: 10px !important;
-  width: 260px;
-  margin-top: -246px;
+  width: 268px;
+  margin-top: -186px;
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 #advanced-options-controls input {
   margin: 2px 4px 2px 4px;
 }
 
-#center-btn {
+/* #center-btn {
   position: absolute;
   margin-left: -76px;
   margin-bottom: 25px;
-}
+} */
 
 #crosshair-center {
   vertical-align: center;
@@ -230,15 +249,21 @@ html {
   display: none;
 }
 
-#import-btn {
+/* #import-btn {
   position: absolute;
   margin-left: -68px;
   margin-bottom: 125px;
-}
+} */
 
 #map {
   height: 100%;
   border: 2px solid black;
+}
+
+#maps-options {
+  position: absolute;
+  margin-left: -72px;
+  margin-bottom: 35px;
 }
 
 #mobile-div {
@@ -288,6 +313,14 @@ html {
   max-width: 30em;
 }
 
+#overlay-settings {
+  display: none;
+}
+
+#overlay-toggle-btn {
+  display: none;
+}
+
 #pac-input {
   background-color: #fff;
   font-family: Roboto;
@@ -314,17 +347,28 @@ html {
   border-color: #4d90fe;
 }
 
-#reset-btn {
+/* #reset-btn {
   position: absolute;
   margin-left: -72px;
   margin-bottom: 75px;
-}
+} */
 
 #stat-display {
   text-align: center;
   margin: -11px 15px 0px 15px;
   padding: 10px 0px 10px 0px;
   /*background-color: grey;*/
+}
+
+#top-alert {
+  width: 30%;
+  position: absolute;
+  top: 18px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  display: none;
 }
 
 #user-info-display {

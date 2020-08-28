@@ -6,16 +6,21 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
-      defer
+    defer
     ></script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
     <link rel="stylesheet" type="text/css" href="stylesheets/style.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
     <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
-    <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="/js/jsts.1.6.1.js"></script>
     <script src="/js/togeojson.js"></script>
+    <script src="/js/geoxml3.js"></script>
+    <script defer src="/js/ProtectedOverlay.js"></script>
+    <script defer src="/js/ZipFile.js"></script>
     <script async src="/js/classes.js"></script>
   </head>
 
@@ -34,20 +39,20 @@
           <hr>
           <h6>Application Area</h6>
           <div>Color: <input type="color" id="app-area-color" value="#FFFF00"></div>
-          <div>Opacity: <input type="range" min="1" max="100" value="60" id="app-area-opacity"><span id="app-area-opacity-display">60%</span></div>
+          <div>Opacity: <input type="range" min="0" max="100" value="60" id="app-area-opacity"><span id="app-area-opacity-display">60%</span></div>
           <hr>
           <h6>Hazard Area</h6>
           <div>Color: <input type="color" id="hazard-area-color" value="#FF0000"></div>
-          <div>Opacity: <input type="range" min="1" max="100" value="70" id="hazard-area-opacity"><span id="hazard-area-opacity-display">70%</span></div>
+          <div>Opacity: <input type="range" min="0" max="100" value="70" id="hazard-area-opacity"><span id="hazard-area-opacity-display">70%</span></div>
           <hr>
           <h6>Variable Rate Area</h6>
           <div>Color: <input type="color" id="vr-area-color" value="#CCCCCC"></div>
-          <div>Opacity: <input type="range" min="1" max="100" value="60" id="vr-area-opacity"><span id="vr-area-opacity-display">60%</span></div>
+          <div>Opacity: <input type="range" min="0" max="100" value="60" id="vr-area-opacity"><span id="vr-area-opacity-display">60%</span></div>
           <hr>
-          <!-- <h4>Overlay Settings</h4>
-          <hr>
-          <div>Color: <input type="color" id="overlay-color" value="#00FF00"></div>
-          <div>Opacity: <input type="range" min="1" max="100" value="50" id="overlay-opacity"><span id="overlay-opacity-display">50%</span></div> -->
+          <div id="overlay-settings">
+            <h4>Overlay Settings</h4>
+            <div id="overlay-settings-content"></div>
+          </div>
           <br>
           <div class="row justify-content-center">
             <div class="col col-auto"><input type="button" value="Reset" onclick="resetDisplaySettings()"></div>
@@ -56,6 +61,9 @@
         </div>
       </div>
     </div>
+
+    <div id="top-alert"></div>
+
     <form id="additional-info" method="POST">
       <div id="stat-display">
   
@@ -318,10 +326,13 @@
       let centerMarker;
       let overlayMarkers = [];
       let tempShape;
-    
-      let fileInput = document.createElement("input");
-      fileInput.setAttribute("type", "file");
-      fileInput.setAttribute("accept", ".kml");
+      let rotatingRectangle;
+
+      /* OVERLAY VARIABLES */
+      let geoJsonFeatures = null;
+      let geoXML = null;
+      let localURL = null;
+      let overlayVisible = false;
     
       // Internal object to help manage toggling between our custom drawing modes
       let drawModeControl = {
@@ -347,50 +358,125 @@
     
       // HTML Elements
       let modal = document.getElementById("tip-modal");
-      let bugsPerAcre = document.getElementById("num-bugs-per-acre");
-      let percentMultiplier = document.getElementById("variable-rate");
-      let bugsPerAcre2 = document.getElementById("num-bugs-per-acre2");
-      let percentMultiplier2 = document.getElementById("variable-rate2");
+      let fileInput = document.createElement("input");
+      fileInput.setAttribute("type", "file");
+      fileInput.setAttribute("accept", ".kml,.kmz");
     
       /* FUNCTIONS */
     
+      function addKMLLayer(file) {
+        createAlert("Loading KML File", 10000, "info");
+        let urlObject = URL.createObjectURL(file);
+        var xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+          try {
+            // Remove Pre-existing features from past import
+            if (!!geoJsonFeatures) {
+              geoJsonFeatures.forEach((feature) => map.data.remove(feature));
+              geoJsonFeatures = null;
+            }
+
+            if (this.status == 200) {
+              // Convert response XML Doc to GeoJson and Overlay it on the map
+              let geoJson = toGeoJSON.kml(xhr.responseXML);
+              geoJsonFeatures = geoJson.features;
+              map.data.addGeoJson(geoJson);
+
+              // Set the overlay styles
+              map.data.setStyle(function(feature) {
+                return ({
+                  fillColor: feature.getProperty('fill'),
+                  fillOpacity: feature.getProperty('fill-opacity'),
+                  strokeColor: feature.getProperty('fill'),
+                  strokeWeight: 2
+                });
+              });
+
+              // Get centroid of one overlay feature in import, then jump to it on the map
+              let jumpCoords = null;
+              geoJsonFeatures.forEach((feature) => {
+                let coords = feature.geometry.coordinates;
+                if (jumpCoords === null && !!coords) {
+                  coords.forEach((c) => { if(c.length > 3) { jumpCoords = coords[0]; }});
+                }
+              });
+              if (jumpCoords) {
+                let path = jumpCoords.map((coord) => {return {lat: coord[1], lng: coord[0]};});
+                let poly = new google.maps.Polygon({ paths: path });
+                let jstsPoly = AppArea.createJstsPolygon(new jsts.geom.GeometryFactory(), poly);
+                let centroid = jsts.algorithm.Centroid.getCentroid(jstsPoly);
+                map.setCenter({ lat: centroid.x, lng: centroid.y });
+              }
+              createAlert("Loading Complete", 3000, "success");
+            } else {
+              createAlert("KML Failed to Load", 5000, "error");
+            }
+          } catch (e) {
+            createAlert("KML Format Error", 10000, "error");
+            console.log("KML Format Error:");
+            console.log(e.message);
+          }
+        }
+        xhr.onerror = function() {
+          createAlert("KML Failed to Load", 5000, "error");
+          console.log("Error while getting XML.");
+        }
+        xhr.open("GET", urlObject);
+        xhr.responseType = "document";
+        xhr.send();
+      }
+
+      function addKMZLayer(file) {
+        localURL = URL.createObjectURL(file);
+        geoXML = new geoXML3.parser({
+          map: map,
+          singleInfoWindow: false,
+          suppressInfoWindows : true,
+          zoom : true,
+          afterParse: fileLoadingFinished,
+        });
+        createAlert("Loading File...", 10000, "info");
+        geoXML.parse(localURL);
+      }
+
       function applyDisplaySettings() {
-        let appAreaColor = document.getElementById('app-area-color').value;
-        let appAreaOpacity = document.getElementById('app-area-opacity').value;
-        let hazardAreaColor = document.getElementById('hazard-area-color').value;
-        let hazardAreaOpacity = document.getElementById('hazard-area-opacity').value;
-        let vrAreaColor = document.getElementById('vr-area-color').value;
-        let vrAreaOpacity = document.getElementById('vr-area-opacity').value;
-    
         try {
           if (appArea) {
             appArea.poly.setOptions({
-              fillColor: appAreaColor,
-              fillOpacity: (appAreaOpacity/100)
+              fillColor: $('#app-area-color').val(),
+              fillOpacity: ($('#app-area-opacity').val()/100)
             });
             for(let i = 0; i < appArea.getNumHazard(); i++) {
               appArea.getHazard(i).poly.setOptions({
-                fillColor: hazardAreaColor,
-                fillOpacity: (hazardAreaOpacity/100)
+                fillColor: $('#hazard-area-color').val(),
+                fillOpacity: ($('#hazard-area-opacity').val()/100)
               });
             }
             for(let i = 0; i < appArea.getNumVariableRateAreas(); i++) {
               appArea.getVariableRateArea(i).poly.setOptions({
-                fillColor: vrAreaColor,
-                fillOpacity: (vrAreaOpacity/100)
+                fillColor: $('#vr-area-color').val(),
+                fillOpacity: ($('#vr-area-opacity').val()/100)
               });
             }
           }
           // Static Values
-          AppArea.fill = appAreaColor;
-          AppArea.opacity = appAreaOpacity/100;
-          AppArea.hazardFill = hazardAreaColor;
-          AppArea.hazardOpacity = hazardAreaOpacity/100;
-          AppArea.vrFill = vrAreaColor;
-          AppArea.vrOpacity = vrAreaOpacity/100;
+          AppArea.fill = $('#app-area-color').val();
+          AppArea.opacity = $('#app-area-opacity').val()/100;
+          AppArea.hazardFill = $('#hazard-area-color').val();
+          AppArea.hazardOpacity = $('#hazard-area-opacity').val()/100;
+          AppArea.vrFill = $('#vr-area-color').val();
+          AppArea.vrOpacity = $('#vr-area-opacity').val()/100;
         } catch (e) {
-          console.log(e);
-        }   
+          console.log("Error when applying custom drawing display settings: " + e.message);
+        }
+        try {
+          // Overlay Settings
+          if (!!geoXML) {
+            fixKMZOverlay();
+          }
+        } catch (e) {
+          console.log("Error when applying overlay display settings: " + e.message);
+        }
       }
     
       function centerMap() {
@@ -403,10 +489,27 @@
         }
         map.setCenter(center);
       }
-      
+
+      function createAlert(message, duration, type="success") {
+        let alertBox = $('#top-alert');
+        switch (type) {
+          case "success":
+            alertBox.attr("class","alert alert-success");
+            break;
+          case "info":
+            alertBox.attr("class","alert alert-info");
+            break;
+          case "error": default:
+            alertBox.attr("class","alert alert-danger");
+          break;
+        }
+        alertBox.text(message);
+        alertBox.fadeIn("slow");
+        setTimeout(function(){ alertBox.fadeOut("slow"); }, duration);
+      }
+
       function deleteSubPoly() {
         if ((appArea != null) && (appArea.deleteIdentifier != null)) {
-          // console.log(appArea.deleteIdentifier);
           index = appArea.getIndexOfIdentifier(appArea.deleteIdentifier.id, appArea.deleteIdentifier.type);
           if (appArea.deleteIdentifier.type == "hazard") {
               appArea.removeHazard(index);
@@ -483,16 +586,59 @@
             break; // unexpected input
         }
       }
-    
+      
+      function fileLoadingFinished(doc) {
+        createAlert("Loading Complete", 3000, "success");
+        doc = geoXML.docs[0];
+
+        // Generate and show overlay settings in advanced options menu
+        let overlaySettingsDiv = $('#overlay-settings-content');
+        for (let i = 0; i < doc.ggroundoverlays.length ; i++) {
+          let id = "kmz-layer-opacity-" + i;
+          doc.ggroundoverlays[i].id_ = doc.groundoverlays[i].name + "-" + i;
+          overlaySettingsDiv.append("<h6>"+doc.groundoverlays[i].name+"</h6>").append(
+            $("<div>Opacity: </div>").append(
+              $('<input type="range" min="0" max="100" value="100" id="'+id+'">').on("input", function() {
+                $("#"+id+"-display").text($(this).val()+"%")
+              })
+            ).append('<span id="'+id+"-display"+'">100%</span>')
+          ).append('<hr>');
+        }
+        $('#overlay-settings').show();
+        fixKMZOverlay();
+      }
+
       function finishShape() {
-        if (tempShape != null) {
+        if (!!tempShape) {
           draw(tempShape.getPath());
           tempShape.setMap(null);
         }
         overlayMarkers = [];
         tempShape = null;
       }
-    
+
+      function fixKMZOverlay() {
+        const doc = geoXML.docs[0];
+        for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+          let gO = doc.ggroundoverlays[i];
+          let id = "kmz-layer-opacity-" + i;
+          let opacity = $('#'+id).val();
+          if (opacity > 0 && overlayVisible) {
+            try {
+              gO.setMap(map);
+              gO.setOpacity(opacity);
+            } catch (e) {
+              // Not yet initialized on map, edit style directly
+              gO.percentOpacity_ = opacity;
+              gO.setMap(map);
+            }
+            setTimeout(function(){document.getElementById(gO.id_).style.zIndex = 10-i;}, 1000);
+          } else {
+            gO.setMap(null);
+          }
+        }
+      }
+
       function handleLocationError(browserHasGeolocation) {
         let message = browserHasGeolocation
           ? "Error: The Geolocation service failed."
@@ -541,31 +687,32 @@
         google.maps.event.addListener(drawingManager, "polygoncomplete", function(p) {
           draw(p.getPath());
           p.setMap(null);
-          // path = null;
         });
     
         map.setTilt(0);
     
         //*********************************** User Location ************************************
         // Try HTML5 geolocation.
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            function(position) {
-              let pos = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-              };
-              map.setCenter(pos);
-              map.setZoom(15);
-              centerMarker.setPosition(pos);
-            },
-            function() {
-              handleLocationError(true);
-            }
-          );
-        } else {
-          // Browser doesn't support Geolocation
-          handleLocationError(false);
+        try {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              function(position) {
+                let pos = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                };
+                
+              },
+              function() {
+                handleLocationError(true);
+              }
+            );
+          } else {
+            // Browser doesn't support Geolocation
+            handleLocationError(false);
+          }
+        } catch (e) {
+          console.log(e);
         }
         //********************************* End User Location **********************************
     
@@ -666,64 +813,36 @@
         modeSelectionDiv.index = 1;
         map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
     
-        function customControl(divHolder, text, callback) {
-          // Set CSS for the control border.
-          let controlUI = document.createElement("div");
-          controlUI.style.backgroundColor = "#fff";
-          controlUI.style.border = "2px solid #fff";
-          controlUI.style.borderRadius = "3px";
-          controlUI.style.cursor = "pointer";
-          controlUI.style.margin = "10px";
-          controlUI.style.padding = "2px";
-          controlUI.style.textAlign = "center";
-    
-          let controlText = document.createElement("div");
-          controlText.innerHTML = text;
-          controlText.style.color = "rgb(25,25,25)";
-          controlText.style.fontFamily = "Roboto,Arial,sans-serif";
-          controlText.style.fontSize = "15px";
-          controlText.style.lineHeight = "30px";
-          controlText.style.fontWeight = "600";
-    
-          controlUI.appendChild(controlText);
-          divHolder.appendChild(controlUI);
-          callback(divHolder);
-        }
-    
-        /* Center Button */
-        let centerDiv = document.createElement("div");
-        centerDiv.id = "center-btn";
-        customControl(centerDiv, "Center", function(div) {
-          div.addEventListener("click", centerMap);
-        });
-        centerDiv.index = 1;
-        map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(centerDiv);
-    
-        /* Reset Button */
-        let resetDiv = document.createElement("div");
-        customControl(resetDiv, "Reset", function(div) {
-          div.addEventListener("click", resetMap);
-        });
-        resetDiv.index = 1;
-        resetDiv.id = "reset-btn";
-        map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(resetDiv);
-        
-        /* Import KML Button */
-        // let importDiv = document.createElement("div");
-        // customControl(importDiv, "Import KML", function(div) {
-        //   div.addEventListener("click", importKML);
-        // });
-        // importDiv.index = 1;
-        // importDiv.id = "import-btn";
-        // map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(importDiv);
-    
         /* Mobile Controls (Crosshair) */
         let mobileControl = document.getElementById("mobile-div");
         mobileControl.index = 1;
         map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(mobileControl);
+
+        /*  Dropup Menu With Additional Options */
+        let dropUpMenuButton = $('<button>Options</button>')
+              .attr({
+                "data-toggle":"dropdown",
+                "aria-haspopup":"true",
+                "aria-expanded":"false"
+              })
+              .addClass("btn btn-white dropdown-toggle");
+
+        let dropUpMenuContent = $('<div></div>')
+            .attr({
+              'id':"dropUpMenuButtons"
+            })
+            .addClass("dropdown-menu")
+            .append($('<button>Center Map</button>').click(centerMap).attr({"id":"center-btn"}).addClass("dropdown-item"))
+            .append($('<button>Clear Drawings</button>').click(resetMap).attr({"id":"reset-btn"}).addClass("dropdown-item"))
+            .append($('<button>Clear Overlays</button>').click(removeOverlays).addClass("dropdown-item"))
+            .append($('<button>Import Overlay</button>').click(importKML).attr({"id":"import-btn"}).addClass("dropdown-item"))
+            .append($('<button>Toggle Overlay</button>').click(toggleOverlay).addClass("dropdown-item").attr({"id":"overlay-toggle-btn"}));
+        
+        let dropUpMenu = $('<div></div>').attr({"id":"maps-options"}).addClass("btn-group dropup").append(dropUpMenuButton).append(dropUpMenuContent);
+        map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(dropUpMenu[0]);        
         //********************************* End Custom Controls*********************************
       }
-    
+
       function makeMarker() {
         if (drawModeControl.current == 4) {
           // Delete Mode
@@ -839,20 +958,46 @@
           appArea.infoWindow = infoWindow;
       }
 
+      function removeOverlays() {
+        map.data.forEach(function(feature) { map.data.remove(feature); });
+        geoJsonFeatures = null;
+        if (!!geoXML) {
+          try {
+            let doc = geoXML.docs[0];
+            geoXML.docs = [];
+            for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+              doc.ggroundoverlays[i].setMap(null);
+              doc.ggroundoverlays[i] = null;
+            }
+          } catch (e) {
+            // Continue
+          }
+        }
+        document.getElementById("overlay-toggle-btn").style.display = "none";
+        $('#overlay-settings-content').empty();
+        $('#overlay-settings').hide();
+        fileInput.value = null;
+        geoXML = null;
+        overlayVisible = false;
+      }
+
       function resetDisplaySettings() {
-        let appAreaColor = "#FFFF00";
-        let appAreaOpacity = 0.6;
-        let hazardAreaColor = "#FF0000";
-        let hazardAreaOpacity = 0.7;
-        let vrAreaColor = "#CCCCCC";
-        let vrAreaOpacity = 0.6;
+        const appAreaColor = "#FFFF00";
+        const appAreaOpacity = 0.6;
+        const hazardAreaColor = "#FF0000";
+        const hazardAreaOpacity = 0.7;
+        const vrAreaColor = "#CCCCCC";
+        const vrAreaOpacity = 0.6;
     
-        document.getElementById('app-area-color').value = appAreaColor;
-        document.getElementById('app-area-opacity').value = appAreaOpacity * 100;
-        document.getElementById('hazard-area-color').value = hazardAreaColor;
-        document.getElementById('hazard-area-opacity').value = hazardAreaOpacity * 100;
-        document.getElementById('vr-area-color').value = vrAreaColor;
-        document.getElementById('vr-area-opacity').value = vrAreaOpacity * 100;
+        $('#app-area-color').val(appAreaColor);
+        $('#app-area-opacity').val(appAreaOpacity * 100);
+        $('#app-area-opacity-display').val((appAreaOpacity * 100) + "%");
+        $('#hazard-area-color').val(hazardAreaColor);
+        $('#hazard-area-opacity').val(hazardAreaOpacity * 100);
+        $('#hazard-area-opacity-display').val((hazardAreaOpacity * 100) + "%");
+        $('#vr-area-color').val(vrAreaColor);
+        $('#vr-area-opacity').val(vrAreaOpacity * 100);
+        $('#vr-area-opacity-display').val((vrAreaOpacity * 100) + "%");
     
         try {
           if (appArea) {
@@ -875,28 +1020,46 @@
           }
           // Static Values
           AppArea.fill = appAreaColor;
-          AppArea.opacity = appAreaOpacity/100;
+          AppArea.opacity = appAreaOpacity;
           AppArea.hazardFill = hazardAreaColor;
-          AppArea.hazardOpacity = hazardAreaOpacity/100;
+          AppArea.hazardOpacity = hazardAreaOpacity;
           AppArea.vrFill = vrAreaColor;
-          AppArea.vrOpacity = vrAreaOpacity/100;
+          AppArea.vrOpacity = vrAreaOpacity;
         } catch (e) {
-          console.log(e);
-        }   
+          console.log("Error when resetting custom drawing display settings: " + e.message);
+        }
+        try {
+          // Overlay Settings
+          if (!!geoXML) {
+            const doc = geoXML.docs[0];
+            for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+              const gO = doc.ggroundoverlays[i];
+              try {
+                gO.setMap(map);
+                gO.setOpacity(100);
+              } catch (e) {
+                // Not yet initialized on map, edit style directly
+                gO.percentOpacity_ = 100;
+                gO.setMap(map);
+              }
+              const id = "kmz-layer-opacity-" + i;
+              $("#"+id).val(100);
+              $("#"+id+"-display").text("100%");
+            }
+            overlayVisible = true;
+            fixKMZOverlay();
+          }
+        } catch (e) {
+          console.log("Error when resetting overlay display settings: " + e.message);
+        } 
       }
     
       function resetMap() {
-        if (appArea != null) {
-          appArea.del();
-        }
+        if (!!appArea) { appArea.del(); }
         appArea = null;
         // Reset stat display
         document.getElementById("num-acres").value = 0;
         document.getElementById("num-bugs").value = 0;
-        fileInput.value = null;
-        map.data.forEach(function(feature) {
-          map.data.remove(feature);
-        });
       }
     
       function round(value, decimals) {
@@ -906,11 +1069,11 @@
       function showAlert(json) {
         let message = JSON.parse(json);
         if (message.alertMessage === "Success") {
-          toastr.success("Request Complete!");
+          createAlert("Request Complete!", 5000, "success");
         } else if (message.alertMessage === "invalid") {
-          toastr.warning("Please Fill Out the Map Application Area.");
+          createAlert("Please Fill Out the Map Application Area.", 10000, "error");
         } else {
-          toastr.error("Request Failed. Please Try Again.");
+          createAlert("Request Failed. Please Try Again.", 10000, "error");
         }
       }
     
@@ -962,7 +1125,7 @@
           }
         };
       }
-    
+
       function toggleAdvancedOptions() {
         let controlTab = document.getElementById("advanced-options-control-tab");
         let btnText = document.getElementById("adv-btn-txt");
@@ -975,6 +1138,69 @@
         }
       }
     
+      function toggleKMLOverlay() {
+        try {
+          if (overlayVisible) {
+            map.data.setStyle((feature) => { return {visible: false}; });
+            overlayVisible = false;
+          } else {
+            map.data.setStyle((feature) => {
+              return ({
+                visible: true,
+                fillColor: feature.getProperty('fill'),
+                fillOpacity: feature.getProperty('fill-opacity'),
+                strokeColor: feature.getProperty('fill'),
+                strokeWeight: 2
+              });
+            });
+            overlayVisible = true;
+          }
+        } catch (e) {
+          console.log("Error when toggling KML overlay display: " + e.message);
+        }
+      }
+
+      function toggleKMZOverlay() {
+        try {
+          const doc = geoXML.docs[0];
+          if (overlayVisible) {
+            doc.ggroundoverlays.forEach((gO) => gO.setMap(null));
+            overlayVisible = false;
+          } else {
+            for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+              let id = "kmz-layer-opacity-" + i;
+              let opacity = $('#'+id).val();
+              let gO = doc.ggroundoverlays[i];
+              if (opacity > 0) {
+                // Set opacity before overlaying on map
+                gO.percentOpacity_ = opacity;
+                gO.setMap(map);
+              } else {
+                gO.setMap(null);
+              }
+            }
+            overlayVisible = true;
+            fixKMZOverlay();
+          }
+        } catch (e) {
+          console.log("Error when toggling KMZ overlay display: " + e.message);
+        }
+      }
+
+      function toggleOverlay() {
+        let file = fileInput.files[0];
+        if (file) {
+          const extension = file.name.substr(file.name.lastIndexOf('.') + 1);
+          if (extension === 'kml') {
+            toggleKMLOverlay();
+          } else if (extension === 'kmz') {
+            toggleKMZOverlay();
+          } else {
+            // Unknown file type
+          }
+        }
+      }
+
       function updateStats() {
         try {
           if (appArea != null) {
@@ -1017,53 +1243,49 @@
     
     
       /* EVENT LISTENERS */
-      document.getElementById("modal-close").addEventListener("click", function(event) {
-        modal.style.display = "none";
-      });
-    
-      bugsPerAcre.addEventListener("change", updateStats);
-      bugsPerAcre.addEventListener("paste", updateStats);
-      bugsPerAcre.addEventListener("input", updateStats);
-      bugsPerAcre2.addEventListener("change", updateStats);
-      bugsPerAcre2.addEventListener("paste", updateStats);
-      bugsPerAcre2.addEventListener("input", updateStats);
-      percentMultiplier.addEventListener("change", updateStats);
-      percentMultiplier.addEventListener("paste", updateStats);
-      percentMultiplier.addEventListener("input", updateStats);
-      percentMultiplier2.addEventListener("change", updateStats);
-      percentMultiplier2.addEventListener("paste", updateStats);
-      percentMultiplier2.addEventListener("input", updateStats);
-    
-      document.getElementById("advanced-options-button").addEventListener("click", function(event) {
-        let controls = document.getElementById("advanced-options-controls");
-        let settingsButton = document.getElementById("advanced-options-button");
-        if (controls.style.display === "none") {
-          controls.style.display = "block";
-          settingsButton.style.marginRight = "0px";
-        } else {
-          controls.style.display = "none";
-          settingsButton.style.marginRight = "12px";
+      $('#num-bugs-per-acre').on('change paste input', updateStats);
+      $('#num-bugs-per-acre2').on('change paste input', updateStats);
+      $('#variable-rate').on('change paste input', updateStats);
+      $('#variable-rate2').on('change paste input', updateStats);
+
+      fileInput.addEventListener("click", function(event) { removeOverlays(); });
+      fileInput.addEventListener("change", function(event) {
+        try {
+          let file = fileInput.files[0];
+          if (file) {
+            const extension = file.name.substr(file.name.lastIndexOf('.') + 1);
+            if (extension === 'kml') {
+              addKMLLayer(file);
+              overlayVisible = true;
+            } else if (extension === 'kmz') {
+              addKMZLayer(file);
+              overlayVisible = true;
+            } else {
+              // Unknown file type
+              createAlert("Unknown File Type", 5000, "error");
+            }
+          }
+          if (overlayVisible) {
+            document.getElementById("overlay-toggle-btn").style.display = "block";
+          }
+        } catch (e) {
+          console.log(e);
         }
       });
-    
-      document.getElementById("app-area-opacity").addEventListener("input", function(event) {
-        document.getElementById("app-area-opacity-display").innerHTML = this.value + "%";
+
+      document.getElementById("add-bug-toggle").addEventListener("click", function() {
+        updateStats();
+        if (this.checked) {
+          document.getElementById("add-bug-display").style.display =
+            "inline-block";
+        } else {
+          document.getElementById("add-bug-display").style.display = "none";
+        }
       });
-      document.getElementById("hazard-area-opacity").addEventListener("input", function(event) {
-        document.getElementById("hazard-area-opacity-display").innerHTML = this.value + "%";
-      });
-      document.getElementById("vr-area-opacity").addEventListener("input", function(event) {
-        document.getElementById("vr-area-opacity-display").innerHTML = this.value + "%";
-      });
-      // document.getElementById("overlay-opacity").addEventListener("input", function(event) {
-      //   document.getElementById("overlay-opacity-display").innerHTML = this.value + "%";
-      // });
-    
-      toastr.options.positionClass = "toast-top-center";
+      
       document.getElementById("additional-info").addEventListener("submit", function(event) {
         if (validate()) {
-          //toastr.optionsOverride({progressBar: 'true'});
-          toastr.info("Processing...");
+          createAlert("Processing...", 5000, "info");
           event.preventDefault();
     
           // Create form data object to easily get form values
@@ -1114,10 +1336,31 @@
             "application/json; charset=UTF-8"
           );
           xhttp.send(JSON.stringify(data));
+          window.scrollTo(0, 0);
         } else {
           event.preventDefault();
           console.log("Did not submit");
         }
+      });
+
+      document.getElementById("advanced-options-button").addEventListener("click", function(event) {
+        let controls = document.getElementById("advanced-options-controls");
+        let settingsButton = document.getElementById("advanced-options-button");
+        if (controls.style.display === "none") {
+          controls.style.display = "block";
+          settingsButton.style.marginRight = "0px";
+        } else {
+          controls.style.display = "none";
+          settingsButton.style.marginRight = "12px";
+        }
+      });
+
+      document.getElementById("app-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("app-area-opacity-display").innerHTML = this.value + "%";
+      });
+      
+      document.getElementById("hazard-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("hazard-area-opacity-display").innerHTML = this.value + "%";
       });
       
       document.getElementById("mobile-mode").addEventListener("click", function() {
@@ -1133,17 +1376,13 @@
           document.getElementById("mobile-options-div").style.display = "none";
         }
       });
-    
-      document.getElementById("add-bug-toggle").addEventListener("click", function() {
-          updateStats();
-          if (this.checked) {
-            document.getElementById("add-bug-display").style.display =
-              "inline-block";
-          } else {
-            document.getElementById("add-bug-display").style.display = "none";
-          }
-        });
+      
+      document.getElementById("modal-close").addEventListener("click", function(event) { modal.style.display = "none"; });
+
+      document.getElementById("vr-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("vr-area-opacity-display").innerHTML = this.value + "%";
+      });
     </script>
   </body>
   
-</html>
+</html>`

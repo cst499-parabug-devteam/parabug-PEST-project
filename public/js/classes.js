@@ -75,7 +75,7 @@ class AppArea {
             strokeWeight: 1,
             fillColor: AppArea.fill,
             fillOpacity: AppArea.opacity,
-            zIndex: 0,
+            zIndex: 1,
         });
         this.poly.setMap(this.map);
     }
@@ -138,7 +138,7 @@ class AppArea {
             strokeWeight: 1,
             fillColor: AppArea.hazardFill,
             fillOpacity: AppArea.hazardOpacity,
-            zIndex: 1,
+            zIndex: 2,
             identifier: id
         });
         poly.setMap(this.map);
@@ -157,7 +157,7 @@ class AppArea {
             strokeWeight: 1,
             fillColor: AppArea.vrFill,
             fillOpacity: AppArea.vrOpacity,
-            zIndex: 2,
+            zIndex: 3,
             identifier: id
         });
         poly.setMap(this.map);
