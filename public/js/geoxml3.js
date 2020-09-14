@@ -501,6 +501,12 @@ if (!!window.google && !! google.maps) {
       return latLonBox;
     }
 
+    var getBoundsCenter = function(coords) {
+      let bounds = new google.maps.LatLngBounds();
+      coords.forEach((coord) => bounds.extend(coord));
+      return bounds.getCenter();
+    }
+
     /*
         Convert the String Contents of a LatLonQuad Element(incompatible with Google Maps)
         to a LatLonBox Element, which is compatible with Google Maps
@@ -576,7 +582,8 @@ if (!!window.google && !! google.maps) {
 
     var rotateCoords = function(coords, angle) {
       var prj = map.getProjection();
-      let origin = prj.fromLatLngToPoint(new google.maps.LatLng(44.473765979999996, -123.21016127));
+      // let origin = prj.fromLatLngToPoint(new google.maps.LatLng(44.473765979999996, -123.21016127));
+      let origin = prj.fromLatLngToPoint(getBoundsCenter(coords));
       var coords = coords.map(function(latLng){
         var point = prj.fromLatLngToPoint(latLng);
         var rotatedLatLng =  prj.fromPointToLatLng(rotatePoint(point,origin,angle));
