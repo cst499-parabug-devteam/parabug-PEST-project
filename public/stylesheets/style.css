@@ -148,6 +148,10 @@ html {
   color: white;
 }
 
+.overlay-visible-item {
+  display: none;
+}
+
 .read-only {
   background-color: lightgrey;
 }
@@ -317,9 +321,9 @@ html {
   display: none;
 }
 
-#overlay-toggle-btn {
+/* #overlay-toggle-btn {
   display: none;
-}
+} */
 
 #pac-input {
   background-color: #fff;
