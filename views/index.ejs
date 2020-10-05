@@ -56,13 +56,16 @@
           <br>
           <div class="row justify-content-center">
             <div class="col col-auto"><input type="button" value="Reset" onclick="resetDisplaySettings()"></div>
-            <div class="col col-auto"><input type="button" value="Apply" onclick="applyDisplaySettings()"></div>
           </div>
         </div>
       </div>
     </div>
 
     <div id="top-alert"></div>
+
+    <div style="padding-left: 20px;">
+      <span class="click-tip" onclick="showTip('shortcuts')">Shortcuts <i class="fa fa-question"></i></span>
+    </div>
 
     <form id="additional-info" method="POST">
       <div id="stat-display">
@@ -308,7 +311,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <span class="modal-close" id="modal-close">&times;</span>
-          <div id="modal-header"></div>
+          <div id="modal-header-text"></div>
         </div>
         <div class="modal-body">
           <div id="modal-body"></div>
@@ -316,6 +319,7 @@
         </div>
       </div>
     </div>
+
     <script>
       "use strict"
       /* GLOBAL VARIABLES */
@@ -540,7 +544,7 @@
 
       function deleteSubPoly() {
         if ((appArea != null) && (appArea.deleteIdentifier != null)) {
-          index = appArea.getIndexOfIdentifier(appArea.deleteIdentifier.id, appArea.deleteIdentifier.type);
+          let index = appArea.getIndexOfIdentifier(appArea.deleteIdentifier.id, appArea.deleteIdentifier.type);
           if (appArea.deleteIdentifier.type == "hazard") {
               appArea.removeHazard(index);
           } else if (appArea.deleteIdentifier.type = "variable") {
@@ -629,7 +633,8 @@
           overlaySettingsDiv.append("<h6>"+doc.groundoverlays[i].name+"</h6>").append(
             $("<div>Opacity: </div>").append(
               $('<input type="range" min="0" max="100" value="100" id="'+id+'">').on("input", function() {
-                $("#"+id+"-display").text($(this).val()+"%")
+                $("#"+id+"-display").text($(this).val()+"%");
+                applyDisplaySettings();
               })
             ).append('<span id="'+id+"-display"+'">100%</span>')
           ).append('<hr>');
@@ -662,7 +667,14 @@
               gO.percentOpacity_ = opacity;
               gO.setMap(map);
             }
-            setTimeout(function(){document.getElementById(gO.id_).style.zIndex = 10-i;}, 1000);
+            setTimeout(function(){
+              try {
+                document.getElementById(gO.id_).style.zIndex = 10-i;
+              } catch (e) {
+                // timeout function occured after value was already set as null, ignore
+              }
+            }, 1000);
+            
           } else {
             gO.setMap(null);
           }
@@ -808,6 +820,7 @@
     
           // Interior
           let modeSelect = document.createElement("select");
+          modeSelect.id = "mode-selector";
           modeSelect.style.color = "rgb(25,25,25)";
           modeSelect.style.fontFamily = "Roboto,Arial,sans-serif";
           modeSelect.style.fontSize = "15px";
@@ -936,7 +949,7 @@
             return;
           }
         }
-        for (i = 0; i < appArea.getNumVariableRateAreas(); i++) {
+        for (let i = 0; i < appArea.getNumVariableRateAreas(); i++) {
           temp = appArea.getVariableRateArea(i).getPoly();
           if (google.maps.geometry.poly.containsLocation(latLng, temp)) {
             let mev = {
@@ -1024,13 +1037,13 @@
     
         $('#app-area-color').val(appAreaColor);
         $('#app-area-opacity').val(appAreaOpacity * 100);
-        $('#app-area-opacity-display').val((appAreaOpacity * 100) + "%");
+        $('#app-area-opacity-display').text((appAreaOpacity * 100) + "%");
         $('#hazard-area-color').val(hazardAreaColor);
         $('#hazard-area-opacity').val(hazardAreaOpacity * 100);
-        $('#hazard-area-opacity-display').val((hazardAreaOpacity * 100) + "%");
+        $('#hazard-area-opacity-display').text((hazardAreaOpacity * 100) + "%");
         $('#vr-area-color').val(vrAreaColor);
         $('#vr-area-opacity').val(vrAreaOpacity * 100);
-        $('#vr-area-opacity-display').val((vrAreaOpacity * 100) + "%");
+        $('#vr-area-opacity-display').text((vrAreaOpacity * 100) + "%");
     
         try {
           if (appArea) {
@@ -1141,6 +1154,28 @@
             text =
               "The spacing, in feet, between each row of crops in the field specified";
             break;
+          case "shortcuts":
+            header = "Shortcuts / Hotkeys"
+            text = 
+              '<div class="row">' + 
+                '<div class="col col-6 s-key">1</div>' +
+                '<div class="col col-6 s-name">Drag Mode</div>' +
+                '<div class="col col-6 s-key">2</div>' +
+                '<div class="col col-6 s-name">Application Area Mode</div>' +
+                '<div class="col col-6 s-key">3</div>' +
+                '<div class="col col-6 s-name">Hazard Area Mode</div>' +
+                '<div class="col col-6 s-key">4</div>' +
+                '<div class="col col-6 s-name">Variable Rate Mode</div>' +
+                '<div class="col col-6 s-key">5</div>' +
+                '<div class="col col-6 s-name">Delete Mode</div>' +
+                '<div class="col col-6 s-key">t</div>' +
+                '<div class="col col-6 s-name">Toggle Crosshair Mode</div>' +
+                '<div class="col col-6 s-key">s</div>' +
+                '<div class="col col-6 s-name">Mark/Select (Crosshair Mode)</div>' +
+                '<div class="col col-6 s-key">f</div>' +
+                '<div class="col col-6 s-name">Finish Shape (Crosshair Mode)</div>' +
+              '</div>';
+            break;
           default:
             text = "tip not found";
             return;
@@ -1148,7 +1183,7 @@
         }
     
         modal.style.display = "block";
-        document.getElementById("modal-header").innerHTML = header;
+        document.getElementById("modal-header-text").innerHTML = header;
         document.getElementById("modal-body").innerHTML = text;
     
         // When the user clicks anywhere outside of the modal, close it
@@ -1282,6 +1317,7 @@
       $('#variable-rate2').on('change paste input', updateStats);
 
       fileInput.addEventListener("click", function(event) { removeOverlays(); });
+      
       fileInput.addEventListener("change", function(event) {
         try {
           let file = fileInput.files[0];
@@ -1376,26 +1412,6 @@
           console.log("Did not submit");
         }
       });
-
-      document.getElementById("advanced-options-button").addEventListener("click", function(event) {
-        let controls = document.getElementById("advanced-options-controls");
-        let settingsButton = document.getElementById("advanced-options-button");
-        if (controls.style.display === "none") {
-          controls.style.display = "block";
-          settingsButton.style.marginRight = "0px";
-        } else {
-          controls.style.display = "none";
-          settingsButton.style.marginRight = "12px";
-        }
-      });
-
-      document.getElementById("app-area-opacity").addEventListener("input", function(event) {
-        document.getElementById("app-area-opacity-display").innerHTML = this.value + "%";
-      });
-      
-      document.getElementById("hazard-area-opacity").addEventListener("input", function(event) {
-        document.getElementById("hazard-area-opacity-display").innerHTML = this.value + "%";
-      });
       
       document.getElementById("mobile-mode").addEventListener("click", function() {
         if (this.checked) {
@@ -1413,8 +1429,83 @@
       
       document.getElementById("modal-close").addEventListener("click", function(event) { modal.style.display = "none"; });
 
+      
+      /* ADVANCED OPTIONS LISTENERS */
+      document.getElementById("advanced-options-button").addEventListener("click", function(event) {
+        let controls = document.getElementById("advanced-options-controls");
+        let settingsButton = document.getElementById("advanced-options-button");
+        if (controls.style.display === "none") {
+          controls.style.display = "block";
+          settingsButton.style.marginRight = "0px";
+        } else {
+          controls.style.display = "none";
+          settingsButton.style.marginRight = "12px";
+        }
+      });
+
+      document.getElementById("app-area-color").addEventListener("input", function(event) {
+        applyDisplaySettings();
+      });
+
+      document.getElementById("app-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("app-area-opacity-display").innerHTML = this.value + "%";
+        applyDisplaySettings();
+      });
+      
+      document.getElementById("hazard-area-color").addEventListener("input", function(event) {
+        applyDisplaySettings();
+      });
+
+      document.getElementById("hazard-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("hazard-area-opacity-display").innerHTML = this.value + "%";
+        applyDisplaySettings();
+      });
+      
+      document.getElementById("vr-area-color").addEventListener("input", function(event) {
+        applyDisplaySettings();
+      });
+
       document.getElementById("vr-area-opacity").addEventListener("input", function(event) {
         document.getElementById("vr-area-opacity-display").innerHTML = this.value + "%";
+        applyDisplaySettings();
+      });
+    
+      /* HOTKEYS */
+      $('#map').keypress(function(e) {
+        let key = String.fromCharCode(e.which);
+        switch (key) {
+          case '1':
+            $('#mode-selector').val(0);
+            drawToggle('0');
+            break;
+          case '2':
+            $('#mode-selector').val(1);
+            drawToggle('1');
+            break;
+          case '3':
+            $('#mode-selector').val(2);
+            drawToggle('2');
+            break;
+          case '4':
+            $('#mode-selector').val(3);
+            drawToggle('3');
+            break;
+          case '5':
+            $('#mode-selector').val(4);
+            drawToggle('4');
+            break;
+          case 't': case 'T': // Mobile mode select / mark
+            $('#mobile-mode').click();
+            break;
+          case 's': case 'S': // Mobile mode select / mark
+            if ($('#mobile-mode').prop("checked")) { makeMarker(); }
+            break;
+          case 'f': case 'F': // Mobile mode finish
+            if ($('#mobile-mode').prop("checked")) { finishShape(); }
+            break;
+          default:
+            break;
+        }
       });
     </script>
   </body>

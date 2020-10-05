@@ -164,6 +164,15 @@ html {
   max-width: 100%;
 }
 
+.s-key {
+  font-weight: bold;
+  text-align: right;
+}
+
+.s-name {
+  text-align: left;
+}
+
 .sidebar {
   padding: 10px;
 }
@@ -299,11 +308,12 @@ html {
   line-height: 28px;
 }
 
-#modal-header {
-  text-align: center;
+#modal-header-text {
   font-size: 32px;
   font-weight: bold;
   line-height: 46px;
+  width: 100%;
+  text-align: center;
 }
 
 #mode-control-container {
