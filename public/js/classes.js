@@ -1013,3 +1013,96 @@ AppArea.hazardFill = "#FF0000";
 AppArea.hazardOpacity = 0.7;
 AppArea.vrFill = "#CCCCCC";
 AppArea.vrOpacity = 0.6;
+
+
+// https://developers.google.com/maps/documentation/javascript/examples/overlay-simple
+class CustomOverlay extends google.maps.OverlayView {
+    constructor(corners, image, name = "Unnamed Layer", description = "") {
+        super();
+        this.corners_ = corners;
+        this.image_ = image;
+        this.div_ = null;
+        this.opacity_ = 100;
+        this.bounds_ = new google.maps.LatLngBounds(
+            new google.maps.LatLng(corners.lowerLeft[1], corners.lowerLeft[0]),
+            new google.maps.LatLng(corners.upperRight[1], corners.upperRight[0])
+        );
+        this.name_ = name;
+        this.description_ = description;
+        this.center_ = this.bounds_.getCenter();
+    }
+
+    draw() {
+        // We use the south-west and north-east
+        // coordinates of the overlay to peg it to the correct position and size.
+        // To do this, we need to retrieve the projection from the overlay.
+        const overlayProjection = this.getProjection();
+        // Retrieve the south-west and north-east coordinates of this overlay
+        // in LatLngs and convert them to pixel coordinates.
+        // We'll use these coordinates to resize the div.
+        const sw = overlayProjection.fromLatLngToDivPixel(
+            this.bounds_.getSouthWest()
+        );
+        const ne = overlayProjection.fromLatLngToDivPixel(
+            this.bounds_.getNorthEast()
+        );
+
+        // Resize the image's div to fit the indicated dimensions.
+        if (this.div_) {
+            this.div_.style.left = sw.x + "px";
+            this.div_.style.top = ne.y + "px";
+            this.div_.style.width = ne.x - sw.x + "px";
+            this.div_.style.height = sw.y - ne.y + "px";
+        }
+    }
+
+    getCenter() {
+        return this.center_;
+    }
+
+    getName() {
+        return this.name_;
+    }
+
+    getOpacity() {
+        return this.opacity_;
+    }
+
+    /**
+     * onAdd is called when the map's panes are ready and the overlay has been
+     * added to the map.
+     */
+    onAdd() {
+        this.div_ = document.createElement("div");
+        this.div_.style.borderStyle = "none";
+        this.div_.style.borderWidth = "0px";
+        this.div_.style.position = "absolute";
+        // this.div_.style.opacity = "0.5";
+        // Create the img element and attach it to the div.
+        const img = document.createElement("img");
+        img.src = this.image_;
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.position = "absolute";
+        this.div_.appendChild(img);
+        // Add the element to the "overlayLayer" pane.
+        const panes = this.getPanes();
+        panes.overlayLayer.appendChild(this.div_);
+    }
+
+    /**
+     * The onRemove() method will be called automatically from the API if
+     * we ever set the overlay's map property to 'null'.
+     */
+    onRemove() {
+        if (this.div_) {
+            this.div_.parentNode.removeChild(this.div_);
+            this.div_ = null;
+        }
+    }
+
+    setOpacity(percent) {
+        this.div_.style.opacity = (percent/100);
+        this.opacity_ = percent;
+    }
+}

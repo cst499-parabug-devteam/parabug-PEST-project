@@ -21,7 +21,10 @@
     <script src="/js/geoxml3.js"></script>
     <script defer src="/js/ProtectedOverlay.js"></script>
     <script defer src="/js/ZipFile.js"></script>
-    <script async src="/js/classes.js"></script>
+    <script defer src="/js/classes.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.6.2/proj4.min.js"></script>
   </head>
 
   <body>
@@ -306,6 +309,8 @@
       </div>
     </form>
   
+    <div id="tiff-image"></div>
+
     <!-- The Modal -->
     <div id="tip-modal" class="modal">
       <div class="modal-content">
@@ -320,6 +325,8 @@
       </div>
     </div>
 
+    <script src="./js/esri-proj-codes.js"></script>
+    <script src="./js/tiff.js"></script>
     <script>
       "use strict"
       /* GLOBAL VARIABLES */
@@ -330,13 +337,14 @@
       let centerMarker;
       let overlayMarkers = [];
       let tempShape;
-      let rotatingRectangle;
 
-      /* OVERLAY VARIABLES */
+      /* OVERLAY & FILE VARIABLES */
+      let fileType = null;
+      let localURL = null;
       let geoJsonFeatures = null;
       let geoXML = null;
-      let localURL = null;
       let overlayVisible = false;
+      let customOverlay = null; // Currently used for tiff files
     
       // Internal object to help manage toggling between our custom drawing modes
       let drawModeControl = {
@@ -364,13 +372,11 @@
       let modal = document.getElementById("tip-modal");
       let fileInput = document.createElement("input");
       fileInput.setAttribute("type", "file");
-      fileInput.setAttribute("accept", ".kml,.kmz");
+      fileInput.setAttribute("accept", ".kml,.kmz,.tif");
     
       /* FUNCTIONS */
-    
-      function addKMLLayer(file) {
-        createAlert("Loading KML File", 10000, "info");
-        let urlObject = URL.createObjectURL(file);
+
+      function addKMLLayer() {
         var xhr = new XMLHttpRequest();
         xhr.onload = function() {
           try {
@@ -412,36 +418,159 @@
                 map.setCenter({ lat: centroid.x, lng: centroid.y });
               }
               createAlert("Loading Complete", 3000, "success");
+              setOverlayMenuOptionDisplay(true);
             } else {
               createAlert("KML Failed to Load", 5000, "error");
+              setOverlayMenuOptionDisplay(false);
+              fileType = null;
             }
           } catch (e) {
             createAlert("KML Format Error", 10000, "error");
             console.log("KML Format Error:");
             console.log(e.message);
             removeOverlays();
+            setOverlayMenuOptionDisplay(false);
           }
         }
         xhr.onerror = function() {
           createAlert("KML Failed to Load", 5000, "error");
           console.log("Error while getting XML.");
+          setOverlayMenuOptionDisplay(false);
         }
-        xhr.open("GET", urlObject);
+        xhr.open("GET", localURL);
         xhr.responseType = "document";
         xhr.send();
       }
 
-      function addKMZLayer(file) {
-        localURL = URL.createObjectURL(file);
-        geoXML = new geoXML3.parser({
-          map: map,
-          singleInfoWindow: false,
-          suppressInfoWindows : true,
-          zoom : true,
-          afterParse: fileLoadingFinished,
-        });
+      function addKMZLayer() {
         createAlert("Loading File...", 10000, "info");
-        geoXML.parse(localURL);
+        try {
+          geoXML = new geoXML3.parser({
+            map: map,
+            singleInfoWindow: false,
+            suppressInfoWindows : true,
+            zoom : true,
+            afterParse: kmzFileParsed,
+          });
+          geoXML.parse(localURL);
+        } catch (e) {
+          setOverlayMenuOptionDisplay(false);
+
+        }
+      }
+
+      async function addTiff(file, clearOpacity) {
+        const tiff = await GeoTIFF.fromBlob(file);
+        const image = await tiff.getImage();
+        const fd = image.getFileDirectory()
+        const gk = image.getGeoKeys()
+
+        let temp = gk.ProjectedCSTypeGeoKey;
+        temp = (!temp) ? gk.GeographicTypeGeoKey : temp;
+        if (!temp) {
+          createAlert("Geokey Missing For GeoTiff File", 3000, "error");
+          setOverlayMenuOptionDisplay(false);
+          fileType = null;
+          return;
+        }
+
+        // User Defined Geokey (find out how to deal with these)
+        if (parseInt(temp) === 32767) {
+          createAlert("Custom Geokey (Projection System) used in GeoTiff file. This feature is not yet supported.", 5000, "error");
+          setOverlayMenuOptionDisplay(false);
+          fileType = null;
+          return;
+        }
+        const codes = require('@esri/proj-codes'); // browserified @esri/proj-codes
+        const crs = codes.lookup(parseInt(temp));
+        const targetProjection = proj4('EPSG:4326');
+        const sourceProjection = proj4(crs.wkt);
+
+        // http://duff.ess.washington.edu/data/raster/drg/docs/geotiff.txt
+        let cw, cs, ce, cn;
+        if (fd.ModelTiepoint && fd.ModelPixelScale) {
+            let mt = fd.ModelTiepoint, mp = fd.ModelPixelScale;
+            let ih = fd.ImageLength, iw = fd.ImageWidth;
+            cw = mt[3] - mt[0] * mp[0];
+            cs = mt[4] - (ih - mt[1]) * mp[1];
+            ce = mt[3] + (iw - mt[0]) * mp[0];
+            cn = mt[4] + mt[1] * mp[1];
+        } else if (fd.ModelTransformation) {
+            let md = fd.ModelTransformation;
+            let ih = fd.ImageLength, iw = fd.ImageWidth;
+            cw = md[3];
+            cn = md[7];
+            ce = md[0]*iw + md[3];
+            cs = md[5]*ih + md[7];      
+        } else {
+          createAlert("No transformation information provided in GeoTiff", 3000, "error");
+          setOverlayMenuOptionDisplay(false);
+          fileType = null;
+          return;
+        }
+
+        let bounds = {
+          upperLeft: proj4(sourceProjection, targetProjection, [cw,cn]),
+          lowerLeft: proj4(sourceProjection, targetProjection, [cw,cs]),
+          upperRight: proj4(sourceProjection,targetProjection, [ce,cn]),
+          lowerRight: proj4(sourceProjection, targetProjection, [ce,cs]),
+          center: proj4(sourceProjection, targetProjection, [(cw+ce)/2,(cn+cs)/2])
+        }
+        let Tiff = require('tiff.js');
+        let xhr = new XMLHttpRequest();
+          xhr.onload = function (e) {
+            if (xhr.readyState==4 && xhr.status==200){
+              let tiff;
+              try {
+                tiff = new Tiff({buffer: xhr.response});
+              } catch (err) {
+                tiff = null;
+              }
+              if (!tiff) {
+                createAlert("Error When Parsing GeoTiff File", 3000, "error");
+                setOverlayMenuOptionDisplay(false);
+                fileType = null;
+              } else {
+                let canvas = tiff.toCanvas();
+                if (clearOpacity !== "") {
+                  clearOpacity = clearOpacity.split(",");
+                  let context = canvas.getContext("2d");
+                  for(let x = 0; x < canvas.width; x++) {
+                    for(let y = 0; y < canvas.height; y++) {
+                      let pD = context.getImageData(x, y, 1, 1);
+                      if ((pD.data[0]==clearOpacity[0])&&(pD.data[1]==clearOpacity[1])&&(pD.data[2]==clearOpacity[2])) {
+                        context.clearRect( x, y, 1, 1 );
+                      }
+                    }
+                  }
+                }
+                customOverlay = new CustomOverlay(bounds, canvas.toDataURL("image/png", 1), fd.PageName, fd.ImageDescription);
+                customOverlay.setMap(map);
+                map.setCenter(customOverlay.getCenter());
+                createAlert("Loading Complete", 3000, "success");
+                let id = "tiff-layer-opacity";
+                $('#overlay-settings-content').append("<h6>"+customOverlay.getName()+"</h6>").append(
+                  $("<div>Opacity: </div>").append(
+                    $('<input type="range" min="0" max="100" value="100" id="'+id+'">').on("input", function() {
+                      $("#"+id+"-display").text($(this).val()+"%");
+                      applyDisplaySettings();
+                    })
+                  ).append('<span id="'+id+"-display"+'">100%</span>')
+                ).append('<hr>');
+                setOverlayMenuOptionDisplay(true);
+                $('#overlay-settings').show();
+              }
+            }
+          };
+          xhr.onerror = function() {
+            createAlert("Error When Loading GeoTiff File", 3000, "error");
+            console.log(e);
+            setOverlayMenuOptionDisplay(false);
+            fileType = null;
+          }
+          xhr.responseType = 'arraybuffer';
+          xhr.open('GET', localURL);
+          xhr.send();
       }
 
       function applyDisplaySettings() {
@@ -476,8 +605,12 @@
         }
         try {
           // Overlay Settings
-          if (!!geoXML) {
+          if (fileType === "kmz") {
             fixKMZOverlay();
+          } else if (fileType === "tif") {
+            let opacity = $("#tiff-layer-opacity").val();
+            customOverlay.setOpacity(opacity);
+            overlayVisible = true;
           }
         } catch (e) {
           console.log("Error when applying overlay display settings: " + e.message);
@@ -499,8 +632,8 @@
       function centerOnOverlay() {
         let file = fileInput.files[0];
         if (!file) { return; }
-        const extension = file.name.substr(file.name.lastIndexOf('.') + 1);
-        if (extension === 'kml') {
+        const fileType = file.name.substr(file.name.lastIndexOf('.') + 1);
+        if (fileType === 'kml') {
           try {
             let center = null;
             map.data.forEach(function(feature) {
@@ -514,13 +647,15 @@
           } catch (e) {
             createAlert("Failed to center on KML overlay", 10000, "error");
           }
-        } else if (extension === 'kmz') {
+        } else if (fileType === 'kmz') {
           try {
             let center = geoXML.docs[0].ggroundoverlays[0].bounds_.getCenter();
             map.setCenter(center)
           } catch (e) {
             createAlert("Failed to center on KMZ overlay", 10000, "error");
           }
+        } else if (fileType === "tif") {
+          map.setCenter(customOverlay.getCenter());
         }
       }
 
@@ -621,28 +756,6 @@
         }
       }
       
-      function fileLoadingFinished(doc) {
-        createAlert("Loading Complete", 3000, "success");
-        doc = geoXML.docs[0];
-
-        // Generate and show overlay settings in advanced options menu
-        let overlaySettingsDiv = $('#overlay-settings-content');
-        for (let i = 0; i < doc.ggroundoverlays.length ; i++) {
-          let id = "kmz-layer-opacity-" + i;
-          doc.ggroundoverlays[i].id_ = doc.groundoverlays[i].name + "-" + i;
-          overlaySettingsDiv.append("<h6>"+doc.groundoverlays[i].name+"</h6>").append(
-            $("<div>Opacity: </div>").append(
-              $('<input type="range" min="0" max="100" value="100" id="'+id+'">').on("input", function() {
-                $("#"+id+"-display").text($(this).val()+"%");
-                applyDisplaySettings();
-              })
-            ).append('<span id="'+id+"-display"+'">100%</span>')
-          ).append('<hr>');
-        }
-        $('#overlay-settings').show();
-        fixKMZOverlay();
-      }
-
       function finishShape() {
         if (!!tempShape) {
           draw(tempShape.getPath());
@@ -674,7 +787,6 @@
                 // timeout function occured after value was already set as null, ignore
               }
             }, 1000);
-            
           } else {
             gO.setMap(null);
           }
@@ -888,6 +1000,28 @@
         //********************************* End Custom Controls*********************************
       }
 
+      function kmzFileParsed(doc) {
+        createAlert("Loading Complete", 3000, "success");
+        doc = geoXML.docs[0];
+        // Generate and show overlay settings in advanced options menu
+        let overlaySettingsDiv = $('#overlay-settings-content');
+        for (let i = 0; i < doc.ggroundoverlays.length ; i++) {
+          let id = "kmz-layer-opacity-" + i;
+          doc.ggroundoverlays[i].id_ = doc.groundoverlays[i].name + "-" + i;
+          overlaySettingsDiv.append("<h6>"+doc.groundoverlays[i].name+"</h6>").append(
+            $("<div>Opacity: </div>").append(
+              $('<input type="range" min="0" max="100" value="100" id="'+id+'">').on("input", function() {
+                $("#"+id+"-display").text($(this).val()+"%");
+                applyDisplaySettings();
+              })
+            ).append('<span id="'+id+"-display"+'">100%</span>')
+          ).append('<hr>');
+        }
+        $('#overlay-settings').show();
+        setOverlayMenuOptionDisplay(true);
+        fixKMZOverlay();
+      }
+
       function makeMarker() {
         if (drawModeControl.current == 4) {
           // Delete Mode
@@ -1004,9 +1138,10 @@
       }
 
       function removeOverlays() {
-        map.data.forEach(function(feature) { map.data.remove(feature); });
-        geoJsonFeatures = null;
-        if (!!geoXML) {
+        if (fileType === "kml") {
+          map.data.forEach(function(feature) { map.data.remove(feature); });
+          geoJsonFeatures = null;
+        } else if (fileType === "kmz") {
           try {
             let doc = geoXML.docs[0];
             geoXML.docs = [];
@@ -1017,14 +1152,18 @@
           } catch (e) {
             // Continue
           }
+        } else if (fileType === "tif") {
+          customOverlay.setMap(null);
+          customOverlay = null;
         }
-        let elements = document.getElementsByClassName("overlay-visible-item");
-        for (let i = 0; i < elements.length; i++) { elements[i].style.display = "none"; }
+        setOverlayMenuOptionDisplay(false);
         $('#overlay-settings-content').empty();
         $('#overlay-settings').hide();
+        URL.revokeObjectURL(localURL);
+        localURL = null;
         fileInput.value = null;
+        fileType = null;
         geoXML = null;
-        overlayVisible = false;
       }
 
       function resetDisplaySettings() {
@@ -1076,7 +1215,7 @@
         }
         try {
           // Overlay Settings
-          if (!!geoXML) {
+          if (fileType === "kmz") {
             const doc = geoXML.docs[0];
             for (let i = 0; i < doc.ggroundoverlays.length; i++) {
               const gO = doc.ggroundoverlays[i];
@@ -1094,6 +1233,10 @@
             }
             overlayVisible = true;
             fixKMZOverlay();
+          } else if (fileType === "tif") {
+            $("#tiff-layer-opacity").val(100);
+            $("#tiff-layer-opacity-display").text("100%");
+            customOverlay.setOpacity(100);
           }
         } catch (e) {
           console.log("Error when resetting overlay display settings: " + e.message);
@@ -1110,6 +1253,16 @@
     
       function round(value, decimals) {
           return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
+      }
+
+      function setOverlayMenuOptionDisplay(visible = true) {
+        let elements = document.getElementsByClassName("overlay-visible-item");
+        if (visible) {
+          for (let i = 0; i < elements.length; i++) { elements[i].style.display = "block"; }
+        } else {
+          for (let i = 0; i < elements.length; i++) { elements[i].style.display = "none"; }
+        }
+        overlayVisible = visible;
       }
 
       function showAlert(json) {
@@ -1255,17 +1408,26 @@
         }
       }
 
+      function toggleTIFFOverlay() {
+        overlayVisible = !overlayVisible;
+        let current = customOverlay.getOpacity();
+        console.log(current);
+        if (current === 0) {
+          customOverlay.setOpacity($("#tiff-layer-opacity").val());
+        } else {
+          customOverlay.setOpacity(0);
+        }
+      }
+
       function toggleOverlay() {
-        let file = fileInput.files[0];
-        if (file) {
-          const extension = file.name.substr(file.name.lastIndexOf('.') + 1);
-          if (extension === 'kml') {
-            toggleKMLOverlay();
-          } else if (extension === 'kmz') {
-            toggleKMZOverlay();
-          } else {
-            // Unknown file type
-          }
+        if (fileType === 'kml') {
+          toggleKMLOverlay();
+        } else if (fileType === 'kmz') {
+          toggleKMZOverlay();
+        } else if (fileType === 'tif') {
+          toggleTIFFOverlay();
+        } else {
+          // Unknown file type
         }
       }
 
@@ -1309,7 +1471,6 @@
         return true;
       }
     
-    
       /* EVENT LISTENERS */
       $('#num-bugs-per-acre').on('change paste input', updateStats);
       $('#num-bugs-per-acre2').on('change paste input', updateStats);
@@ -1322,21 +1483,23 @@
         try {
           let file = fileInput.files[0];
           if (file) {
-            const extension = file.name.substr(file.name.lastIndexOf('.') + 1);
-            if (extension === 'kml') {
-              addKMLLayer(file);
-              overlayVisible = true;
-            } else if (extension === 'kmz') {
-              addKMZLayer(file);
-              overlayVisible = true;
+            fileType = file.name.substr(file.name.lastIndexOf('.') + 1);
+            if (localURL) { URL.revokeObjectURL(localURL); }
+            localURL = URL.createObjectURL(file);
+            if (fileType === 'kml') {
+              addKMLLayer();
+            } else if (fileType === 'kmz') {
+              addKMZLayer();
+            } else if (fileType === 'tif') {
+              let clearOpacity = prompt('Remove filler pixels for areas intended to be transparent? \n*Note: This can take minutes for large files and is not recommended on mobile devices. \n\n'
+                                        + 'Enter the color (Red,Green,Blue) to be removed.\n0,0,0 - Black (Default Filler)\nEmpty Input - Leave Filler Pixels', "0,0,0");
+              if (clearOpacity === null) { fileType = null; return; }
+              createAlert("Loading GeoTiff File", 10000, "info");
+              // adding tiff is resource intensive, delay by 1 second to allow loading alert to come up first.
+              setTimeout(() => {addTiff(file, clearOpacity);}, 1000);
             } else {
-              // Unknown file type
               createAlert("Unknown File Type", 5000, "error");
             }
-          }
-          if (overlayVisible) {
-            let elements = document.getElementsByClassName("overlay-visible-item");
-            for (let i = 0; i < elements.length; i++) { elements[i].style.display = "block"; }
           }
         } catch (e) {
           console.log(e);
