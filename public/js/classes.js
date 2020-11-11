@@ -1015,7 +1015,6 @@ AppArea.vrFill = "#CCCCCC";
 AppArea.vrOpacity = 0.6;
 
 
-// https://developers.google.com/maps/documentation/javascript/examples/overlay-simple
 class CustomOverlay extends google.maps.OverlayView {
     constructor(corners, image, name = "Unnamed Layer", description = "") {
         super();
@@ -1104,5 +1103,751 @@ class CustomOverlay extends google.maps.OverlayView {
     setOpacity(percent) {
         this.div_.style.opacity = (percent/100);
         this.opacity_ = percent;
+    }
+}
+
+class OverlayManager {
+    constructor(map) {
+        // Google Maps map to display overlays on
+        this.map = map;
+        // Variable to hold various data used for different types of overlays
+        this.data = {};
+        // Variable to manage display state of overlays
+        this.overlayVisible = false;
+
+        /* Assumed Element IDs or Classes -> Change Later? */
+        // Div used for createAlert function
+        this.alertDivID = 'top-alert';
+        // Overlay display settings elements (should only be shown when an overlay is imported)
+        this.displaySettingsDivID = 'overlay-settings';
+        this.displaySettingsDivContentID = 'overlay-settings-content';
+        // Class of menu item elements which should only be shown when an overlay is imported
+        this.menuOptionsClass = 'overlay-visible-item';
+    }
+
+    addFeatureDisplayOptions() {
+        const that = this;
+        const id = "feature-layer-opacity";
+        $('#' + that.displaySettingsDivContentID).append("<h6>Features</h6>").append(
+            $("<div>Opacity: </div>").append(
+                $('<input type="range" min="0" max="100" value="60" id="'+id+'">').on("input", function() {
+                    $("#"+id+"-display").text($(this).val()+"%");
+                    that.applyDisplaySettings();
+                })
+            ).append('<span id="'+id+"-display"+'">60%</span>')
+        ).append('<hr>');
+    }
+
+    /**
+     * Adds a JSON (GeoJson) overlay to the current map based on the current file
+     */
+    addGeoJson() {
+        this.createAlert("Loading GeoJson File", 10000, "info");
+        // Save instance of this to prevent issues in file reader
+        const that = this;
+        const fr = new FileReader();
+        fr.onload = function(e) {
+            const geoJson = JSON.parse(e.target.result);
+            // Save the geoJson features
+            that.data.features = geoJson.features;
+            // Parse the JSON text and add it directly to the map
+            that.map.data.addGeoJson(geoJson);
+            // Add general display settings inputs for features
+            that.addFeatureDisplayOptions();
+            // Cycle through features added to the map and manually set their display settings
+            that.setMapFeatureDisplay();
+            // Overlay has been imported, so display overlay-related menu options
+            that.setOverlayMenuOptionDisplay();
+            $('#' + that.displaySettingsDivID).show();
+            that.createAlert("Loading Complete", 3000, "success");
+            // Center map display on the newly added overlay
+            that.centerMapOnOverlay();
+        };
+        fr.onerror = function(e) {
+          that.createAlert("Failed to import GeoJson overlay", 10000, "error");
+          // Overlay failed to import, make sure overlay-related menu options are hidden
+          that.setOverlayMenuOptionDisplay(false);
+        }
+        // Read the JSON file as text to be easily parsed
+        fr.readAsText(that.file);
+    }
+
+    /**
+     * Adds a Tif (GeoTiff) overlay to the current map based on the current file
+     * Format Specification: http://duff.ess.washington.edu/data/raster/drg/docs/geotiff.txt
+     * 
+     * @param {String} clearPixel the "R,G,B" String specifying the color to be removed
+     * from the image on import. This is useful to remove pixels which were added unintentionally
+     * to fill in areas of the image that were meant to be completely transparent, but weren't saved
+     * as such in the GeoTiff format. clearPixel Format: "integer,integer,integer" where 0 <= integer <= 255
+     * 
+     * Required libraries (currently browserified):
+     *  - geotiff.js [https://github.com/geotiffjs/geotiff.js/]
+     *  - tiff.js [https://github.com/seikichi/tiff.js]
+     *  - @esri/proj-codes [https://github.com/Esri/projection-engine-db-doc]
+     *  - proj4 [https://github.com/proj4js/proj4js]
+     */
+    async addGeoTiff(clearPixel) {
+        // Retrieve a GeoTiff object from the current file and retrieve its image data
+        const tiff = await GeoTIFF.fromBlob(this.file);
+        const image = await tiff.getImage();
+        // Convinience variables used to access projection information
+        const fd = image.getFileDirectory();
+        const gk = image.getGeoKeys();
+
+        // Obtain the GeoKey which specifies the projection or coordinate system the source file uses
+        // (We need to convert to a system which can be used on Google Maps -> EPSG:4326)
+        let sourceGeoKey = gk.ProjectedCSTypeGeoKey;
+        sourceGeoKey = (!sourceGeoKey) ? gk.GeographicTypeGeoKey : sourceGeoKey;
+        if (!sourceGeoKey) {
+            // If this metadata is not found we cannot convert the file, error
+            this.createAlert("Geokey Missing For GeoTiff File", 3000, "error");
+            this.reset();
+            return;
+        }
+        sourceGeoKey = parseInt(sourceGeoKey);
+
+        // User Defined Geokey (find out how to deal with these)
+        if (sourceGeoKey === 32767) {
+          createAlert("Custom Geokey (Projection System) used in GeoTiff file. This feature is not yet supported.", 5000, "error");
+          this.reset();
+          return;
+        }
+
+        // Import libraries through which we can get all the coordinate reference system (crs) info for our GeoKey
+        const codes = require('@esri/proj-codes');
+        const crs = codes.lookup(sourceGeoKey);
+        const targetProjection = proj4('EPSG:4326');
+        const sourceProjection = proj4(crs.wkt); // use the well-known text (wkt)
+
+        // We now need to get what the boundaries of our image would be in the old projection / coordinate system
+        // This process will vary based on what metadata was supplied (refer to Format Specification)
+        let cw, cs, ce, cn;
+        if (fd.ModelTiepoint && fd.ModelPixelScale) {
+            let mt = fd.ModelTiepoint, mp = fd.ModelPixelScale;
+            let ih = fd.ImageLength, iw = fd.ImageWidth;
+            cw = mt[3] - mt[0] * mp[0];
+            cs = mt[4] - (ih - mt[1]) * mp[1];
+            ce = mt[3] + (iw - mt[0]) * mp[0];
+            cn = mt[4] + mt[1] * mp[1];
+        } else if (fd.ModelTransformation) {
+            let md = fd.ModelTransformation;
+            let ih = fd.ImageLength, iw = fd.ImageWidth;
+            cw = md[3];
+            cn = md[7];
+            ce = md[0]*iw + md[3];
+            cs = md[5]*ih + md[7];      
+        } else {
+            // Bounds cannot be determined becasue transformation information is missing, error
+            createAlert("No transformation information provided in GeoTiff", 3000, "error");
+            this.reset();
+            return;
+        }
+
+        // Using proj4, convert the old image boundaries to our target projection system
+        let bounds = {
+          upperLeft: proj4(sourceProjection, targetProjection, [cw,cn]),
+          lowerLeft: proj4(sourceProjection, targetProjection, [cw,cs]),
+          upperRight: proj4(sourceProjection,targetProjection, [ce,cn]),
+          lowerRight: proj4(sourceProjection, targetProjection, [ce,cs]),
+          center: proj4(sourceProjection, targetProjection, [(cw+ce)/2,(cn+cs)/2])
+        }
+
+        // Using tiff.js we will generate a html canvas element from our tiff image data
+        // Which we can convert to png and overlay on our map
+        let Tiff = require('tiff.js');
+        // Save instance of "this" to prevent issues in xhr
+        const that = this;
+        let xhr = new XMLHttpRequest();
+        xhr.onload = function (e) {
+            if (xhr.readyState==4 && xhr.status==200){
+                try {
+                    // Create Tiff object from current file as array buffer
+                    let tiff = new Tiff({buffer: xhr.response});
+                    // Convert Tiff object to canvas element
+                    const canvas = tiff.toCanvas();
+                    // If a pixel was selected to be cleared, remove any instance of that pixel on the canvas
+                    if (clearPixel !== "") {
+                        clearPixel = clearPixel.split(",");
+                        const context = canvas.getContext("2d");
+                        for(let x = 0; x < canvas.width; x++) {
+                            for(let y = 0; y < canvas.height; y++) {
+                                const pD = context.getImageData(x, y, 1, 1);
+                                if ((pD.data[0]==clearPixel[0])&&(pD.data[1]==clearPixel[1])&&(pD.data[2]==clearPixel[2])) {
+                                    context.clearRect( x, y, 1, 1 );
+                                }
+                            }
+                        }
+                    }
+                    // Create a CustomOverlay using the converted bounds and the image data as a png
+                    that.data.customOverlay = new CustomOverlay(bounds, canvas.toDataURL("image/png", 1), fd.PageName, fd.ImageDescription);
+                    that.data.customOverlay.setMap(map);
+                    // Get the viewing bounds
+                    const view = new google.maps.LatLngBounds();
+                    for (const [key, value] of Object.entries(bounds)) { view.extend({lat: value[1], lng: value[0]}); }
+                    // Set the map view to the calculated viewing bounds
+                    that.map.fitBounds(view);
+                    // Add section in display settings for newly added tiff overlay layer
+                    const id = "tiff-layer-opacity";
+                    $('#' + that.displaySettingsDivContentID).append("<h6>"+that.data.customOverlay.getName()+"</h6>").append(
+                        $("<div>Opacity: </div>").append(
+                            $('<input type="range" min="0" max="100" value="100" id="'+id+'">').on("input", function() {
+                                $("#"+id+"-display").text($(this).val()+"%");
+                                that.applyDisplaySettings();
+                            })
+                        ).append('<span id="'+id+"-display"+'">100%</span>')
+                    ).append('<hr>');
+                    // Overlay has been imported, so display overlay-related menu options and prompt user
+                    that.setOverlayMenuOptionDisplay(true);
+                    $('#' + that.displaySettingsDivID).show();
+                    that.createAlert("Loading Complete", 3000, "success");
+                } catch (err) {
+                    that.createAlert("Error When Parsing GeoTiff File", 3000, "error");
+                    that.reset();
+                }
+            }
+        };
+        xhr.onerror = function() {
+          this.createAlert("Error When Loading GeoTiff File", 3000, "error");
+          this.reset();
+        }
+        xhr.responseType = 'arraybuffer';
+        xhr.open('GET', that.fileURL);
+        xhr.send();
+    }
+
+    /**
+     * Before adding GeoTiff to map, prompt user to check if a filler pixel of a specified color 
+     * should be removed from the image
+     */
+    addGeoTiffPromptAndDelay() {
+        let clearPixel = prompt('Remove filler pixels for areas intended to be transparent? \n*Note: This can take minutes for large files and is not recommended on mobile devices. \n\n'
+                                        + 'Enter the color (Red,Green,Blue) to be removed.\n0,0,0 - Black (Default Filler)\nEmpty Input - Leave Filler Pixels', "0,0,0");
+        if (clearPixel === null) { this.reset(); return; }
+        this.createAlert("Loading GeoTiff File", 10000, "info");
+        // adding tiff is resource intensive, delay by 1 second to allow loading alert to come up first. (Find alternative)
+        setTimeout(() => {this.addGeoTiff(clearPixel)}, 1000);
+    }
+
+    /**
+     * Adds a KML overlay to the current map based on the current file
+     * 
+     * Required libraries (currently browserified):
+     *  - @tmcw/togeojson [https://github.com/tmcw/togeojson]
+     */
+    addKML() {
+        // Save instance of "this" to prevent issues in xhr
+        const that = this;
+        const xhr = new XMLHttpRequest();
+        // Read the current file as an XMLDocument to be used in @tmcw/togeojson library
+        xhr.onload = function() {
+            try {
+                if (this.status == 200) {
+                    const tj = require("@tmcw/togeojson");
+                    // Read the XMLDocument response, convert it to GeoJson
+                    const geoJson = tj.kml(xhr.responseXML);
+                    // Save the geoJson features
+                    that.data.features = geoJson.features;
+                    // Add the GeoJson to the map
+                    that.map.data.addGeoJson(geoJson);
+                    that.centerMapOnOverlay();
+                    // Add general display settings inputs for features
+                    that.addFeatureDisplayOptions();
+                    // Cycle through features added to the map and manually set their display settings
+                    that.setMapFeatureDisplay();
+                    $('#' + that.displaySettingsDivID).show();
+                    that.createAlert("Loading Complete", 3000, "success");
+                    // Overlay has been imported, so display overlay-related menu options
+                    that.setOverlayMenuOptionDisplay(true);
+                } else {
+                    that.createAlert("KML Failed to Load", 5000, "error");
+                    that.reset();
+                }
+            } catch (e) {
+                that.createAlert("KML Format Error", 10000, "error");
+                that.reset();
+            }
+        }
+        xhr.onerror = function() {
+            that.createAlert("Error When Loading KML", 5000, "error");
+            that.reset();
+        }
+        xhr.open("GET", that.fileURL);
+        xhr.responseType = "document";
+        xhr.send();
+    }
+
+    /**
+     * Adds a KMZ overlay to the current map based on the current file
+     * 
+     * Required libraries:
+     *  - geoxml3 [https://github.com/ChristopherLeeWilliams/geoxml3]
+     */
+    addKMZ() {
+        this.createAlert("Loading KMZ File", 10000, "info");
+        try {
+            this.data.geoXML = new geoXML3.parser({
+                map: this.map,
+                singleInfoWindow: false,
+                suppressInfoWindows : true,
+                zoom : true,
+                afterParse: (doc) => this.kmzFileParsed(doc), // Preserve "this" with arrow function
+            });
+            this.data.geoXML.parse(this.fileURL);
+        } catch (e) {
+            this.createAlert("Error When Loading KMZ", 5000, "error");
+            this.reset();
+        }
+    }
+
+    /**
+     * Adds a Shapefile overlay to the current map based on the current file (zip)
+     * Format Specification: https://www.esri.com/library/whitepapers/pdfs/shapefile.pdf
+     * 
+     * Required libraries:
+     *  - jszip [https://github.com/Stuk/jszip]
+     *  - shapefile [https://github.com/mbostock/shapefile]
+     */
+    addShapefileZip() {
+        const that = this;
+        this.createAlert("Loading Shapefile", 10000, "info");
+        const JSZip = require("jszip");
+        const zip = new JSZip();
+        // Using jszip load the zip file asynchronously and get file contents
+        zip.loadAsync(this.file).then((zip) => {
+            // For shapefiles to be loaded correctly we need the SHP file and the DBF file
+            // They should have the same file name, just with different extensions (.shp & .dbf)
+            // Loop through the files in the zip and make sure they both exist
+            let baseFileName = null;
+            let hasSHP = false;
+            let hasDBF = false;
+            for (const [key, value] of Object.entries(zip.files)) {
+              if (!baseFileName) { baseFileName = key.substr(0, key.lastIndexOf('.')); }
+              if (key === baseFileName+'.shp') { hasSHP = true; } 
+              else if (key === baseFileName+'.dbf') { hasDBF = true; }
+            }
+            if (hasSHP && hasDBF) {
+                // Read both file asynchronously into arraybuffers, to be used by shapefile
+                zip.file(baseFileName+'.shp').async("arraybuffer").then((shpArrayBuffer) => {
+                    zip.file(baseFileName+'.dbf').async("arraybuffer").then((dbfArrayBuffer) => {
+                        // Using shapefile read both buffers and generate a GeoJson object with the data
+                        require("shapefile").read(shpArrayBuffer, dbfArrayBuffer).then((data) => {
+                            // Save the geoJson features
+                            that.data.features = data.features;
+                            // Add the GeoJson to the map and update overlay display settings
+                            that.map.data.addGeoJson(data);
+                            // Add general display settings inputs for features
+                            that.addFeatureDisplayOptions();
+                            that.setMapFeatureDisplay();
+                            // Get the bounds of the GeoJson and use this as the viewing bounds on Google Maps
+                            const bbox = data.bbox;
+                            const bounds = new google.maps.LatLngBounds({lng: bbox[0], lat: bbox[1]}, {lng: bbox[2], lat: bbox[3]});
+                            that.map.fitBounds(bounds);
+                            $('#' + that.displaySettingsDivID).show();
+                            that.createAlert("Loading Complete", 3000, "success");
+                            that.setOverlayMenuOptionDisplay();
+                        })
+                        .catch((error) => {
+                            console.log(error);
+                            that.createAlert("Error When Reading Shapefile Contents", 5000, "error");
+                            that.reset();
+                        });             
+                    });
+                });
+            } else {
+                this.createAlert("Shapefile or Corresponding DBF File Missing in Zip", 5000, "error");
+                this.reset();
+            }
+        }, function() {
+            this.createAlert("Invalid Zip File Format", 5000, "error");
+            this.reset();
+        });
+    }
+
+    /**
+     * Update display of specified overlays (kmz, tif) with values from display settings inputs
+     */
+    applyDisplaySettings() {
+        if (!this.overlayVisible) { return; }
+        try {
+            if (this.fileType === "kml" || this.fileType === "json" || this.fileType === "zip") {
+                // Limit the rate at which geojson features can be updated (once every 1/10 second)
+                if (!this.data.updatingFeatureDisplay) {
+                    this.data.updatingFeatureDisplay = true;
+                    setTimeout(() => {
+                        this.setMapFeatureDisplay();
+                        this.data.updatingFeatureDisplay = false;
+                    }, 100);
+                }
+            } else if (this.fileType === "kmz") {
+                this.updateKMZDisplay();
+            } else if (this.fileType === "tif") {
+                this.data.customOverlay.setOpacity($("#tiff-layer-opacity").val());
+                this.overlayVisible = true;
+            }
+        } catch (e) {
+          this.createAlert("Error when applying overlay display settings", 5000, "error");
+        }
+    }
+
+    /**
+     * Center the map viewing bounds on an overlay if present
+     * May focus on one point of overlay
+     */
+    centerMapOnOverlay() {
+        if (!this.file) { return; }
+        try {
+            if (this.fileType === 'kml' || this.fileType === 'zip' || this.fileType === 'json') {
+                let center = null;
+                // If data was added to the map in the form of GeoJson, get the first Lat,Lng point
+                // Among the features and jump to that point on the map
+                this.map.data.forEach(function(feature) {
+                    if (!center) {
+                        feature.getGeometry().forEachLatLng(function(latLng) {
+                            if (!center) { center = latLng; }
+                        });
+                    }
+                });
+                this.map.setCenter(center);
+            } else if (this.fileType === 'kmz') {
+                // For kmz's get the center of the bounds of the first ground overlay
+                // Currently referencing internal variable, may need to change
+                this.map.setCenter(this.data.geoXML.docs[0].ggroundoverlays[0].bounds_.getCenter());
+            } else if (this.fileType === "tif") {
+                // For tif's use the custom overlay get center function
+                this.map.setCenter(this.data.customOverlay.getCenter());
+            }
+        } catch (e) {
+            this.createAlert("Failed to center on overlay", 5000, "error");
+        }
+    }
+
+    /**
+     * Transitions an alert in and out for the user 
+     * @param {String} message The text to be dispayed in the alert
+     * @param {Integer} duration The duration in milliseconds for the alert to be displayed
+     * @param {String} type The theme of the message: "success", "info", "error" (set class)
+     */
+    createAlert(message, duration, type="success") {
+        if (!this.alertDivID) { return; }
+        let alertBox = $('#'+this.alertDivID);
+        switch (type) {
+            case "success":
+                alertBox.attr("class","alert alert-success");
+                break;
+            case "info":
+                alertBox.attr("class","alert alert-info");
+                break;
+            case "error": default:
+                alertBox.attr("class","alert alert-danger");
+                break;
+        }
+        alertBox.text(message);
+        alertBox.fadeIn("slow");
+        setTimeout(function(){ alertBox.fadeOut("slow"); }, duration);
+    }
+
+    /**
+     * Function called after parsing of KMZ is complete (from GeoXML3)
+     * Updates display settings menu with names and display settings of layers found in kml
+     * @param {Array} doc Array of documents (kml files) sent afte kmz was parsed (currently not used)
+     */
+    kmzFileParsed(doc) {
+        const that = this;
+        this.createAlert("Loading Complete", 3000, "success");
+        doc = this.data.geoXML.docs[0];
+        // Generate and show overlay settings in display settings menu
+        const overlaySettingsDiv = $('#' + this.displaySettingsDivContentID);
+        // Populate the menu with an input for each of the different ground overlays found
+        for (let i = 0; i < doc.ggroundoverlays.length ; i++) {
+          const id = "kmz-layer-opacity-" + i;
+          doc.ggroundoverlays[i].id_ = doc.groundoverlays[i].name + "-" + i;
+          overlaySettingsDiv.append("<h6>"+doc.groundoverlays[i].name+"</h6>").append(
+            $("<div>Opacity: </div>").append(
+              $('<input type="range" min="0" max="100" value="100" id="'+id+'">').on("input", function() {
+                $("#"+id+"-display").text($(this).val()+"%");
+                that.applyDisplaySettings();
+              })
+            ).append('<span id="'+id+"-display"+'">100%</span>')
+          ).append('<hr>');
+        }
+        $('#' + this.displaySettingsDivID).show();
+        this.setOverlayMenuOptionDisplay();
+        this.updateKMZDisplay();
+    }
+
+    /**
+     * Clears the map of any overlays
+     * Resets all internal variables of this instance
+     * Hides overlay-related menu options
+     */
+    reset() {
+        const that = this;
+        // Clear Any Existing Overlays on the Map
+        if (this.fileType) {
+            switch (this.fileType) {
+                case 'kml':
+                case 'zip':
+                case 'json':
+                    this.map.data.forEach((feature) => this.map.data.remove(feature));
+                    break;
+                case 'kmz':
+                    try {
+                        const doc = this.data.geoXML.docs[0];
+                        this.data.geoXML.docs = [];
+                        for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+                          doc.ggroundoverlays[i].setMap(null);
+                          doc.ggroundoverlays[i] = null;
+                        }
+                      } catch (e) {
+                        // Continue
+                      }
+                    break;
+                case 'tif':
+                    if (this.data.customOverlay) {
+                        this.data.customOverlay.setMap(null);
+                        this.data.customOverlay = null;
+                    }
+                    break;
+                default:
+                    // Unknown file type, ignore.
+                    break;
+            }
+        }
+
+        // Clear Attributes
+        if (this.fileURL) { URL.revokeObjectURL(this.fileURL); }
+        this.file = null;
+        this.fileType = null;
+        this.data = {};
+
+        // Clear Menu Options / Overlay-related Display
+        this.setOverlayMenuOptionDisplay(false);
+        $('#' + this.displaySettingsDivContentID).empty();
+        $('#' + this.displaySettingsDivID).hide();
+    }
+
+    /**
+     * Resets an existing overlay to its original display settings
+     */
+    resetDisplaySettings() {
+        try {
+          // Overlay Settings
+          if (this.fileType === "kml" || this.fileType === "json" || this.fileType === "zip") {
+            $('#feature-layer-opacity').val(60);
+            $("#feature-layer-opacity-display").text("60%");
+            this.setMapFeatureDisplay();
+          } else if (this.fileType === "kmz") {
+            const doc = this.data.geoXML.docs[0];
+            for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+              const gO = doc.ggroundoverlays[i];
+              try {
+                gO.setMap(map);
+                gO.setOpacity(100);
+              } catch (e) {
+                gO.percentOpacity_ = 100;
+                gO.setMap(map);
+              }
+              const id = "kmz-layer-opacity-" + i;
+              $("#"+id).val(100);
+              $("#"+id+"-display").text("100%");
+            }
+            this.overlayVisible = true;
+            this.updateKMZDisplay();
+          } else if (this.fileType === "tif") {
+            $("#tiff-layer-opacity").val(100);
+            $("#tiff-layer-opacity-display").text("100%");
+            this.data.customOverlay.setOpacity(100);
+          }
+        } catch (e) {
+          this.createAlert("Error when resetting overlay display settings", 5000, "error");
+        } 
+    }
+
+    /**
+     * Manually sets the display settings of any overlays added to the map by way of GeoJson (kml, shapefile, and json)
+     * @param {Boolean} visible Whether or not map GeoJson features should be visible (for toggling display)
+     */
+    setMapFeatureDisplay(visible = true) {
+        const that = this;
+        // This input will be a multiplier of the original opacity
+        // E.g. If original opacity is .6 and the input is at 50% (.5) the resulting opacity is .3
+        let opacityInput = $('#feature-layer-opacity').val()/100;
+        let i = 0;
+        if (visible) {
+            this.map.data.setStyle((feature) => {
+                let opacity, strokeWeight;
+                if (that.data.features[i]) {
+                    // Get property value from raw feature
+                    const baseOpacity = that.data.features[i].properties["fill-opacity"];
+                    opacity = (baseOpacity) ? opacityInput * baseOpacity : opacityInput;
+                    strokeWeight = that.data.features[i].properties["stroke-width"];
+                    strokeWeight = (strokeWeight) ? strokeWeight : 2;
+                } else {
+                    opacity = opacityInput;
+                    strokeWeight = 2;
+                }
+                i++;
+                return ({
+                    visible: true,
+                    fillColor: (feature.getProperty('fill')) ? feature.getProperty('fill') : "#000000",
+                    fillOpacity: opacity,
+                    strokeColor: (feature.getProperty('fill')) ? feature.getProperty('fill') : "#000000",
+                    strokeWeight: (opacity == 0) ? 0 : strokeWeight
+                });
+            });
+        } else {
+            this.map.data.setStyle((feature) => { return {visible: false}; });
+        }
+    }
+
+    /**
+     * Clears all internal variables and overlays and sets them based on new File input
+     * Currently supported formats are KML, KMZ, TIF, ZIP (ShapeFile), and JSON (GeoJson)
+     */
+    setOverlay(file) {
+        this.reset();
+        if (!file) { return; }
+        this.file = file;
+        this.fileURL = URL.createObjectURL(file);
+        this.fileType = file.name.substr(file.name.lastIndexOf('.') + 1);
+        switch (this.fileType) {
+            case 'kml':
+                this.addKML();
+                break;
+            case 'kmz':
+                this.addKMZ();
+                break;
+            case 'tif':
+                this.addGeoTiffPromptAndDelay();
+                break;
+            case 'zip':
+                this.addShapefileZip();
+                break;
+            case 'json':
+                this.addGeoJson();
+                break;
+            default:
+                // Alert "Uknown File Type"
+                this.reset();
+                break;
+        }
+    }
+
+    /**
+     * @param {Booelan} visible Whether or not overlay settings should display in dropup menu
+     */
+    setOverlayMenuOptionDisplay(visible = true) {
+        const elements = document.getElementsByClassName(this.menuOptionsClass);
+        if (visible) {
+          for (let i = 0; i < elements.length; i++) { elements[i].style.display = "block"; }
+        } else {
+          for (let i = 0; i < elements.length; i++) { elements[i].style.display = "none"; }
+        }
+        this.overlayVisible = visible;
+      }
+
+    /**
+     * Toggles visibility of GeoJson-related overlay features on map
+     */
+    toggleFeatures() {
+        try {
+            if (this.overlayVisible) {
+                this.setMapFeatureDisplay(false);
+                this.overlayVisible = false;
+            } else {
+                this.setMapFeatureDisplay();
+                this.overlayVisible = true;
+            }
+        } catch (e) {
+            this.createAlert("Error when toggling overlay display", 5000, "error");
+        }
+    }
+
+    /**
+     * Toggles KMZ overlay visibility
+     */
+    toggleKMZOverlay() {
+        try {
+          const doc = this.data.geoXML.docs[0];
+          if (this.overlayVisible) {
+            doc.ggroundoverlays.forEach((gO) => gO.setMap(null));
+            this.overlayVisible = false;
+          } else {
+            for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+              let id = "kmz-layer-opacity-" + i;
+              let opacity = $('#'+id).val();
+              let gO = doc.ggroundoverlays[i];
+              if (opacity > 0) {
+                // Set opacity before overlaying on map
+                gO.percentOpacity_ = opacity;
+                gO.setMap(this.map);
+              } else {
+                gO.setMap(null);
+              }
+            }
+            this.overlayVisible = true;
+            this.updateKMZDisplay();
+          }
+        } catch (e) {
+          console.log("Error when toggling KMZ overlay display: " + e.message);
+        }
+    }
+
+    /**
+     * General function for toggling current overlay display
+     */
+    toggleOverlay() {
+        if (this.fileType === 'kml' || this.fileType === 'zip' || this.fileType === 'json') {
+            this.toggleFeatures();
+        } else if (this.fileType === 'kmz') {
+            this.toggleKMZOverlay();
+        } else if (this.fileType === 'tif') {
+            this.toggleTIFFOverlay();
+        } else {
+          // Unknown file type
+        }
+    }
+
+    /**
+     * Toggles GeoTiff overlay visibility
+     */
+    toggleTIFFOverlay() {
+        this.overlayVisible = !this.overlayVisible;
+        let current = this.data.customOverlay.getOpacity();
+        if (current === 0) {
+            this.data.customOverlay.setOpacity($("#tiff-layer-opacity").val());
+        } else {
+            this.data.customOverlay.setOpacity(0);
+        }
+    }
+
+    /**
+     * Manually sets the display settings of KMZ overlay
+     */
+    updateKMZDisplay() {
+        const doc = this.data.geoXML.docs[0];
+        for (let i = 0; i < doc.ggroundoverlays.length; i++) {
+            const gO = doc.ggroundoverlays[i];
+            const id = "kmz-layer-opacity-" + i;
+            const opacity = $('#'+id).val();
+            if (opacity > 0 && this.overlayVisible) {
+                try {
+                    gO.setMap(map);
+                    gO.setOpacity(opacity);
+                } catch (e) {
+                    // Not yet initialized on map, edit style directly
+                    gO.percentOpacity_ = opacity;
+                    gO.setMap(map);
+                }
+                setTimeout(() => {
+                    try { 
+                        document.getElementById(gO.id_).style.zIndex = 10-i; 
+                    } catch (e) { /* Ignore */ }
+                }, 1000);
+            } else {
+                gO.setMap(null);
+            }
+        }
     }
 }

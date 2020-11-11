@@ -12,6 +12,7 @@ var pdf = require("html-pdf");
 var ejs = require("ejs");
 var XMLWriter = require("xml-writer");
 var tmp = require("tmp");
+const e = require("express");
 
 const BUFFER = 0.0000005;
 
