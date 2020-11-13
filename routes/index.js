@@ -8,11 +8,11 @@ var OAuth2 = google.auth.OAuth2;
 var fs = require("fs");
 let privateKey = require("../private/fakeKey.json");
 var path = require("path");
-var pdf = require("html-pdf");
 var ejs = require("ejs");
 var XMLWriter = require("xml-writer");
 var tmp = require("tmp");
 const e = require("express");
+const PdfPrinter = require("pdfmake");
 
 const BUFFER = 0.0000005;
 
@@ -250,8 +250,9 @@ function email(info, callback) {
                     callback(return_msg);
                   } else {
                     console.log("User Message sent: " + info.response);
+                    return_msg.success = true;
+                    callback(return_msg);
                     // Send Parabug emal
-
                     parabugTransporter.sendMail(parabugMailOptions, function (
                       err,
                       info
@@ -623,6 +624,193 @@ function round(value, decimals) {
   return Number(Math.round(value + "e" + decimals) + "e-" + decimals);
 }
 
+function savePDFDocument(data, path, callback) {
+  let dd = {
+    content: [],
+    styles: {
+      centerAlign: {alignment: 'center', margin: [0, 2, 0, 0]},
+      tableHeader: {fontSize: 14, alignment: 'center', margin: [2, 5]}
+    },
+    images: {
+      logo: require('path').join(__dirname, '..', 'public', 'img', 'logo-lrg.jpg'),
+    }
+  };
+  dd.content.push({
+    image: 'logo',
+    width: 300,
+    style: 'centerAlign'
+  });
+  dd.content.push({lineHeight: 1, text: ' '});
+  dd.content.push('Contact Name: ' + data.contact_name);
+  dd.content.push('Contact Email: ' + data.contact_email);
+  dd.content.push('Contact Phone: ' + data.contact_phone);
+  dd.content.push('Billing Address: ' + data.billing_address);
+  dd.content.push({lineHeight: 1, text: ' '});
+  dd.content.push('Crop: ' + data.crop);
+  dd.content.push('Row Spacing: ' + data.row_spacing + ' ft');
+  if (data.ranchName) {
+    dd.content.push('Ranch: ' + data.ranchName);
+  }
+  if (data.applicationDate) {
+    dd.content.push('Preferred Application Date: ' + data.applicationDate);
+  }
+  if (data.operator) {
+    dd.content.push('Preferred Operator: ' + data.operator);
+  }
+  if (data.notes) {
+    dd.content.push('Notes: ' + data.notes);
+  }
+
+  if (data.correctedAcreage) {
+    dd.content.push({lineHeight: 1, text: ' '});
+    let tableBody;
+    if (data.bug2) {
+      tableBody = [
+        [ {text: 'Application Area (Corrected Acreage)', colSpan: 4, style: 'tableHeader'}, {}, {}, {}],
+        [ 
+          {text: 'Size (Acres - Manual)', style: 'centerAlign'},
+          {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
+          {text: data.bug2 +' (Per Acre)', style: 'centerAlign'},
+          {text: 'Total Bugs', style: 'centerAlign'}
+        ],
+        [
+          {text: data.correctedAcreage, style: 'centerAlign'},
+          {text: data.standardBPA1, style: 'centerAlign'},
+          {text: data.standardBPA2, style: 'centerAlign'},
+          {text: data.sumBugsCorrected, style: 'centerAlign'}
+        ]
+      ];
+    } else {
+      tableBody = [
+        [ {text: 'Application Area (Corrected Acreage)', colSpan: 3, style: 'tableHeader'}, {}, {}],
+        [ 
+          {text: 'Size (Acres - Manual)', style: 'centerAlign'},
+          {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
+          {text: 'Total Bugs', style: 'centerAlign'}
+        ],
+        [
+          {text: data.correctedAcreage, style: 'centerAlign'},
+          {text: data.standardBPA1, style: 'centerAlign'},
+          {text: data.sumBugsCorrected, style: 'centerAlign'}
+        ]
+      ];
+    }
+    dd.content.push(
+      {
+        table: {
+          headerRows: 2,
+          heights: [20, 20, 20],
+          body: tableBody
+        }
+      }
+    );
+  }
+
+  dd.content.push({lineHeight: 1, text: ' '});
+  let tableBody;
+  if (data.bug2) {
+    tableBody = [
+      [ {text: 'Application Area (Raw Map Data)', colSpan: 5, style: 'tableHeader'}, {}, {}, {}, {}],
+      [ 
+        {text: '', style: 'centerAlign'}, 
+        {text: 'Size (Acres)', style: 'centerAlign'},
+        {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
+        {text: data.bug2 +' (Per Acre)', style: 'centerAlign'},
+        {text: 'Total Bugs', style: 'centerAlign'}
+      ],
+      [
+        {text: 'Standard Rate Area', style: 'centerAlign'},
+        {text: data.standardAcres, style: 'centerAlign'},
+        {text: data.standardBPA1, style: 'centerAlign'},
+        {text: data.standardBPA2, style: 'centerAlign'},
+        {text: data.standardBugs, style: 'centerAlign'}
+      ],
+      [
+        {text: 'Variable Rate Area', style: 'centerAlign'},
+        {text: data.vraAcres, style: 'centerAlign'},
+        {text: data.vraBPA1, style: 'centerAlign'},
+        {text: data.vraBPA2, style: 'centerAlign'},
+        {text: data.vraBug, style: 'centerAlign'}
+      ],
+      [
+        {text: 'Hazard Area', style: 'centerAlign'},
+        {text: data.hazardAcres, style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+      ],
+      [
+        {text: 'Sum (Non-hazard)', style: 'centerAlign'},
+        {text: data.deployableAcres, style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+        {text: data.sumBugs, style: 'centerAlign'},
+      ]
+    ];
+  } else {
+    tableBody = [
+      [ {text: 'Application Area (Raw Map Data)', colSpan: 4, style: 'tableHeader'}, {}, {}, {}],
+      [ 
+        {text: '', style: 'centerAlign'}, 
+        {text: 'Size (Acres)', style: 'centerAlign'},
+        {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
+        {text: 'Total Bugs', style: 'centerAlign'}
+      ],
+      [
+        {text: 'Standard Rate Area', style: 'centerAlign'},
+        {text: data.standardAcres, style: 'centerAlign'},
+        {text: data.standardBPA1, style: 'centerAlign'},
+        {text: data.standardBugs, style: 'centerAlign'}
+      ],
+      [
+        {text: 'Variable Rate Area', style: 'centerAlign'},
+        {text: data.vraAcres, style: 'centerAlign'},
+        {text: data.vraBPA1, style: 'centerAlign'},
+        {text: data.vraBug, style: 'centerAlign'}
+      ],
+      [
+        {text: 'Hazard Area', style: 'centerAlign'},
+        {text: data.hazardAcres, style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+      ],
+      [
+        {text: 'Sum (Non-hazard)', style: 'centerAlign'},
+        {text: data.deployableAcres, style: 'centerAlign'},
+        {text: '-', style: 'centerAlign'},
+        {text: data.sumBugs, style: 'centerAlign'},
+      ]
+    ];
+  }
+
+  dd.content.push(
+    {
+      table: {
+        headerRows: 2,
+        heights: [20, 20, 20, 20, 20, 20],
+        body: tableBody
+      }
+    }
+  );
+
+  dd.content.push({lineHeight: 1, text: ' '});
+  dd.content.push('Created: ' + new Date());
+
+  const doc = new PdfPrinter({
+    Roboto: {normal: Buffer.from(require('pdfmake/build/vfs_fonts.js').pdfMake.vfs['Roboto-Regular.ttf'], 'base64')}
+  }).createPdfKitDocument(dd);
+
+  const writeStream = fs.createWriteStream(path);
+  doc.pipe(writeStream);
+  doc.end();
+  writeStream.on('finish', function () {
+      callback({success: true});
+  });
+  writeStream.on('error', function () {
+      callback({success: false});
+  });
+}
+
 function simplifyHazards(hazards) {
   let gF = new jsts.geom.GeometryFactory();
 
@@ -933,14 +1121,18 @@ function writePDFile(path, info, callback) {
       console.log(err);
       callback(null);
     } else {
-      pdf.create(pdfData).toFile(path, function (err, res) {
-        if (err) {
-          callback(null);
-        } else {
-          callback(pdfData);
-        }
-        console.log(res);
-      });
+      try {
+        savePDFDocument(data, path, (result) => {
+          if (result.success) {
+            callback(pdfData);
+          } else {
+            callback(null);
+          }
+        });
+      } catch (e) {
+        console.log(e);
+        callback(null);
+      }
     }
   });
 }
