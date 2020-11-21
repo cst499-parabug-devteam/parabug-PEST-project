@@ -250,8 +250,6 @@ function email(info, callback) {
                     callback(return_msg);
                   } else {
                     console.log("User Message sent: " + info.response);
-                    return_msg.success = true;
-                    callback(return_msg);
                     // Send Parabug emal
                     parabugTransporter.sendMail(parabugMailOptions, function (
                       err,
