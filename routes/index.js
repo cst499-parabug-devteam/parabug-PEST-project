@@ -13,6 +13,7 @@ var XMLWriter = require("xml-writer");
 var tmp = require("tmp");
 const e = require("express");
 const PdfPrinter = require("pdfmake");
+var sanitize = require("sanitize-filename");
 
 const BUFFER = 0.0000005;
 
@@ -62,19 +63,21 @@ router.post("/", function (req, res, next) {
           res.json({ alertMessage: "Fail" });
         }
 
-        // Cleanup Temp PDF File
         if (response.pdfPath) {
-          fileCleanup(response.pdfPath, function (success) {
-            if (!success) {
+          fs.unlink(response.pdfPath, (err) => {
+            if (err) {
               console.log("There was an error deleting the pdf file");
+            } else {
+              console.log(`${response.pdfPath} deleted successfully`);
             }
           });
         }
-        // Cleanup Temp KML File
         if (response.kmlPath) {
-          fileCleanup(response.kmlPath, function (success) {
-            if (!success) {
+          fs.unlink(response.kmlPath, (err) => {
+            if (err) {
               console.log("There was an error deleting the kml file");
+            } else {
+              console.log(`${response.kmlPath} deleted successfully`);
             }
           });
         }
@@ -140,162 +143,136 @@ function deleteNonPolys(polyArr) {
 function email(info, callback) {
   var email_files = path.join(__dirname, "..", "email_files");
   var return_msg = { success: false };
-  try {
-    // Generate PDF File
-    tmp.file(
-      { dir: email_files, prefix: "pdf-", postfix: ".pdf" },
-      function _tempFileCreated(pdfErr, pdfPath, pdfFd) {
-        // Set pdf path to be returned and deleted later
-        return_msg.pdfPath = pdfPath;
+  let dateTime = new Date().toISOString().slice(0, 19).replace('T','_').replace(/:/g, '-');
+  let fileNameBody = info["ranchName"] + "_" + info["contactName"] + "_" + dateTime;
+  fileNameBody = sanitize(fileNameBody.replace(/\s+/g,'_').replace(/_{2,}/g, '_'));
 
-        if (pdfErr) {
+  let pdfFileName = 'PDF_' + fileNameBody + '.pdf';
+  let kmlFileName = 'KML_' + fileNameBody + '.kml';
+  let pdfPath = path.join(email_files, pdfFileName);
+  let kmlPath = path.join(email_files, kmlFileName);
+  return_msg.pdfPath = pdfPath;
+  return_msg.kmlPath = kmlPath;
+
+  try {
+    let kmlData = kml(info);
+    fs.writeFile(kmlPath, kmlData, (kmlErr) => {
+      if (kmlErr) {
+        console.log("There was an issue creating the kml");
+        callback(return_msg);
+        return;
+      }
+      
+      writePDFile(pdfPath, info, function (pdfData) {
+        // Returns pdf data for email formatting
+        if (pdfData == null) {
+          // Error while writing to files, don't send email
           console.log("There was an issue creating the pdf");
           callback(return_msg);
-          return;
-        } // Error
+        } else {
+          // Atachments were created and written to, send the email
+          //NO-REPLY@SENDMAIL.COM METHOD:
+          var parabug_email_path = "info@parabug.solutions";
 
-        // Generate KML File
-        tmp.file(
-          { dir: email_files, prefix: "kml-", postfix: ".kml" },
-          function _tempFileCreated(kmlErr, kmlPath, kmlFd) {
-            // Set kml path to be returned and deleted later
-            return_msg.kmlPath = kmlPath;
+          //set up transporter - OAUTH
+          var transporter = nodeMailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true, // use SSL
+            auth: {
+              type: "OAuth2",
+              user: privateKey.user,
+              clientId: privateKey.c_id,
+              clientSecret: privateKey.c_secret,
+              refreshToken: privateKey.refreshToken,
+              accessToken: privateKey.accessToken,
+              expires: 1484314697598
+            }
+          });
 
-            if (kmlErr) {
-              console.log("There was an issue creating the kml");
+          //setup second transporter:
+          var parabugTransporter = nodeMailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true, // use SSL
+            auth: {
+              type: "OAuth2",
+              user: privateKey.user,
+              clientId: privateKey.c_id,
+              clientSecret: privateKey.c_secret,
+              refreshToken: privateKey.refreshToken,
+              accessToken: privateKey.accessToken,
+              expires: 1484314697598
+            }
+          });
+
+          let parabugMailOptions = {
+            from:
+              '"Requested Parabug Estimate Quote"' +
+              "<" +
+              parabug_email_path +
+              ">", // sender address
+            to: " <" + parabug_email_path + ">", // list of receivers
+            subject: "Parabug Estimate Request", // Subject line
+            text: info.notes, // plain text body
+            html: pdfData,
+            attachments: [{ filename: kmlFileName, path: kmlPath }, { filename: pdfFileName, path: pdfPath }]
+          };
+
+          let mailOptions = {
+            from:
+              '"Requested Parabug Estimate Quote"' +
+              "<" +
+              parabug_email_path +
+              ">", // sender address
+            to: " <" + info.contactEmail + ">", // list of receivers
+            subject: "Parabug Estimate Request", // Subject line
+            text: info.notes, // plain text body
+            html: pdfData,
+            attachments: [{ filename: pdfFileName, path: pdfPath }]
+          };
+
+          // ************************ For Local Testing (No Emailing) ************************
+          // return_msg.success = true;
+          // callback(return_msg);
+          // transporter.close();
+          // parabugTransporter.close();
+          // return;
+          // *********************************************************************************
+          
+          // Send user email
+          transporter.sendMail(mailOptions, function (err, info) {
+            if (err) {
+              console.log(err);
               callback(return_msg);
-              return;
-            } // Error
+            } else {
+              console.log("User Message sent: " + info.response);
+              // Send Parabug emal
+              parabugTransporter.sendMail(parabugMailOptions, function (
+                err,
+                info
+              ) {
+                if (err) {
+                  console.log(err);
+                  callback(false);
+                } else {
+                  console.log("Parabug Message sent: " + info.response);
+                  return_msg.success = true;
+                  callback(return_msg);
+                }
+              });
+            }
+          });
+          transporter.close();
+          parabugTransporter.close();
+        }
+      });
 
-            // ------------------------------------------------ SEND EMAIL WITH ATTACHMENTS HERE ------------------------------------------------
-            // Write data to attachment files
-            writeToAttachments(info, kmlPath, pdfPath, function (pdfData) {
-              // Returns pdf data for email formatting
-              if (pdfData == null) {
-                // Error while writing to files, don't send email
-                callback(return_msg);
-              } else {
-                // Local Testing Enable:
-                // return_msg.kmlPath=null;
-                // callback(return_msg);
-                // return;
+    });
 
-                // Atachments were created and written to, send the email
-                //NO-REPLY@SENDMAIL.COM METHOD:
-                var parabug_email_path = "info@parabug.solutions";
-
-                //set up transporter - OAUTH
-                var transporter = nodeMailer.createTransport({
-                  host: "smtp.gmail.com",
-                  port: 465,
-                  secure: true, // use SSL
-                  auth: {
-                    type: "OAuth2",
-                    user: privateKey.user,
-                    clientId: privateKey.c_id,
-                    clientSecret: privateKey.c_secret,
-                    refreshToken: privateKey.refreshToken,
-                    accessToken: privateKey.accessToken,
-                    expires: 1484314697598
-                  }
-                });
-
-                //setup second transporter:
-                var parabugTransporter = nodeMailer.createTransport({
-                  host: "smtp.gmail.com",
-                  port: 465,
-                  secure: true, // use SSL
-                  auth: {
-                    type: "OAuth2",
-                    user: privateKey.user,
-                    clientId: privateKey.c_id,
-                    clientSecret: privateKey.c_secret,
-                    refreshToken: privateKey.refreshToken,
-                    accessToken: privateKey.accessToken,
-                    expires: 1484314697598
-                  }
-                });
-
-                let parabugMailOptions = {
-                  from:
-                    '"Requested Parabug Estimate Quote"' +
-                    "<" +
-                    parabug_email_path +
-                    ">", // sender address
-                  to: " <" + parabug_email_path + ">", // list of receivers
-                  subject: "Parabug Estimate Request", // Subject line
-                  text: info.notes, // plain text body
-                  html: pdfData,
-                  attachments: [{ path: kmlPath }, { path: pdfPath }]
-                };
-
-                let mailOptions = {
-                  from:
-                    '"Requested Parabug Estimate Quote"' +
-                    "<" +
-                    parabug_email_path +
-                    ">", // sender address
-                  to: " <" + info.contactEmail + ">", // list of receivers
-                  subject: "Parabug Estimate Request", // Subject line
-                  text: info.notes, // plain text body
-                  html: pdfData,
-                  attachments: [{ path: pdfPath }]
-                };
-
-                // Send user email
-                // For testing, comment out
-                transporter.sendMail(mailOptions, function (err, info) {
-                  if (err) {
-                    console.log(err);
-                    callback(return_msg);
-                  } else {
-                    console.log("User Message sent: " + info.response);
-                    // Send Parabug emal
-                    parabugTransporter.sendMail(parabugMailOptions, function (
-                      err,
-                      info
-                    ) {
-                      if (err) {
-                        console.log(err);
-                        callback(false);
-                      } else {
-                        console.log("Parabug Message sent: " + info.response);
-                        return_msg.success = true;
-                        callback(return_msg);
-                      }
-                    });
-                  }
-                });
-
-                transporter.close();
-                parabugTransporter.close();
-              }
-            });
-            // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SEND EMAIL WITH ATTACHMENTS HERE ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          }
-        );
-      }
-    );
   } catch (e) {
     callback(return_msg);
   }
-}
-
-function fileCleanup(path, callback) {
-  fs.exists(path, function (exists) {
-    if (exists) {
-      fs.unlink(path, function (err) {
-        if (err) {
-          console.log(err);
-          callback(false);
-        }
-        console.log(path + " was deleted");
-        callback(true);
-        return;
-      });
-    }
-    callback(true);
-  });
 }
 
 function getDifference(jstsPoly, jstsPolyRemove) {
@@ -1030,17 +1007,6 @@ function validateAndFix(appArea, hazards, vras) {
   }
 }
 
-function writeKMLFile(path, content, callback) {
-  fs.appendFile(path, content, function (err) {
-    if (err) {
-      console.log(err);
-      callback(false);
-      return;
-    }
-    callback(true);
-  });
-}
-
 // Returns null if fail or pdfData (ejs render from template)
 function writePDFile(path, info, callback) {
   var email_template = require("path").join(
@@ -1131,26 +1097,6 @@ function writePDFile(path, info, callback) {
         console.log(e);
         callback(null);
       }
-    }
-  });
-}
-
-function writeToAttachments(info, kmlPath, pdfPath, callback) {
-  var kmlData = kml(info);
-  writeKMLFile(kmlPath, kmlData, function (success) {
-    if (!success) {
-      console.log("Error writing to kml file");
-      callback(null);
-    } else {
-      writePDFile(pdfPath, info, function (pdfData) {
-        if (pdfData == null) {
-          console.log("Error writing to pdf file");
-          callback(null);
-        } else {
-          console.log("Wrote to both files successfully");
-          callback(pdfData);
-        }
-      });
     }
   });
 }

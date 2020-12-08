@@ -5,8 +5,8 @@
     <meta name="viewport" content="initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
     defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
     ></script>
 
     <link rel="stylesheet" type="text/css" href="stylesheets/bootstrap-4.0.0.min.css">
@@ -26,6 +26,7 @@
     <script src="./js/tiff.js"></script>
     <script src="./js/shapefile.js"></script>
     <script src="./js/jszip.js"></script>
+    <script defer src="./js/geolocation-marker.js"></script>
   </head>
 
   <body>
@@ -243,9 +244,12 @@
   
             <!-- Ranch Name -->
             <div class="form-element">
-              <label class="form-text" for="ranch-name">Ranch Name</label>
+              <label class="form-text" for="ranch-name">
+                Ranch Name
+                <span class="required">*</span>
+              </label>
               <div class="form-input">
-                <input type="text" name="ranch-name" id="ranch-name"/>
+                <input type="text" name="ranch-name" id="ranch-name" required/>
               </div>
             </div>
   
@@ -336,6 +340,9 @@
       let centerMarker;
       let overlayMarkers = [];
       let tempShape;
+
+      let userLocation = false;
+      let userLocationMarker;
 
       // An instance of the OverlayManager class to help manage overlay data and display
       let overlayManager;
@@ -526,6 +533,7 @@
           ? "Error: The Geolocation service failed."
           : "Error: Your browser doesn't support geolocation.";
         console.log(message);
+        userLocation = false;
       }
     
       function importOverlay() {
@@ -543,7 +551,7 @@
             style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
           }
         });
-    
+
         let image = {
           url: "/img/crosshair.png",
           size: new google.maps.Size(200, 200),
@@ -577,6 +585,7 @@
         // Try HTML5 geolocation.
         try {
           if (navigator.geolocation) {
+            userLocation = true;
             navigator.geolocation.getCurrentPosition(
               function(position) {
                 let pos = {
@@ -718,6 +727,7 @@
             .append($('<button>Center on App Area</button>').click(centerMap).attr({"id":"center-btn"}).addClass("dropdown-item"))
             .append($('<button>Clear Drawings</button>').click(resetMap).attr({"id":"reset-btn"}).addClass("dropdown-item"))
             .append($('<button>Import Overlay</button>').click(importOverlay).attr({"id":"import-btn"}).addClass("dropdown-item"))
+            .append($('<button>Toggle Location Icon</button>').click(toggleLocationIcon).attr({"id":"user-location-toggle-btn"}).addClass("dropdown-item"))
             .append($('<div class="dropdown-divider"></div>').addClass("overlay-visible-item"))
             .append($('<button>Center on Overlay</button>').click(() => { if (overlayManager){ overlayManager.centerMapOnOverlay()} }).attr({"id":"center-btn"}).addClass("dropdown-item overlay-visible-item"))
             .append($('<button>Clear Overlays</button>').click(() => { if (overlayManager){ overlayManager.reset()} }).addClass("dropdown-item overlay-visible-item"))
@@ -989,6 +999,41 @@
         }
       }
 
+      function toggleLocationIcon() {
+        if (userLocation) {
+          if (userLocationMarker) {
+            userLocationMarker.setMap(null);
+            userLocationMarker = null;
+          } else {
+            userLocationMarker = new GeolocationMarker(map);
+            userLocationMarker.setCircleOptions({
+              'strokeOpacity': 0.3,
+              'fillOpacity': 0.3
+            });
+            // Try to get user location coords for 2 seconds
+            let startTime = new Date();
+            let userLocationCoords = userLocationMarker.getPosition();
+            if (userLocationCoords) {
+              map.setCenter(userLocationCoords);
+            } else {
+              let check = function() {
+                userLocationCoords = userLocationMarker.getPosition();
+                if (userLocationCoords) {
+                  map.setCenter(userLocationCoords);
+                } else {
+                  if (new Date() - startTime < 2000) {
+                    setTimeout(() => check(), 100);
+                  }
+                }
+              };
+              check();
+            }
+          }
+        } else {
+          createAlert("User location is currently disabled", 3000, 'error');
+        }
+      }
+
       function updateStats() {
         try {
           if (appArea != null) {
@@ -1122,7 +1167,8 @@
           window.scrollTo(0, 0);
         } else {
           event.preventDefault();
-          console.log("Did not submit");
+          window.scrollTo(0, 0);
+          createAlert("Invalid map data. This could be due to a missing Application Area.", 5000, 'error');
         }
       });
       
