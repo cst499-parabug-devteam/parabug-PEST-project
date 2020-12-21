@@ -1209,7 +1209,7 @@ class OverlayManager {
 
         // User Defined Geokey (find out how to deal with these)
         if (sourceGeoKey === 32767) {
-          createAlert("Custom Geokey (Projection System) used in GeoTiff file. This feature is not yet supported.", 5000, "error");
+          createAlert("Custom Geokey (Projection System) used in GeoTiff file. This feature is not yet supported.", 10000, "error");
           this.reset();
           return;
         }
@@ -1360,7 +1360,7 @@ class OverlayManager {
                     // Overlay has been imported, so display overlay-related menu options
                     that.setOverlayMenuOptionDisplay(true);
                 } else {
-                    that.createAlert("KML Failed to Load", 5000, "error");
+                    that.createAlert("KML Failed to Load", 10000, "error");
                     that.reset();
                 }
             } catch (e) {
@@ -1369,7 +1369,7 @@ class OverlayManager {
             }
         }
         xhr.onerror = function() {
-            that.createAlert("Error When Loading KML", 5000, "error");
+            that.createAlert("Error When Loading KML", 10000, "error");
             that.reset();
         }
         xhr.open("GET", that.fileURL);
@@ -1395,7 +1395,7 @@ class OverlayManager {
             });
             this.data.geoXML.parse(this.fileURL);
         } catch (e) {
-            this.createAlert("Error When Loading KMZ", 5000, "error");
+            this.createAlert("Error When Loading KMZ", 10000, "error");
             this.reset();
         }
     }
@@ -1449,17 +1449,17 @@ class OverlayManager {
                         })
                         .catch((error) => {
                             console.log(error);
-                            that.createAlert("Error When Reading Shapefile Contents", 5000, "error");
+                            that.createAlert("Error When Reading Shapefile Contents", 10000, "error");
                             that.reset();
                         });             
                     });
                 });
             } else {
-                this.createAlert("Shapefile or Corresponding DBF File Missing in Zip", 5000, "error");
+                this.createAlert("Shapefile or Corresponding DBF File Missing in Zip", 10000, "error");
                 this.reset();
             }
         }, function() {
-            this.createAlert("Invalid Zip File Format", 5000, "error");
+            this.createAlert("Invalid Zip File Format", 10000, "error");
             this.reset();
         });
     }
@@ -1486,7 +1486,7 @@ class OverlayManager {
                 this.overlayVisible = true;
             }
         } catch (e) {
-          this.createAlert("Error when applying overlay display settings", 5000, "error");
+          this.createAlert("Error when applying overlay display settings", 10000, "error");
         }
     }
 
@@ -1518,7 +1518,7 @@ class OverlayManager {
                 this.map.setCenter(this.data.customOverlay.getCenter());
             }
         } catch (e) {
-            this.createAlert("Failed to center on overlay", 5000, "error");
+            this.createAlert("Failed to center on overlay", 10000, "error");
         }
     }
 
@@ -1660,7 +1660,7 @@ class OverlayManager {
             this.data.customOverlay.setOpacity(100);
           }
         } catch (e) {
-          this.createAlert("Error when resetting overlay display settings", 5000, "error");
+          this.createAlert("Error when resetting overlay display settings", 10000, "error");
         } 
     }
 
@@ -1760,7 +1760,7 @@ class OverlayManager {
                 this.overlayVisible = true;
             }
         } catch (e) {
-            this.createAlert("Error when toggling overlay display", 5000, "error");
+            this.createAlert("Error when toggling overlay display", 10000, "error");
         }
     }
 

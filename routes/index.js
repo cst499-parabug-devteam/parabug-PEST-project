@@ -13,7 +13,10 @@ var XMLWriter = require("xml-writer");
 var tmp = require("tmp");
 const e = require("express");
 const PdfPrinter = require("pdfmake");
+const { type } = require("os");
+
 var sanitize = require("sanitize-filename");
+const formidable = require('formidable');
 
 const BUFFER = 0.0000005;
 
@@ -25,69 +28,124 @@ router.get("/", function (req, res, next) {
   });
 });
 
-router.post("/", function (req, res, next) {
+router.post("/test", function (req, res, next) {
   try {
-    // Test Data (req.body)
-    var info = req.body;
-    var appArea = info["appArea"]["ApplicationArea"][0];
-    appArea = jsonToJstsGeom(appArea);
-    if (appArea == null) {
-      res.send("App area was not simple");
-      return;
-    }
+    let ranchMap = (!!req.files)? req.files["ranchMap"] : null;
+    console.log(ranchMap);
+    res.json({ success: true });
+  } catch (e) {
+    console.log("ERROR");
+    res.json({ alertMessage: "Success" });
+  }
+});
 
-    var temp = info["appArea"]["Hazards"];
-    var tempPoly;
-    var hazards = [];
-    for (var i = 0; i < temp.length; i++) {
-      tempPoly = jsonToJstsGeom(temp[i][0]);
-      if (tempPoly != null) {
-        hazards.push(tempPoly);
-      }
-    }
-
-    temp = info["appArea"]["VariableRateAreas"];
-    var vras = [];
-    for (i = 0; i < temp.length; i++) {
-      tempPoly = jsonToJstsGeom(temp[i][0]);
-      if (tempPoly != null) {
-        vras.push(tempPoly);
-      }
-    }
-    if (validateAndFix(appArea, hazards, vras)) {
-      // Start email process
-      email(info, function (response) {
-        if (response.success) {
-          res.json({ alertMessage: "Success" });
+function validateRanchMap(ranchMap) {
+  try {
+    // Validate ranch map (size, mimetype, etc...)
+    switch (ranchMap.mimetype) {
+      case "image/png":
+      case "image/jpeg":
+      case "application/pdf":
+        if (((ranchMap.size / 1024) / 1024) < 11) {
+          return true;
         } else {
-          res.json({ alertMessage: "Fail" });
+          return false;
         }
-
-        if (response.pdfPath) {
-          fs.unlink(response.pdfPath, (err) => {
-            if (err) {
-              console.log("There was an error deleting the pdf file");
-            } else {
-              console.log(`${response.pdfPath} deleted successfully`);
-            }
-          });
-        }
-        if (response.kmlPath) {
-          fs.unlink(response.kmlPath, (err) => {
-            if (err) {
-              console.log("There was an error deleting the kml file");
-            } else {
-              console.log(`${response.kmlPath} deleted successfully`);
-            }
-          });
-        }
-      });
-    } else {
-      res.json({ alertMessage: "invalid" });
+        break;
+      default:
+        return false;
+        break;
     }
   } catch (e) {
-    console.log(e);
-    res.send("Error");
+    return false;
+  }
+}
+
+router.post("/", function (req, res, next) {
+  let info = JSON.parse(req.body.info);
+  let appArea;
+  let hazards = [];
+  let vras = [];
+  let ranchMap = (!!req.files)? req.files["ranchMap"] : null;
+
+  // If application area exist, validate the data
+  if (!!info["appArea"]) {
+    // Check if the application area converts to JSTS geometry properly
+    appArea = jsonToJstsGeom(info["appArea"]["ApplicationArea"][0]);
+    if (appArea == null) {
+      res.json({
+        success: false,
+        message: "Application Area was invalid"
+      }); 
+      return;
+    }
+    // Check Hazards
+    let temp = info["appArea"]["Hazards"];
+    for (var i = 0; i < temp.length; i++) {
+      let tempPoly = jsonToJstsGeom(temp[i][0]);
+      if (tempPoly != null) { hazards.push(tempPoly); }
+    }
+    // Check Variable Rate Areas
+    temp = info["appArea"]["VariableRateAreas"];
+    for (i = 0; i < temp.length; i++) {
+      let tempPoly = jsonToJstsGeom(temp[i][0]);
+      if (tempPoly != null) { vras.push(tempPoly); }
+    }
+  }
+
+  // If ranchMap exists, validate the data
+  if (!!ranchMap) {
+    if (!validateRanchMap(ranchMap)) {
+      res.json({
+        success: false,
+        message: "Ranch map supplied was invalid. This could be due to incorrect file type or if the file was larger than 10MB"
+      });
+      return;
+    };
+  }
+
+  
+  if (validateAndFix(appArea, hazards, vras, !!ranchMap)) {
+    // Start email process
+    email(info, ranchMap, function (response) {
+      res.json({
+        success: response.success,
+        message: response.message 
+      });
+
+      if (response.pdfPath) {
+        fs.unlink(response.pdfPath, (err) => {
+          if (err) {
+            console.log("There was an error deleting the pdf file");
+          } else {
+            console.log(`${response.pdfPath} deleted successfully`);
+          }
+        });
+      }
+      if (response.kmlPath) {
+        fs.unlink(response.kmlPath, (err) => {
+          if (err) {
+            console.log("There was an error deleting the kml file");
+          } else {
+            console.log(`${response.kmlPath} deleted successfully`);
+          }
+        });
+      }
+      if (response.ranchMapPath) {
+        fs.unlink(response.ranchMapPath, (err) => {
+          if (err) {
+            console.log("There was an error deleting the ranch map file");
+          } else {
+            console.log(`${response.ranchMapPath} deleted successfully`);
+          }
+        });
+      }
+    });
+  } else {
+    res.json({
+      success: false,
+      message: "Application Area was invalid"
+    });
   }
 });
 
@@ -140,139 +198,82 @@ function deleteNonPolys(polyArr) {
   return polyArr;
 }
 
-function email(info, callback) {
-  var email_files = path.join(__dirname, "..", "email_files");
-  var return_msg = { success: false };
+function email(info, ranchMap, callback) {
+  let return_msg = { success: false };
+  let appAreaExists = !!info["appArea"];
+  if (!appAreaExists && !ranchMap) {
+    return_msg.message = "Both the Application Area and Ranch map were invalid or not supplied";
+    callback(return_msg);
+    return;
+  }
+
+  let email_files = path.join(__dirname, "..", "email_files");
   let dateTime = new Date().toISOString().slice(0, 19).replace('T','_').replace(/:/g, '-');
   let fileNameBody = info["ranchName"] + "_" + info["contactName"] + "_" + dateTime;
   fileNameBody = sanitize(fileNameBody.replace(/\s+/g,'_').replace(/_{2,}/g, '_'));
 
+
   let pdfFileName = 'PDF_' + fileNameBody + '.pdf';
-  let kmlFileName = 'KML_' + fileNameBody + '.kml';
+  let kmlFileName = (appAreaExists) ? 'KML_' + fileNameBody + '.kml' : null;
+  let ranchMapName = (!!ranchMap) ? 'RanchMap_' + fileNameBody + ranchMap.name.substr(ranchMap.name.lastIndexOf('.')) : null;
   let pdfPath = path.join(email_files, pdfFileName);
-  let kmlPath = path.join(email_files, kmlFileName);
+  let kmlPath = (appAreaExists) ? path.join(email_files, kmlFileName) : null;
+  let ranchMapPath = (!!ranchMap) ? path.join(email_files, ranchMapName) : null;
+  // Save paths for deletion (comment out to leave in file system)
   return_msg.pdfPath = pdfPath;
   return_msg.kmlPath = kmlPath;
+  return_msg.ranchMapPath = ranchMapPath;
 
-  try {
-    let kmlData = kml(info);
-    fs.writeFile(kmlPath, kmlData, (kmlErr) => {
-      if (kmlErr) {
-        console.log("There was an issue creating the kml");
-        callback(return_msg);
-        return;
-      }
-      
-      writePDFile(pdfPath, info, function (pdfData) {
-        // Returns pdf data for email formatting
-        if (pdfData == null) {
-          // Error while writing to files, don't send email
-          console.log("There was an issue creating the pdf");
+
+  writePDFile(pdfPath, info, function (pdfData) {
+    if (pdfData == null) {
+      return_msg.message = "There was an error when generating PDF email attachment. This is generally due to invalid data."
+      callback(return_msg);
+      return;
+    }
+    if (appAreaExists) {
+      fs.writeFile(kmlPath, kml(info), (kmlErr) => {
+        if (kmlErr) {
+          return_msg.message = "There was an error when generating KML email attachment. This is generally due to invalid data."
           callback(return_msg);
-        } else {
-          // Atachments were created and written to, send the email
-          //NO-REPLY@SENDMAIL.COM METHOD:
-          var parabug_email_path = "info@parabug.solutions";
-
-          //set up transporter - OAUTH
-          var transporter = nodeMailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true, // use SSL
-            auth: {
-              type: "OAuth2",
-              user: privateKey.user,
-              clientId: privateKey.c_id,
-              clientSecret: privateKey.c_secret,
-              refreshToken: privateKey.refreshToken,
-              accessToken: privateKey.accessToken,
-              expires: 1484314697598
-            }
-          });
-
-          //setup second transporter:
-          var parabugTransporter = nodeMailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true, // use SSL
-            auth: {
-              type: "OAuth2",
-              user: privateKey.user,
-              clientId: privateKey.c_id,
-              clientSecret: privateKey.c_secret,
-              refreshToken: privateKey.refreshToken,
-              accessToken: privateKey.accessToken,
-              expires: 1484314697598
-            }
-          });
-
-          let parabugMailOptions = {
-            from:
-              '"Requested Parabug Estimate Quote"' +
-              "<" +
-              parabug_email_path +
-              ">", // sender address
-            to: " <" + parabug_email_path + ">", // list of receivers
-            subject: "Parabug Estimate Request", // Subject line
-            text: info.notes, // plain text body
-            html: pdfData,
-            attachments: [{ filename: kmlFileName, path: kmlPath }, { filename: pdfFileName, path: pdfPath }]
-          };
-
-          let mailOptions = {
-            from:
-              '"Requested Parabug Estimate Quote"' +
-              "<" +
-              parabug_email_path +
-              ">", // sender address
-            to: " <" + info.contactEmail + ">", // list of receivers
-            subject: "Parabug Estimate Request", // Subject line
-            text: info.notes, // plain text body
-            html: pdfData,
-            attachments: [{ filename: pdfFileName, path: pdfPath }]
-          };
-
-          // ************************ For Local Testing (No Emailing) ************************
-          // return_msg.success = true;
-          // callback(return_msg);
-          // transporter.close();
-          // parabugTransporter.close();
-          // return;
-          // *********************************************************************************
-          
-          // Send user email
-          transporter.sendMail(mailOptions, function (err, info) {
-            if (err) {
-              console.log(err);
+          return;
+        }
+        if (!!ranchMap) {
+          fs.writeFile(ranchMapPath, ranchMap.data, (ranchMapErr) => {
+            if (ranchMapErr) {
+              return_msg.message = "There was an error when generating Ranch Map email attachment. This is generally due to invalid data."
               callback(return_msg);
-            } else {
-              console.log("User Message sent: " + info.response);
-              // Send Parabug emal
-              parabugTransporter.sendMail(parabugMailOptions, function (
-                err,
-                info
-              ) {
-                if (err) {
-                  console.log(err);
-                  callback(false);
-                } else {
-                  console.log("Parabug Message sent: " + info.response);
-                  return_msg.success = true;
-                  callback(return_msg);
-                }
-              });
+              return;
             }
+            sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, function(success) {
+              return_msg.success = success;
+              if (!success) { return_msg.message = "There was an issue sending the email, this may be an internal issue."; }
+              callback(return_msg);
+            });
           });
-          transporter.close();
-          parabugTransporter.close();
+        } else {
+          sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, function(success) {
+            return_msg.success = success;
+            if (!success) { return_msg.message = "There was an issue sending the email, this may be an internal issue."; }
+            callback(return_msg);
+          });
         }
       });
-
-    });
-
-  } catch (e) {
-    callback(return_msg);
-  }
+    } else {
+      fs.writeFile(ranchMapPath, ranchMap.data, (ranchMapErr) => {
+        if (ranchMapErr) {
+          return_msg.message = "There was an error when generating Ranch Map email attachment. This is generally due to invalid data."
+          callback(return_msg);
+          return;
+        }
+        sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, function(success) {
+          return_msg.success = success;
+          if (!success) { return_msg.message = "There was an issue sending the email, this may be an internal issue."; }
+          callback(return_msg);
+        });
+      });
+    }
+  });
 }
 
 function getDifference(jstsPoly, jstsPolyRemove) {
@@ -599,7 +600,7 @@ function round(value, decimals) {
   return Number(Math.round(value + "e" + decimals) + "e-" + decimals);
 }
 
-function savePDFDocument(data, path, callback) {
+function savePDFDocument(data, path, appAreaExists, callback) {
   let dd = {
     content: [],
     styles: {
@@ -681,92 +682,94 @@ function savePDFDocument(data, path, callback) {
     );
   }
 
-  dd.content.push({lineHeight: 1, text: ' '});
-  let tableBody;
-  if (data.bug2) {
-    tableBody = [
-      [ {text: 'Application Area (Raw Map Data)', colSpan: 5, style: 'tableHeader'}, {}, {}, {}, {}],
-      [ 
-        {text: '', style: 'centerAlign'}, 
-        {text: 'Size (Acres)', style: 'centerAlign'},
-        {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
-        {text: data.bug2 +' (Per Acre)', style: 'centerAlign'},
-        {text: 'Total Bugs', style: 'centerAlign'}
-      ],
-      [
-        {text: 'Standard Rate Area', style: 'centerAlign'},
-        {text: data.standardAcres, style: 'centerAlign'},
-        {text: data.standardBPA1, style: 'centerAlign'},
-        {text: data.standardBPA2, style: 'centerAlign'},
-        {text: data.standardBugs, style: 'centerAlign'}
-      ],
-      [
-        {text: 'Variable Rate Area', style: 'centerAlign'},
-        {text: data.vraAcres, style: 'centerAlign'},
-        {text: data.vraBPA1, style: 'centerAlign'},
-        {text: data.vraBPA2, style: 'centerAlign'},
-        {text: data.vraBug, style: 'centerAlign'}
-      ],
-      [
-        {text: 'Hazard Area', style: 'centerAlign'},
-        {text: data.hazardAcres, style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-      ],
-      [
-        {text: 'Sum (Non-hazard)', style: 'centerAlign'},
-        {text: data.deployableAcres, style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-        {text: data.sumBugs, style: 'centerAlign'},
-      ]
-    ];
-  } else {
-    tableBody = [
-      [ {text: 'Application Area (Raw Map Data)', colSpan: 4, style: 'tableHeader'}, {}, {}, {}],
-      [ 
-        {text: '', style: 'centerAlign'}, 
-        {text: 'Size (Acres)', style: 'centerAlign'},
-        {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
-        {text: 'Total Bugs', style: 'centerAlign'}
-      ],
-      [
-        {text: 'Standard Rate Area', style: 'centerAlign'},
-        {text: data.standardAcres, style: 'centerAlign'},
-        {text: data.standardBPA1, style: 'centerAlign'},
-        {text: data.standardBugs, style: 'centerAlign'}
-      ],
-      [
-        {text: 'Variable Rate Area', style: 'centerAlign'},
-        {text: data.vraAcres, style: 'centerAlign'},
-        {text: data.vraBPA1, style: 'centerAlign'},
-        {text: data.vraBug, style: 'centerAlign'}
-      ],
-      [
-        {text: 'Hazard Area', style: 'centerAlign'},
-        {text: data.hazardAcres, style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-      ],
-      [
-        {text: 'Sum (Non-hazard)', style: 'centerAlign'},
-        {text: data.deployableAcres, style: 'centerAlign'},
-        {text: '-', style: 'centerAlign'},
-        {text: data.sumBugs, style: 'centerAlign'},
-      ]
-    ];
+  if (appAreaExists) {
+    dd.content.push({lineHeight: 1, text: ' '});
+    let tableBody;
+    if (data.bug2) {
+      tableBody = [
+        [ {text: 'Application Area (Raw Map Data)', colSpan: 5, style: 'tableHeader'}, {}, {}, {}, {}],
+        [ 
+          {text: '', style: 'centerAlign'}, 
+          {text: 'Size (Acres)', style: 'centerAlign'},
+          {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
+          {text: data.bug2 +' (Per Acre)', style: 'centerAlign'},
+          {text: 'Total Bugs', style: 'centerAlign'}
+        ],
+        [
+          {text: 'Standard Rate Area', style: 'centerAlign'},
+          {text: data.standardAcres, style: 'centerAlign'},
+          {text: data.standardBPA1, style: 'centerAlign'},
+          {text: data.standardBPA2, style: 'centerAlign'},
+          {text: data.standardBugs, style: 'centerAlign'}
+        ],
+        [
+          {text: 'Variable Rate Area', style: 'centerAlign'},
+          {text: data.vraAcres, style: 'centerAlign'},
+          {text: data.vraBPA1, style: 'centerAlign'},
+          {text: data.vraBPA2, style: 'centerAlign'},
+          {text: data.vraBug, style: 'centerAlign'}
+        ],
+        [
+          {text: 'Hazard Area', style: 'centerAlign'},
+          {text: data.hazardAcres, style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+        ],
+        [
+          {text: 'Sum (Non-hazard)', style: 'centerAlign'},
+          {text: data.deployableAcres, style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+          {text: data.sumBugs, style: 'centerAlign'},
+        ]
+      ];
+    } else {
+      tableBody = [
+        [ {text: 'Application Area (Raw Map Data)', colSpan: 4, style: 'tableHeader'}, {}, {}, {}],
+        [ 
+          {text: '', style: 'centerAlign'}, 
+          {text: 'Size (Acres)', style: 'centerAlign'},
+          {text: data.bug1 +' (Per Acre)', style: 'centerAlign'},
+          {text: 'Total Bugs', style: 'centerAlign'}
+        ],
+        [
+          {text: 'Standard Rate Area', style: 'centerAlign'},
+          {text: data.standardAcres, style: 'centerAlign'},
+          {text: data.standardBPA1, style: 'centerAlign'},
+          {text: data.standardBugs, style: 'centerAlign'}
+        ],
+        [
+          {text: 'Variable Rate Area', style: 'centerAlign'},
+          {text: data.vraAcres, style: 'centerAlign'},
+          {text: data.vraBPA1, style: 'centerAlign'},
+          {text: data.vraBug, style: 'centerAlign'}
+        ],
+        [
+          {text: 'Hazard Area', style: 'centerAlign'},
+          {text: data.hazardAcres, style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+        ],
+        [
+          {text: 'Sum (Non-hazard)', style: 'centerAlign'},
+          {text: data.deployableAcres, style: 'centerAlign'},
+          {text: '-', style: 'centerAlign'},
+          {text: data.sumBugs, style: 'centerAlign'},
+        ]
+      ];
+    }
+    dd.content.push(
+      {
+        table: {
+          headerRows: 2,
+          heights: [20, 20, 20, 20, 20, 20],
+          body: tableBody
+        }
+      }
+    );
   }
 
-  dd.content.push(
-    {
-      table: {
-        headerRows: 2,
-        heights: [20, 20, 20, 20, 20, 20],
-        body: tableBody
-      }
-    }
-  );
 
   dd.content.push({lineHeight: 1, text: ' '});
   dd.content.push('Created: ' + new Date());
@@ -784,6 +787,110 @@ function savePDFDocument(data, path, callback) {
   writeStream.on('error', function () {
       callback({success: false});
   });
+}
+
+function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, callback) {
+  // Get file path for files to be emailed
+  let email_files = path.join(__dirname, "..", "email_files");
+  let pdfPath = path.join(email_files, pdfFileName);
+  let kmlPath = (!!kmlFileName) ? path.join(email_files, kmlFileName) : null;
+  let ranchMapPath = (!!ranchMapName) ? path.join(email_files, ranchMapName) : null;
+  if (!kmlPath && !ranchMapPath) { return false; }
+  let parabug_email_path = "info@parabug.solutions";
+
+  //set up transporter - OAUTH
+  var transporter = nodeMailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+      type: "OAuth2",
+      user: privateKey.user,
+      clientId: privateKey.c_id,
+      clientSecret: privateKey.c_secret,
+      refreshToken: privateKey.refreshToken,
+      accessToken: privateKey.accessToken,
+      expires: 1484314697598
+    }
+  });
+
+  //setup second transporter:
+  var parabugTransporter = nodeMailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+      type: "OAuth2",
+      user: privateKey.user,
+      clientId: privateKey.c_id,
+      clientSecret: privateKey.c_secret,
+      refreshToken: privateKey.refreshToken,
+      accessToken: privateKey.accessToken,
+      expires: 1484314697598
+    }
+  });
+
+  let parabugAttachments = [{ filename: pdfFileName, path: pdfPath }];
+  if (!!kmlPath) { parabugAttachments.push({ filename: kmlFileName, path: kmlPath }); }
+  if (!!ranchMapPath) { parabugAttachments.push({ filename: ranchMapName, path: ranchMapPath }); }
+
+  let parabugMailOptions = {
+    from:
+      '"Requested Parabug Estimate Quote"' +
+      "<" +
+      parabug_email_path +
+      ">", // sender address
+    to: " <" + parabug_email_path + ">", // list of receivers
+    subject: "Parabug Estimate Request", // Subject line
+    text: info.notes, // plain text body
+    html: pdfData,
+    attachments: parabugAttachments
+  };
+
+  let mailOptions = {
+    from:
+      '"Requested Parabug Estimate Quote"' +
+      "<" +
+      parabug_email_path +
+      ">", // sender address
+    to: " <" + info.contactEmail + ">", // list of receivers
+    subject: "Parabug Estimate Request", // Subject line
+    text: info.notes, // plain text body
+    html: pdfData,
+    attachments: parabugAttachments
+    // attachments: [{ filename: pdfFileName, path: pdfPath }]
+  };
+
+  // ************************ For Local Testing (No Emailing) ************************
+  // callback(true);
+  // transporter.close();
+  // parabugTransporter.close();
+  // return;
+  // *********************************************************************************
+  
+  // Send user email
+  transporter.sendMail(mailOptions, function (err, info) {
+    if (err) {
+      callback(false);
+    } else {
+      console.log("User Message sent: " + info.response);
+      // Send Parabug emal
+      parabugTransporter.sendMail(parabugMailOptions, function (
+        err,
+        info
+      ) {
+        if (err) {
+          console.log(err);
+          callback(false);
+        } else {
+          console.log("Parabug Message sent: " + info.response);
+          callback(true);
+        }
+      });
+    }
+  });
+  transporter.close();
+  parabugTransporter.close();
 }
 
 function simplifyHazards(hazards) {
@@ -981,9 +1088,10 @@ function unionPolygons(jstsPoly1, jstsPoly2) {
   };
 }
 
-function validateAndFix(appArea, hazards, vras) {
+function validateAndFix(appArea, hazards, vras, ranchMapProvided = null) {
   try {
     if (appArea == null || appArea === []) {
+      if (!!ranchMapProvided) { return true; }
       return false;
     }
     if (numUniqueCoordinates(appArea) < 3) {
@@ -1009,96 +1117,169 @@ function validateAndFix(appArea, hazards, vras) {
 
 // Returns null if fail or pdfData (ejs render from template)
 function writePDFile(path, info, callback) {
-  var email_template = require("path").join(
-    __dirname,
-    "..",
-    "public",
-    "test_files",
-    "email_template.ejs"
-  );
-  // Path.join is not working without module reference here for some reason
-
-  // Parse Numbers
-  info["appAcres"] = parseFloat(info["appAcres"], 10);
-  info["hazardAcres"] = parseFloat(info["hazardAcres"], 10);
-  info["vraAcres"] = parseFloat(info["vraAcres"], 10);
-
-  // Check values, on per bug basis
-  let bug1 = checkBug(
-    info.bugName,
-    info.bugsPerAcre,
-    info.variableRate,
-    "bug1"
-  );
-  let bug2 = checkBug(
-    info.bugName2,
-    info.bugsPerAcre2,
-    info.variableRate2,
-    "bug2"
-  );
-
-  var standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
-  var standardBugs = (bug1.bpa + bug2.bpa) * standardAcres;
-  var vraBugs = (bug1.vr + bug2.vr) * info.vraAcres;
-  var sumBugs = standardBugs + vraBugs;
-
-  var deployableAcres = info["appAcres"] - info["hazardAcres"];
-
-  var data = {
-    contact_name: info.contactName,
-    contact_email: info.contactEmail,
-    contact_phone: info.contactPhone,
-    crop: info.crop,
-    billing_address: info.billingAddress,
-    notes: info.notes,
-    row_spacing: info.rowSpacing,
-    bug1: bug1.name,
-    bug2: bug2.name,
-    standardAcres: round(standardAcres, 3),
-    standardBPA1: bug1.bpa,
-    standardBPA2: bug2.bpa,
-    standardBugs: round(standardBugs, 0),
-    vraAcres: round(info.vraAcres, 3),
-    vraBPA1: bug1.vr,
-    vraBPA2: bug2.vr,
-    vraBugs: round(vraBugs, 0),
-    hazardAcres: round(info.hazardAcres, 3),
-    appAcres: round(info.appAcres, 3),
-    deployableAcres: round(deployableAcres, 3),
-    sumBugs: round(sumBugs, 0),
-
-    ranchName: info.ranchName,
-    applicationDate: info.applicationDate,
-    operator: info.operator,
-    correctedAcreage: info.correctedAcreage
-  };
-
-  // Check if corrected acreage was supplied, if so provide additional bug estaimate
-  if (info.correctedAcreage != null) {
-    let correctedAcreage = parseFloat(info.correctedAcreage);
-    let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
-    data.sumBugsCorrected = round(sumBugsCorrected, 0);
-  }
-
-  ejs.renderFile(email_template, data, function (err, pdfData) {
-    if (err) {
-      console.log(err);
-      callback(null);
-    } else {
-      try {
-        savePDFDocument(data, path, (result) => {
-          if (result.success) {
-            callback(pdfData);
-          } else {
-            callback(null);
-          }
-        });
-      } catch (e) {
-        console.log(e);
-        callback(null);
-      }
+  if (!!info["appArea"]) {
+    let email_template = require("path").join(
+      __dirname,
+      "..",
+      "public",
+      "test_files",
+      "email_template.ejs"
+    );
+    // Path.join is not working without module reference here for some reason
+  
+    // Parse Numbers
+    info["appAcres"] = parseFloat(info["appAcres"], 10);
+    info["hazardAcres"] = parseFloat(info["hazardAcres"], 10);
+    info["vraAcres"] = parseFloat(info["vraAcres"], 10);
+  
+    // Check values, on per bug basis
+    let bug1 = checkBug(
+      info.bugName,
+      info.bugsPerAcre,
+      info.variableRate,
+      "bug1"
+    );
+    let bug2 = checkBug(
+      info.bugName2,
+      info.bugsPerAcre2,
+      info.variableRate2,
+      "bug2"
+    );
+  
+    let standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
+    let standardBugs = (bug1.bpa + bug2.bpa) * standardAcres;
+    let vraBugs = (bug1.vr + bug2.vr) * info.vraAcres;
+    let sumBugs = standardBugs + vraBugs;
+  
+    let deployableAcres = info["appAcres"] - info["hazardAcres"];
+  
+    let data = {
+      contact_name: info.contactName,
+      contact_email: info.contactEmail,
+      contact_phone: info.contactPhone,
+      crop: info.crop,
+      billing_address: info.billingAddress,
+      notes: info.notes,
+      row_spacing: info.rowSpacing,
+      bug1: bug1.name,
+      bug2: bug2.name,
+      standardAcres: round(standardAcres, 3),
+      standardBPA1: bug1.bpa,
+      standardBPA2: bug2.bpa,
+      standardBugs: round(standardBugs, 0),
+      vraAcres: round(info.vraAcres, 3),
+      vraBPA1: bug1.vr,
+      vraBPA2: bug2.vr,
+      vraBugs: round(vraBugs, 0),
+      hazardAcres: round(info.hazardAcres, 3),
+      appAcres: round(info.appAcres, 3),
+      deployableAcres: round(deployableAcres, 3),
+      sumBugs: round(sumBugs, 0),
+  
+      ranchName: info.ranchName,
+      applicationDate: info.applicationDate,
+      operator: info.operator,
+      correctedAcreage: info.correctedAcreage
+    };
+  
+    // Check if corrected acreage was supplied, if so provide additional bug estaimate
+    if (info.correctedAcreage != null) {
+      let correctedAcreage = parseFloat(info.correctedAcreage);
+      let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
+      data.sumBugsCorrected = round(sumBugsCorrected, 0);
     }
-  });
+  
+    ejs.renderFile(email_template, data, function (err, pdfData) {
+      if (err) {
+        console.log(err);
+        callback(null);
+      } else {
+        try {
+          savePDFDocument(data, path, true, (result) => {
+            if (result.success) {
+              callback(pdfData);
+            } else {
+              callback(null);
+            }
+          });
+        } catch (e) {
+          console.log(e);
+          callback(null);
+        }
+      }
+    });
+
+  } else {
+    let email_template = require("path").join(
+      __dirname,
+      "..",
+      "public",
+      "test_files",
+      "email_template_no_apparea.ejs"
+    );
+  
+    // Check values, on per bug basis
+    let bug1 = checkBug(
+      info.bugName,
+      info.bugsPerAcre,
+      info.variableRate,
+      "bug1"
+    );
+    let bug2 = checkBug(
+      info.bugName2,
+      info.bugsPerAcre2,
+      info.variableRate2,
+      "bug2"
+    );
+  
+    let data = {
+      contact_name: info.contactName,
+      contact_email: info.contactEmail,
+      contact_phone: info.contactPhone,
+      crop: info.crop,
+      billing_address: info.billingAddress,
+      notes: info.notes,
+      row_spacing: info.rowSpacing,
+      bug1: bug1.name,
+      bug2: bug2.name,
+      standardBPA1: bug1.bpa,
+      standardBPA2: bug2.bpa,
+      vraBPA1: bug1.vr,
+      vraBPA2: bug2.vr,
+  
+      ranchName: info.ranchName,
+      applicationDate: info.applicationDate,
+      operator: info.operator,
+      correctedAcreage: info.correctedAcreage
+    };
+  
+    // Check if corrected acreage was supplied, if so provide additional bug estaimate
+    if (info.correctedAcreage != null) {
+      let correctedAcreage = parseFloat(info.correctedAcreage);
+      let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
+      data.sumBugsCorrected = round(sumBugsCorrected, 0);
+    }
+  
+    ejs.renderFile(email_template, data, function (err, pdfData) {
+      if (err) {
+        console.log(err);
+        callback(null);
+      } else {
+        try {
+          savePDFDocument(data, path, false, (result) => {
+            if (result.success) {
+              callback(pdfData);
+            } else {
+              callback(null);
+            }
+          });
+        } catch (e) {
+          console.log(e);
+          callback(null);
+        }
+      }
+    });
+  }
 }
 
 module.exports = router;

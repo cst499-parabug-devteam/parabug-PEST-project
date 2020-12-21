@@ -4,9 +4,10 @@
     <title>Parabug Estimate Solution Tool</title>
     <meta name="viewport" content="initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    
     <script
-    defer
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
+    defer
     ></script>
 
     <link rel="stylesheet" type="text/css" href="stylesheets/bootstrap-4.0.0.min.css">
@@ -72,7 +73,7 @@
       <span class="click-tip" onclick="showTip('shortcuts')">Shortcuts <span>&#8505;</span></span>
     </div>
 
-    <form id="additional-info" method="POST">
+    <form id="additional-info" method="POST" enctype="multipart/form-data">
       <div id="stat-display">
   
         <!--Bug Name-->
@@ -132,7 +133,7 @@
         <!--Estimated Number of Acres-->
         <div class="stat-item">
           <label class="stat-text" for="num-acres"
-            title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in corrected acreage value">
+            title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in manual acreage value">
             Acres:
           </label>
           <div class="stat-input">
@@ -256,10 +257,20 @@
             <!-- Corrected Acreage -->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('corrected-acreage')"> Corrected Acreage </span>
+                <span class="click-tip" onclick="showTip('corrected-acreage')"> Manual Acreage </span>
               </label>
               <div class="form-input">
                 <input type="number" step="0.01" name="corrected-acreage" id="corrected-acreage"/>
+              </div>
+            </div>
+
+            <!-- Ranch Map -->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showTip('ranch-map')"> Ranch Map </span>
+              </label>
+              <div class="form-input">
+                <input type="file" name="ranch-map" id="ranch-map" accept="image/jpeg, image/png, .pdf">
               </div>
             </div>
           </fieldset>
@@ -969,6 +980,10 @@
                 '<div class="col col-6 s-name">Finish Shape (Crosshair Mode)</div>' +
               '</div>';
             break;
+          case "ranch-map":
+            header = "Ranch Map File Upload";
+            text = "An Image/PDF file which displays the ranch map or desired application area. This file input can be used in place of the manually drawn application area. (10 MB Max)";
+            break;
           default:
             text = "tip not found";
             return;
@@ -1063,13 +1078,15 @@
       }
     
       function validate() {
-        if (appArea == null) {
-          console.log("App area was null");
-          return false;
-        }
-        if (!appArea.validateAndFix()) {
-          appArea == null;
-          return false;
+        if (!!appArea) {
+          if (!appArea.validateAndFix()) {
+            appArea == null;
+            return false;
+          }
+        } else {
+          if (!$("#ranch-map").val()) {
+            return false;
+          }
         }
         return true;
       }
@@ -1110,15 +1127,15 @@
           createAlert("Processing...", 5000, "info");
           event.preventDefault();
     
-          // Create form data object to easily get form values
           let formData = new FormData(document.getElementById("additional-info"));
-          let applicationArea = appArea.toEasyFormat();
+          // Create form data object to easily get form values
+          let aa = (!!appArea) ? appArea.toEasyFormat() : null;
           let data = {
             // Map Data
-            appArea: applicationArea,
-            appAcres: appArea.getArea(),
-            hazardAcres: appArea.getHazardArea(),
-            vraAcres: appArea.getVRAArea(),
+            appArea: aa,
+            appAcres: (aa) ? appArea.getArea() : null,
+            hazardAcres: (aa) ? appArea.getHazardArea(): null,
+            vraAcres: (aa) ? appArea.getVRAArea() : null,
             bugName: formData.get("bug-name"),
             bugsPerAcre: formData.get("bugs-per-acre"),
             variableRate: formData.get("variable-rate"),
@@ -1133,6 +1150,7 @@
             rowSpacing: formData.get("row_spacing"),
             ranchName: formData.get("ranch-name"),
             correctedAcreage: formData.get("corrected-acreage"),
+            ranchMap: formData.get("ranch-map"),
             // Preferences Input
             applicationDate: formData.get("application-date"),
             operator: formData.get("operator"),
@@ -1144,31 +1162,29 @@
             data.variableRate2 = formData.get("variable-rate2");
           }
     
+          let formToSend = new FormData();
+          formToSend.append('info', JSON.stringify(data));
+          formToSend.append('ranchMap', document.querySelector('[name=ranch-map]').files[0]);
+
           // Ajax request
           let xhttp = new XMLHttpRequest();
           xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-              let message = JSON.parse(this.responseText);
-              if (message.alertMessage === "Success") {
+              let response = JSON.parse(this.responseText);
+              if (response.success) {
                 createAlert("Request Complete!", 5000, "success");
-              } else if (message.alertMessage === "invalid") {
-                createAlert("Please Fill Out the Map Application Area.", 10000, "error");
               } else {
-                createAlert("Request Failed. Please Try Again.", 10000, "error");
+                createAlert(response.message, 10000, "error");
               }
             }
           };
           xhttp.open("POST", "/", true);
-          xhttp.setRequestHeader(
-            "Content-Type",
-            "application/json; charset=UTF-8"
-          );
-          xhttp.send(JSON.stringify(data));
+          xhttp.send(formToSend);
           window.scrollTo(0, 0);
         } else {
           event.preventDefault();
           window.scrollTo(0, 0);
-          createAlert("Invalid map data. This could be due to a missing Application Area.", 5000, 'error');
+          createAlert("Invalid map data. This could be due to a missing Application Area or Ranch Map.", 10000, 'error');
         }
       });
       
@@ -1220,6 +1236,22 @@
         applyDisplaySettings();
       });
       
+      $('#ranch-map').on("change", function(e) {
+        let ranchMapFile = e.currentTarget.files;
+        if (ranchMapFile.length == 1) {
+          let filesize = ((ranchMapFile[0].size/1024)/1024).toFixed(4);
+          if (filesize >= 11) {
+            window.scrollTo(0, 0);
+            createAlert("Ranch map input file too large. Files must be less than 11 MB", 10000, "error");
+            $('#ranch-map').val("");
+          }
+        } else if (ranchMapFile.length > 1) {
+          window.scrollTo(0, 0);
+          createAlert("Too many files included in ranch map input. Please include 1 file only and try again", 10000, "error");
+          $('#ranch-map').val("");
+        }
+      });
+
       document.getElementById("vr-area-color").addEventListener("input", function(event) {
         applyDisplaySettings();
       });

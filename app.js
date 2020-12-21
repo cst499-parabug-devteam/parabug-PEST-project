@@ -1,5 +1,6 @@
 var createError = require('http-errors');
 var express = require('express');
+const fileUpload = require('express-fileupload');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
@@ -17,6 +18,13 @@ app.set('view engine', 'ejs');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+// enable files upload
+app.use(fileUpload({
+  createParentPath: true,
+  fileSize: 11 * 1024 * 1024 * 1024 //11MB max file(s) size
+}));
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
