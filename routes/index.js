@@ -1103,8 +1103,9 @@ function validateAndFix(appArea, hazards, vras, ranchMapProvided = null) {
     newVras = unionPolyArray(newVras);
     newHazards = trimPolyArray(newHazards, appArea);
     newVras = trimPolyArray(newVras, appArea, newHazards);
-    newHazards = simplifyHazards(newHazards);
-    newVras = simplifyVariableRateAreas(newVras);
+    // Simplify currently bugged: vra's made with hazards internally get deleted
+    // newHazards = simplifyHazards(newHazards);
+    // newVras = simplifyVariableRateAreas(newVras);
 
     // All the values at this point should be valid
     return true;
