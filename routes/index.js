@@ -216,13 +216,29 @@ function email(info, ranchMap, callback) {
   let pdfFileName = 'PDF_' + fileNameBody + '.pdf';
   let kmlFileName = (appAreaExists) ? 'KML_' + fileNameBody + '.kml' : null;
   let ranchMapName = (!!ranchMap) ? 'RanchMap_' + fileNameBody + ranchMap.name.substr(ranchMap.name.lastIndexOf('.')) : null;
+  let csvFileName = (appAreaExists) ? 'CSV_' + fileNameBody + '.csv' : null;
+
+
   let pdfPath = path.join(email_files, pdfFileName);
   let kmlPath = (appAreaExists) ? path.join(email_files, kmlFileName) : null;
   let ranchMapPath = (!!ranchMap) ? path.join(email_files, ranchMapName) : null;
+  let csvPath = (appAreaExists) ? path.join(email_files, csvFileName) : null; 
   // Save paths for deletion (comment out to leave in file system)
   return_msg.pdfPath = pdfPath;
   return_msg.kmlPath = kmlPath;
   return_msg.ranchMapPath = ranchMapPath;
+  // return_msg.csvPath = csvPath;
+
+  writeCSV(csvPath, csvName, info, function(success) {
+    if (success) {
+      console.log("CSV write was a success");
+    } else {
+      console.log("CSV write has failed");
+    }
+    return_msg.success = success;
+    callback(return_msg);
+  });
+  return;
 
 
   writePDFile(pdfPath, info, function (pdfData) {
@@ -336,6 +352,54 @@ function jstsCoordsToShellHoles(coords) {
     }
   }
   return { shell, holes };
+}
+
+function writeCSV(csvPath, fileName, info, callback) {
+  var appArea = info["appArea"]["ApplicationArea"][0]["shell"];
+  var hazardArea = info["appArea"]["Hazards"];
+  var vRAArea = info["appArea"]["VariableRateAreas"];
+
+  // Multipliers control the change of rate
+  // When going from the standard rate to variable rate
+  let bug1Multiplier = 0;
+  let bug2Multiplier = 0;
+
+  try {
+    let vr = parseInt(info["bugsPerAcre"]);
+    let sr = parseInt(info["variableRate"]);
+    if (vr > 0) { bug1Multiplier = sr / vr; }
+    if (info["bugsPerAcre2"]) {
+      vr = parseInt(info["bugsPerAcre2"]);
+      sr = parseInt(info["variableRate2"]);
+      if (vr > 0) { bug2Multiplier = sr / vr; }
+    }
+  } catch (e) {
+    console.log("Error when setting multipliers");
+    console.log(e);
+  }
+
+  info["bugName"] = (info["bugName"] === "") ? info["bugName"] : "Not Specified";
+  info["bugName2"] = (info["bugName2"] === "") ? info["bugName2"] : "Not Specified";
+  info["notes"] = (info["notes"] === "") ? info["notes"] : "N/A";
+
+
+  fs.writeFile(csvPath, 'name,description,coordinateX,coordinateY,coordinateZ', (csvErr) => {
+    if (csvErr) {
+      callback(false);
+    } else {
+      let logger = fs.createWriteStream(csvPath, {
+        flags: 'a' // 'a' means appending (old data will be preserved)
+      })
+      
+      logger.write('This is some test data') // append string to your file    
+      logger.end();
+      callback(true);
+    }
+  });
+
+
+
+
 }
 
 function kml(info) {
