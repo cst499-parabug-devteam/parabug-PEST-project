@@ -6,8 +6,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     
     <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
     defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
     ></script>
 
     <link rel="stylesheet" type="text/css" href="stylesheets/bootstrap-4.0.0.min.css">
@@ -1164,7 +1164,9 @@
     
           let formToSend = new FormData();
           formToSend.append('info', JSON.stringify(data));
-          formToSend.append('ranchMap', document.querySelector('[name=ranch-map]').files[0]);
+          if (document.querySelector('[name=ranch-map]').files) {
+            formToSend.append('ranchMap', document.querySelector('[name=ranch-map]').files[0]);
+          }
 
           // Ajax request
           let xhttp = new XMLHttpRequest();
@@ -1175,10 +1177,11 @@
                 createAlert("Request Complete!", 5000, "success");
               } else {
                 createAlert(response.message, 10000, "error");
+                console.log(response);
               }
             }
           };
-          xhttp.open("POST", "/", true);
+          xhttp.open("POST", "http://localhost:3000/", true);
           xhttp.send(formToSend);
           window.scrollTo(0, 0);
         } else {
@@ -1301,4 +1304,4 @@
     </script>
   </body>
   
-</html>`
+</html>

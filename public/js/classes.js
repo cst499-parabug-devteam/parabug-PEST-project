@@ -728,7 +728,7 @@ class AppArea {
             this.unionVariableRateAreas();
             this.trimVariableRateAreas();
             // Simplify currently bugged: vra's made with hazards internally get deleted
-            // this.simplify();
+            this.simplify();
             return true;
         } catch (e) {
             console.log(e);

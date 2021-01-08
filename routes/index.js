@@ -140,6 +140,15 @@ router.post("/", function (req, res, next) {
           }
         });
       }
+      if (response.csvPath) {
+        fs.unlink(response.csvPath, (err) => {
+          if (err) {
+            console.log("There was an error deleting the csv file");
+          } else {
+            console.log(`${response.csvPath} deleted successfully`);
+          }
+        });
+      }
     });
   } else {
     res.json({
@@ -227,19 +236,7 @@ function email(info, ranchMap, callback) {
   return_msg.pdfPath = pdfPath;
   return_msg.kmlPath = kmlPath;
   return_msg.ranchMapPath = ranchMapPath;
-  // return_msg.csvPath = csvPath;
-
-  writeCSV(csvPath, csvName, info, function(success) {
-    if (success) {
-      console.log("CSV write was a success");
-    } else {
-      console.log("CSV write has failed");
-    }
-    return_msg.success = success;
-    callback(return_msg);
-  });
-  return;
-
+  return_msg.csvPath = csvPath;
 
   writePDFile(pdfPath, info, function (pdfData) {
     if (pdfData == null) {
@@ -254,26 +251,33 @@ function email(info, ranchMap, callback) {
           callback(return_msg);
           return;
         }
-        if (!!ranchMap) {
-          fs.writeFile(ranchMapPath, ranchMap.data, (ranchMapErr) => {
-            if (ranchMapErr) {
-              return_msg.message = "There was an error when generating Ranch Map email attachment. This is generally due to invalid data."
-              callback(return_msg);
-              return;
-            }
-            sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, function(success) {
+        writeCSV(csvPath, csvFileName, info, function(csvCreatedSuccessfully) {
+          if (!csvCreatedSuccessfully) {
+            return_msg.message = "There was an error when generating CSV email attachment. This is likely an internal issue."
+            callback(return_msg);
+            return;
+          }
+          if (!!ranchMap) {
+            fs.writeFile(ranchMapPath, ranchMap.data, (ranchMapErr) => {
+              if (ranchMapErr) {
+                return_msg.message = "There was an error when generating Ranch Map email attachment. This is generally due to invalid data."
+                callback(return_msg);
+                return;
+              }
+              sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFileName, function(success) {
+                return_msg.success = success;
+                if (!success) { return_msg.message = "There was an issue sending the email, this may be an internal issue."; }
+                callback(return_msg);
+              });
+            });
+          } else {
+            sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFileName, function(success) {
               return_msg.success = success;
               if (!success) { return_msg.message = "There was an issue sending the email, this may be an internal issue."; }
               callback(return_msg);
             });
-          });
-        } else {
-          sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, function(success) {
-            return_msg.success = success;
-            if (!success) { return_msg.message = "There was an issue sending the email, this may be an internal issue."; }
-            callback(return_msg);
-          });
-        }
+          }
+        });
       });
     } else {
       fs.writeFile(ranchMapPath, ranchMap.data, (ranchMapErr) => {
@@ -282,7 +286,7 @@ function email(info, ranchMap, callback) {
           callback(return_msg);
           return;
         }
-        sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, function(success) {
+        sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFileName, function(success) {
           return_msg.success = success;
           if (!success) { return_msg.message = "There was an issue sending the email, this may be an internal issue."; }
           callback(return_msg);
@@ -378,27 +382,63 @@ function writeCSV(csvPath, fileName, info, callback) {
     console.log(e);
   }
 
-  info["bugName"] = (info["bugName"] === "") ? info["bugName"] : "Not Specified";
-  info["bugName2"] = (info["bugName2"] === "") ? info["bugName2"] : "Not Specified";
-  info["notes"] = (info["notes"] === "") ? info["notes"] : "N/A";
+  info["bugName"] = (info["bugName"] != "") ? info["bugName"] : "Not Specified";
+  if (info["bugName2"] != null && info["bugName2"] === "") {
+    info["bugName2"] = "Not Specified";
+  }
+  if (info["notes"] === "" || !info["notes"]) {
+    info["notes"] = "N/A";
+  }
 
-
-  fs.writeFile(csvPath, 'name,description,coordinateX,coordinateY,coordinateZ', (csvErr) => {
+  fs.writeFile(csvPath, 'name,description,coordinateX,coordinateY,coordinateZ\r\n', (csvErr) => {
     if (csvErr) {
       callback(false);
     } else {
-      let logger = fs.createWriteStream(csvPath, {
-        flags: 'a' // 'a' means appending (old data will be preserved)
-      })
-      
-      logger.write('This is some test data') // append string to your file    
-      logger.end();
+      let csv = fs.createWriteStream(csvPath, {flags: 'a'}); // appending
+      csv.write(`Multiplier,${bug1Multiplier},${bug2Multiplier},,,\r\n`);
+      csv.write(`Application Area,Application Area Bug: ${info["bugName"]} ${info["bugsPerAcre"]} per acre`);
+      if (info["bugName2"] != null) {
+        csv.write(` Bug2: ${info["bugName2"]} ${info["bugsPerAcre2"]} per acre`);
+      }
+      csv.write(` Crop: ${info["crop"]} with row spacing of ${info["rowSpacing"]}ft Notes: ${info["notes"]},`);
+      for (let j = 0; j < appArea.length; j++) {
+        if (j == 0) {
+          csv.write(`${JSON.stringify(appArea[j]["lng"])},${JSON.stringify(appArea[j]["lat"])},0\r\n`);
+        } else {
+          csv.write(` , ,${JSON.stringify(appArea[j]["lng"])},${JSON.stringify(appArea[j]["lat"])},0\r\n`);
+        }
+      }
+      for (let i = 0; i < hazardArea.length; i++) {
+        let hazard = info["appArea"]["Hazards"][i][0]["shell"];
+        csv.write(`Hazard Area,Hazard Area,`);
+        for (let j = 0; j < hazard.length; j++) {
+          if (j == 0) {
+            csv.write(`${JSON.stringify(hazard[j]["lng"])},${JSON.stringify(hazard[j]["lat"])},0\r\n`);
+          } else {
+            csv.write(` , ,${JSON.stringify(hazard[j]["lng"])},${JSON.stringify(hazard[j]["lat"])},0\r\n`);
+          }
+        }
+      }
+      for (let i = 0; i < vRAArea.length; i++) {
+        let vra = info["appArea"]["VariableRateAreas"][i][0]["shell"];
+        console.log(info["appArea"]["VariableRateAreas"][i][0]["holes"]);
+        csv.write(`Variable Rate Area,Variable Rate Area Bug: ${info["bugName"]} ${info["variableRate"]} per acre`);
+        if (info["bugName2"] != null) {
+          csv.write(` Bug2: ${info["bugName2"]} ${info["variableRate2"]} per acre`);
+        }
+        csv.write(`,`);
+        for (let j = 0; j < vra.length; j++) {
+          if (j == 0) {
+            csv.write(`${JSON.stringify(vra[j]["lng"])},${JSON.stringify(vra[j]["lat"])},0\r\n`);
+          } else {
+            csv.write(` , ,${JSON.stringify(vra[j]["lng"])},${JSON.stringify(vra[j]["lat"])},0\r\n`);
+          }
+        }
+      }
+      csv.end();
       callback(true);
     }
   });
-
-
-
 
 }
 
@@ -853,12 +893,13 @@ function savePDFDocument(data, path, appAreaExists, callback) {
   });
 }
 
-function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, callback) {
+function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFileName, callback) {
   // Get file path for files to be emailed
   let email_files = path.join(__dirname, "..", "email_files");
   let pdfPath = path.join(email_files, pdfFileName);
   let kmlPath = (!!kmlFileName) ? path.join(email_files, kmlFileName) : null;
   let ranchMapPath = (!!ranchMapName) ? path.join(email_files, ranchMapName) : null;
+  let csvPath = (csvFileName) ? path.join(email_files, csvFileName) : null; 
   if (!kmlPath && !ranchMapPath) { return false; }
   let parabug_email_path = "info@parabug.solutions";
 
@@ -896,6 +937,7 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, callbac
 
   let parabugAttachments = [{ filename: pdfFileName, path: pdfPath }];
   if (!!kmlPath) { parabugAttachments.push({ filename: kmlFileName, path: kmlPath }); }
+  if (!!csvPath) { parabugAttachments.push({ filename: csvFileName, path: csvPath }); }
   if (!!ranchMapPath) { parabugAttachments.push({ filename: ranchMapName, path: ranchMapPath }); }
 
   let parabugMailOptions = {
@@ -921,8 +963,9 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, callbac
     subject: "Parabug Estimate Request", // Subject line
     text: info.notes, // plain text body
     html: pdfData,
-    attachments: parabugAttachments
-    // attachments: [{ filename: pdfFileName, path: pdfPath }]
+    attachments: [{ filename: pdfFileName, path: pdfPath }]
+    // For testing:
+    // attachments: parabugAttachments
   };
 
   // ************************ For Local Testing (No Emailing) ************************
@@ -1168,8 +1211,8 @@ function validateAndFix(appArea, hazards, vras, ranchMapProvided = null) {
     newHazards = trimPolyArray(newHazards, appArea);
     newVras = trimPolyArray(newVras, appArea, newHazards);
     // Simplify currently bugged: vra's made with hazards internally get deleted
-    // newHazards = simplifyHazards(newHazards);
-    // newVras = simplifyVariableRateAreas(newVras);
+    newHazards = simplifyHazards(newHazards);
+    newVras = simplifyVariableRateAreas(newVras);
 
     // All the values at this point should be valid
     return true;
