@@ -903,6 +903,14 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
   if (!kmlPath && !ranchMapPath) { return false; }
   let parabug_email_path = "info@parabug.solutions";
 
+  const oauth2Client = new OAuth2(
+    privateKey.c_id,
+    privateKey.c_secret, // Client Secret
+    "https://developers.google.com/oauthplayground" // Redirect URL
+  );
+  oauth2Client.setCredentials({refresh_token: privateKey.refreshToken });
+  const accessToken = oauth2Client.getAccessToken()
+
   //set up transporter - OAUTH
   var transporter = nodeMailer.createTransport({
     host: "smtp.gmail.com",
@@ -914,7 +922,8 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
       clientId: privateKey.c_id,
       clientSecret: privateKey.c_secret,
       refreshToken: privateKey.refreshToken,
-      accessToken: privateKey.accessToken,
+      // accessToken: privateKey.accessToken,
+      accessToken: accessToken,
       expires: 1484314697598
     }
   });
@@ -930,7 +939,8 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
       clientId: privateKey.c_id,
       clientSecret: privateKey.c_secret,
       refreshToken: privateKey.refreshToken,
-      accessToken: privateKey.accessToken,
+      // accessToken: privateKey.accessToken,
+      accessToken: accessToken,
       expires: 1484314697598
     }
   });
@@ -963,9 +973,9 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     subject: "Parabug Estimate Request", // Subject line
     text: info.notes, // plain text body
     html: pdfData,
-    attachments: [{ filename: pdfFileName, path: pdfPath }]
+    // attachments: [{ filename: pdfFileName, path: pdfPath }]
     // For testing:
-    // attachments: parabugAttachments
+    attachments: parabugAttachments
   };
 
   // ************************ For Local Testing (No Emailing) ************************
@@ -978,6 +988,7 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
   // Send user email
   transporter.sendMail(mailOptions, function (err, info) {
     if (err) {
+      console.log(err);
       callback(false);
     } else {
       console.log("User Message sent: " + info.response);
