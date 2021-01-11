@@ -973,9 +973,9 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     subject: "Parabug Estimate Request", // Subject line
     text: info.notes, // plain text body
     html: pdfData,
-    // attachments: [{ filename: pdfFileName, path: pdfPath }]
+    attachments: [{ filename: pdfFileName, path: pdfPath }]
     // For testing:
-    attachments: parabugAttachments
+    // attachments: parabugAttachments
   };
 
   // ************************ For Local Testing (No Emailing) ************************
