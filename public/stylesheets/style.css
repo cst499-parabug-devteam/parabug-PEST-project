@@ -148,6 +148,13 @@ html {
   color: white;
 }
 
+.overlay-header {
+  text-align: left;
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .overlay-visible-item {
   display: none;
 }
@@ -239,7 +246,7 @@ html {
   border-radius: 5px;
   font-size: 15px;
   padding: 10px !important;
-  width: 268px;
+  width: 300px;
   margin-top: -186px;
   max-height: 420px;
   overflow-y: auto;
@@ -329,6 +336,10 @@ html {
 
 #overlay-settings {
   display: none;
+}
+
+#overlay-settings-content {
+  vertical-align: middle;
 }
 
 /* #overlay-toggle-btn {

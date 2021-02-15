@@ -9,7 +9,7 @@
     defer
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjdaVy7TYsjGHRblTHwP1_FMurWKyD1Lk&callback=initMap&libraries=drawing,places"
     ></script>
-
+    
     <link rel="stylesheet" type="text/css" href="stylesheets/bootstrap-4.0.0.min.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/style.css">
     <script src="/js/jquery-3.5.1.min.js"></script>
@@ -69,8 +69,9 @@
 
     <div id="top-alert"></div>
 
+
     <div style="padding-left: 20px;">
-      <span class="click-tip" onclick="showTip('shortcuts')">Shortcuts <span>&#8505;</span></span>
+      <span class="click-tip" onclick="showPrompt('shortcuts')">Shortcuts <span>&#8505;</span></span>
     </div>
 
     <form id="additional-info" method="POST" enctype="multipart/form-data">
@@ -224,7 +225,7 @@
             <!--Crop-->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('crop')">Crop</span>
+                <span class="click-tip" onclick="showPrompt('crop')">Crop</span>
                 <span class="required">*</span>
               </label>
               <div class="form-input">
@@ -235,7 +236,7 @@
             <!--Row Spacing-->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('row-spacing')">Spacing (ft)</span>
+                <span class="click-tip" onclick="showPrompt('row-spacing')">Spacing (ft)</span>
                 <span class="required">*</span>
               </label>
               <div class="form-input">
@@ -257,7 +258,7 @@
             <!-- Corrected Acreage -->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('corrected-acreage')"> Manual Acreage </span>
+                <span class="click-tip" onclick="showPrompt('corrected-acreage')"> Manual Acreage </span>
               </label>
               <div class="form-input">
                 <input type="number" step="0.01" name="corrected-acreage" id="corrected-acreage"/>
@@ -267,7 +268,7 @@
             <!-- Ranch Map -->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('ranch-map')"> Ranch Map </span>
+                <span class="click-tip" onclick="showPrompt('ranch-map')"> Ranch Map </span>
               </label>
               <div class="form-input">
                 <input type="file" name="ranch-map" id="ranch-map" accept="image/jpeg, image/png, .pdf">
@@ -281,7 +282,7 @@
             <!-- Desired Application Date -->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('application-date')"> Application Date </span>
+                <span class="click-tip" onclick="showPrompt('application-date')"> Application Date </span>
               </label>
               <div class="form-input">
                 <input type="date" name="application-date" id="application-date"/>
@@ -291,7 +292,7 @@
             <!-- Operator Preference -->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('operator')"> Operator </span>
+                <span class="click-tip" onclick="showPrompt('operator')"> Operator </span>
               </label>
               <div class="form-input">
                 <input type="text" name="operator" id="operator"/>
@@ -301,7 +302,7 @@
             <!-- Notes -->
             <div class="form-element">
               <label class="form-text">
-                <span class="click-tip" onclick="showTip('notes')">Notes</span>
+                <span class="click-tip" onclick="showPrompt('notes')">Notes</span>
               </label>
               <div class="form-input">
                 <textarea name="notes" id="notes" rows="3"></textarea>
@@ -324,8 +325,6 @@
         </div>
       </div>
     </form>
-  
-    <div id="tiff-image"></div>
 
     <!-- The Modal -->
     <div id="tip-modal" class="modal">
@@ -341,6 +340,8 @@
       </div>
     </div>
 
+    <div id="test"></div>
+
     <script>
       "use strict"
       /* GLOBAL VARIABLES */
@@ -355,7 +356,7 @@
       let userLocation = false;
       let userLocationMarker;
 
-      // An instance of the OverlayManager class to help manage overlay data and display
+      // An instance of the GMapsOverlay class to help manage overlay data and display
       let overlayManager;
     
       // Internal object to help manage toggling between our custom drawing modes
@@ -740,13 +741,19 @@
             .append($('<button>Import Overlay</button>').click(importOverlay).attr({"id":"import-btn"}).addClass("dropdown-item"))
             .append($('<button>Toggle Location Icon</button>').click(toggleLocationIcon).attr({"id":"user-location-toggle-btn"}).addClass("dropdown-item"))
             .append($('<div class="dropdown-divider"></div>').addClass("overlay-visible-item"))
-            .append($('<button>Center on Overlay</button>').click(() => { if (overlayManager){ overlayManager.centerMapOnOverlay()} }).attr({"id":"center-btn"}).addClass("dropdown-item overlay-visible-item"))
-            .append($('<button>Clear Overlays</button>').click(() => { if (overlayManager){ overlayManager.reset()} }).addClass("dropdown-item overlay-visible-item"))
-            .append($('<button>Toggle Overlay</button>').click(() => { if (overlayManager){ overlayManager.toggleOverlay()} }).addClass("dropdown-item overlay-visible-item"));
+            .append($('<button>Center on Overlays</button>').click(() => { if (overlayManager){ overlayManager.setMapBoundsToAllLayers()} }).attr({"id":"center-btn"}).addClass("dropdown-item overlay-visible-item"))
+            .append($('<button>Clear Overlays</button>').click(() => { if (overlayManager){ overlayManager.removeAllLayers()} }).addClass("dropdown-item overlay-visible-item"))
+            .append($('<button>Toggle Overlays On</button>').click(() => { if (overlayManager){ overlayManager.setVisibility(true)} }).addClass("dropdown-item overlay-visible-item"))
+            .append($('<button>Toggle Overlays Off</button>').click(() => { if (overlayManager){ overlayManager.setVisibility(false)} }).addClass("dropdown-item overlay-visible-item"));
         
         let dropUpMenu = $('<div></div>').attr({"id":"maps-options"}).addClass("btn-group dropup").append(dropUpMenuButton).append(dropUpMenuContent);
         map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(dropUpMenu[0]);        
         //********************************* End Custom Controls*********************************
+
+        
+        google.maps.event.addListener(map, "click", function (event) {
+          console.log(event);
+        });
       }
 
       function makeMarker() {
@@ -927,9 +934,9 @@
           return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
       }
     
-      function showTip(id) {
+      function showPrompt(id, data = null) {
         let header = "";
-        let text = "";
+        let body = "";
         switch (id) {
           case "application-date":
             header = "Application Date";
@@ -937,7 +944,7 @@
             break;
           case "corrected-acreage":
             header = "Corrected Acreage";
-            text =
+            body =
               "If exact field acreage is known, this number will be used in place of the estimate above." +
               "<br>Note: if this number is given, variable rate areas and hazard areas will not be incorporated into initial bug estimates. Map data will still be sent";
             break;
@@ -951,16 +958,16 @@
             break;
           case "operator":
             header = "Preferred Operator";
-            text = "Enter the name of a preferred Parabug operator, if desired";
+            body = "Enter the name of a preferred Parabug operator, if desired";
             break;
           case "row-spacing":
             header = "Row Spacing";
-            text =
+            body =
               "The spacing, in feet, between each row of crops in the field specified";
             break;
           case "shortcuts":
             header = "Shortcuts / Hotkeys"
-            text = 
+            body = 
               '<div class="row">' + 
                 '<div class="col col-6 s-key">1</div>' +
                 '<div class="col col-6 s-name">Drag Mode</div>' +
@@ -982,17 +989,110 @@
             break;
           case "ranch-map":
             header = "Ranch Map File Upload";
-            text = "An Image/PDF file which displays the ranch map or desired application area. This file input can be used in place of the manually drawn application area. (10 MB Max)";
+            body = "An Image/PDF file which displays the ranch map or desired application area. This file input can be used in place of the manually drawn application area. (10 MB Max)";
+            break;
+          case "overlay-vra-prompt":
+            header = "Specify Color Range for VRA Generation";
+            body =
+              '<div style="text-align: center;">' +
+                '<div class="row mt-4">' +
+                  '<div class="col font-weight-bold">Selected (Red, Green, Blue): ' + data.r + ', ' + data.g + ', ' + data.b +'</div>' +
+                '</div>' +
+                '<div class="row mt-4 align-items-center">' +
+                  '<div class="col font-weight-bold">Range: </div>' +
+                  '<div class="col">' +
+                    '<div class="row justify-content-center font-weight-bold">R</div>' +
+                    '<div class="row mt-2">' +
+                      '<div class="col">' +
+                        '<div class="row">' +
+                          '<div class="col">' +
+                            '<input type="number" id="r-min" min="0" max="255" value="'+data.r+'">' +
+                          '</div>' +
+                        '</div>' +
+                        '<div class="row">' +
+                          '<div class="col">Min</div>' +
+                        '</div>' +
+                      '</div>' +
+                      '<div class="col">' +
+                        '<div class="row">' +
+                          '<div class="col">' +
+                            '<input type="number" id="r-max" min="0" max="255" value="'+data.r+'">' +
+                          '</div>' +
+                        '</div>' +
+                        '<div class="row">' +
+                          '<div class="col">Max</div>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="col">' +
+                    '<div class="row justify-content-center font-weight-bold">G</div>' +
+                    '<div class="row mt-2">' +
+                      '<div class="col">' +
+                        '<div class="row">' +
+                          '<div class="col">' +
+                            '<input type="number" id="g-min" min="0" max="255" value="'+data.g+'">' +
+                          '</div>' +
+                        '</div>' +
+                        '<div class="row">' +
+                          '<div class="col">Min</div>' +
+                        '</div>' +
+                      '</div>' +
+                      '<div class="col">' +
+                        '<div class="row">' +
+                          '<div class="col">' +
+                            '<input type="number" id="g-max" min="0" max="255" value="'+data.g+'">' +
+                          '</div>' +
+                        '</div>' +
+                        '<div class="row">' +
+                          '<div class="col">Max</div>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="col">' +
+                    '<div class="row justify-content-center font-weight-bold">B</div>' +
+                    '<div class="row mt-2">' +
+                      '<div class="col">' +
+                        '<div class="row">' +
+                          '<div class="col">' +
+                            '<input type="number" id="b-min" min="0" max="255" value="'+data.b+'">' +
+                          '</div>' +
+                        '</div>' +
+                        '<div class="row">' +
+                          '<div class="col">Min</div>' +
+                        '</div>' +
+                      '</div>' +
+                      '<div class="col">' +
+                        '<div class="row">' +
+                          '<div class="col">' +
+                            '<input type="number" id="b-max" min="0" max="255" value="'+data.b+'">' +
+                          '</div>' +
+                        '</div>' +
+                        '<div class="row">' +
+                          '<div class="col">Max</div>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="row mt-4 mb-4">' +
+                  '<div class="col offset-md-8">' +
+                    '<button onclick="vraAutoGenerationFromDataLayer()">Confirm</button>' +
+                    '<button class="ml-3" onclick="hideModal()">Cancel</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>';
             break;
           default:
-            text = "tip not found";
+          body = "tip not found";
             return;
             break;
         }
     
         modal.style.display = "block";
         document.getElementById("modal-header-text").innerHTML = header;
-        document.getElementById("modal-body").innerHTML = text;
+        document.getElementById("modal-body").innerHTML = body;
     
         // When the user clicks anywhere outside of the modal, close it
         window.onclick = function(event) {
@@ -1000,6 +1100,54 @@
             modal.style.display = "none";
           }
         };
+      }
+
+      function hideModal() {
+        modal.style.display = "none";
+      }
+
+      function vraAutoGenerationFromDataLayer() {
+        let rMin = document.getElementById("r-min").value;
+        let rMax = document.getElementById("r-max").value;
+        let gMin = document.getElementById("g-min").value;
+        let gMax = document.getElementById("g-max").value;
+        let bMin = document.getElementById("b-min").value;
+        let bMax = document.getElementById("b-max").value;
+        rMin = (rMin) ? rMin : 0;
+        rMax = (rMax) ? rMax : 255;
+        gMin = (gMin) ? gMin : 0;
+        gMax = (gMax) ? gMax : 255;
+        bMin = (bMin) ? bMin : 0;
+        bMax = (bMax) ? bMax : 255;
+        let count = 0;
+        map.data.forEach((f) => {
+          let valid = true;
+          let color = f.getProperty('fill');
+          if (color) {
+            color = hexToRgb(color);
+            if (color.r > rMax || color.r < rMin) { valid = false; }
+            if (color.g > gMax || color.g < gMin) { valid = false; }
+            if (color.b > bMax || color.b < bMin) { valid = false; }
+          } else {
+            valid = false;
+          }
+          if (valid) {
+            let path = [];
+            f.getGeometry().forEachLatLng((coord) => { path.push(coord); });
+            if (!path[0].equals(path[path.length-1])) { path.push(path[0]); }
+            if (!!appArea) {
+              appArea.addVariableRate(path);
+            }
+            count++;
+          }
+        });
+        hideModal();
+        if (!!appArea) {
+          appArea.validateAndFix();
+        }
+        if (count == 0) {
+          createAlert('No features where found with the given color parameters.', 5000, 'info');
+        }
       }
 
       function toggleAdvancedOptions() {
@@ -1098,16 +1246,20 @@
       $('#variable-rate2').on('change paste input', updateStats);
 
       fileInput.addEventListener("click", function(event) { 
-        if (overlayManager) { overlayManager.reset(); }
+        // if (overlayManager) { overlayManager.reset(); }
         fileInput.value = "";
       });
+    
       
       fileInput.addEventListener("change", function(event) {
+        if (!overlayManager) { overlayManager = new GMapsOverlay(map); }
+        overlayManager.loadOverlay(fileInput.files[0], true);
+
+        return;
         try {
           if (!overlayManager) { overlayManager = new OverlayManager(map); }
           overlayManager.setOverlay(fileInput.files[0])
         } catch (e) {
-          
           console.log(e);
         }
       });
@@ -1115,8 +1267,7 @@
       document.getElementById("add-bug-toggle").addEventListener("click", function() {
         updateStats();
         if (this.checked) {
-          document.getElementById("add-bug-display").style.display =
-            "inline-block";
+          document.getElementById("add-bug-display").style.display = "inline-block";
         } else {
           document.getElementById("add-bug-display").style.display = "none";
         }
@@ -1164,9 +1315,7 @@
     
           let formToSend = new FormData();
           formToSend.append('info', JSON.stringify(data));
-          if (document.querySelector('[name=ranch-map]').files) {
-            formToSend.append('ranchMap', document.querySelector('[name=ranch-map]').files[0]);
-          }
+          formToSend.append('ranchMap', document.querySelector('[name=ranch-map]').files[0]);
 
           // Ajax request
           let xhttp = new XMLHttpRequest();
@@ -1177,7 +1326,6 @@
                 createAlert("Request Complete!", 5000, "success");
               } else {
                 createAlert(response.message, 10000, "error");
-                console.log(response);
               }
             }
           };
@@ -1190,14 +1338,13 @@
           createAlert("Invalid map data. This could be due to a missing Application Area or Ranch Map.", 10000, 'error');
         }
       });
-      
+
       document.getElementById("mobile-mode").addEventListener("click", function() {
         if (this.checked) {
           drawingManager.setOptions({ drawingMode: null });
           centerMarker.setPosition(map.getCenter());
           centerMarker.setMap(map);
-          document.getElementById("mobile-options-div").style.display =
-            "inline-block";
+          document.getElementById("mobile-options-div").style.display = "inline-block";
         } else {
           drawToggle(drawModeControl.current);
           centerMarker.setMap(null);
