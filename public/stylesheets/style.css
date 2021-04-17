@@ -23,7 +23,12 @@ html {
   padding: 0px;
 }
 
+
 /* Class CSS */
+.advanced-options-margin-fix {
+  right: -15px !important;
+}
+
 .align-input {
   display: inline-block;
   text-align: left;
@@ -38,6 +43,88 @@ html {
 .click-tip {
   cursor: pointer;
   border-bottom: dotted 1px black;
+}
+
+/* Style the button that is used to open and close the collapsible content */
+.collapsible {
+  background-color: #6c757d1a;
+  border: 0.5px solid #000000;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  width: 96%;
+  min-width: 80%;
+  text-align: left;
+  outline: none;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapsible-delete {
+  background-color: #6c757d1a;
+  border: 0.5px solid #000000;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  /* width: 10%; */
+  width: 4%;
+  max-width: 20%;
+  min-width: 16px;
+  text-align: center;
+  vertical-align: center;
+  outline: none;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 2px;
+}
+
+.collapsible-delete:hover,
+.collapsible-delete:focus {
+  color: #000;
+  text-decoration: none;
+  background-color: rgb(190, 190, 190);
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .collapsible:hover {
+  background-color: rgb(190, 190, 190);
+}
+
+/* Style the collapsible content. Note: hidden by default */
+.content {
+  padding: 8px 12px 12px 12px;
+  display: none;
+  overflow: hidden;
+  background-color: #ffffff;
+  width: 100%;
+  border: 1px solid black;
+  border-top: none;
+  border-radius: 2px;
+}
+
+.content input[type=color] {
+  margin-right: 2px;
+  margin-left: 2px;
+}
+
+.content input[type=checkbox] {
+  vertical-align: middle;
+}
+
+.content input[type=number] {
+  width: 60px;
+  vertical-align: middle;
+}
+
+.content input[type=range] {
+  width: 80px;
+  vertical-align: middle;
 }
 
 .div-button {
@@ -81,6 +168,24 @@ html {
 
 .helpful-tips {
   cursor: help;
+  border-bottom: 0.5px solid grey;
+}
+
+* {box-sizing: border-box;}
+
+.img-magnifier-container {
+  position: relative;
+}
+
+.img-magnifier-glass {
+  position: absolute;
+  border: 3px solid #000;
+  border-radius: 50%;
+  cursor: none;
+  /*Set the size of the magnifier glass:*/
+  width: 80px;
+  height: 80px;
+  z-index: 1000;
 }
 
 .map-container {
@@ -134,7 +239,7 @@ html {
 .modal-content {
   position: fixed;
   bottom: 0;
-  background-color: #fefefe;
+  background-color: white;
   width: 100%;
   -webkit-animation-name: slideIn;
   -webkit-animation-duration: 0.4s;
@@ -144,8 +249,16 @@ html {
 
 .modal-header {
   padding: 2px 16px;
-  background-color: #4395cc;
+  background-color: #f39325;
   color: white;
+}
+
+.modal-row-content {
+  padding: 8px 4px 8px 4px;
+}
+
+.modal-row-content span, .modal-row-content input{
+  vertical-align: middle;
 }
 
 .overlay-header {
@@ -153,6 +266,100 @@ html {
   font-weight: bold;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Overlay Loader Modal */
+.overlay-loader-modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Overlay Loader Modal Content */
+.overlay-loader-modal-content {
+  position: relative;
+  background-color: white;
+  margin: auto;
+  padding: 0;
+  border: 2px solid rgb(59, 59, 59);
+  width: 80%;
+  max-width: 1500px;
+  /* min-width: 400px; */
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+  -webkit-animation-name: animatetop;
+  -webkit-animation-duration: 0.4s;
+  animation-name: animatetop;
+  animation-duration: 0.4s
+}
+
+/* Add Animation */
+@-webkit-keyframes animatetop {
+  from {top:-300px; opacity:0} 
+  to {top:0; opacity:1}
+}
+
+@keyframes animatetop {
+  from {top:-300px; opacity:0}
+  to {top:0; opacity:1}
+}
+
+/* The Close Button */
+.overlay-loader-close {
+  color: white;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  padding: 0px 8px;
+}
+
+.overlay-loader-close:hover,
+.overlay-loader-close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+@media only screen and (max-width: 460px) {
+  .overlay-loader-close {
+    display: none;
+  }
+}
+
+.overlay-loader-modal-header {
+  padding: 12px;
+  /* background-color: #5cb85c; */
+  background-color: #f39325;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.overlay-loader-modal-body {padding: 4px;}
+
+.overlay-loader-modal-footer {
+  padding: 12px;
+  /* background-color: #5cb85c; */
+  background-color: #f39325;
+  color: white;
+  text-align: right;
+}
+
+.overlay-loader-modal-footer button {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.overlay-settings-row {
+  width: 100%;
+  padding: 10px 0 10px 0;
 }
 
 .overlay-visible-item {
@@ -168,7 +375,9 @@ html {
 }
 
 .row {
-  max-width: 100%;
+  /* max-width: 100%; */
+  margin-left: 0px;
+  margin-right: 0px;
 }
 
 .s-key {
@@ -209,6 +418,18 @@ html {
   text-align: right;
 }
 
+.ta-c {
+  text-align: center;
+}
+
+.ta-l {
+  text-align: left;
+}
+
+.ta-r {
+  text-align: right;
+}
+
 .upright-text {
   writing-mode: vertical-rl;
   text-orientation: upright;
@@ -245,35 +466,43 @@ html {
   background-color: white;
   border-radius: 5px;
   font-size: 15px;
-  padding: 10px !important;
+  padding: 4px !important;
   width: 300px;
   margin-top: -186px;
-  max-height: 420px;
+  max-height: 446px;
+  max-width: 300px;
   overflow-y: auto;
   overflow-x: auto;
 }
 
 #advanced-options-controls input {
   margin: 2px 4px 2px 4px;
+  vertical-align: middle;
 }
 
-/* #center-btn {
-  position: absolute;
-  margin-left: -76px;
-  margin-bottom: 25px;
-} */
+#advanced-options-controls input[type=range] {
+  width: 50%;
+}
+
+#advanced-options-controls::-webkit-scrollbar {
+  width: .6em;
+}
+ 
+#advanced-options-controls::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+ 
+#advanced-options-controls::-webkit-scrollbar-thumb {
+  background-color: darkgrey;
+  border-radius: 3px;
+  /* outline: 1px solid slategrey; */
+}
 
 #crosshair-center {
   vertical-align: center;
   text-align: center;
   display: none;
 }
-
-/* #import-btn {
-  position: absolute;
-  margin-left: -68px;
-  margin-bottom: 125px;
-} */
 
 #map {
   height: 100%;
@@ -289,19 +518,20 @@ html {
 #mobile-div {
   display: inline-block;
   background-color: #fff;
-  border: 2px solid #fff;
   border-radius: 3px;
   cursor: pointer;
-  text-align: center;
-  vertical-align: center;
   font-family: Roboto, Arial, sans-serif;
   font-size: 15px;
-  padding: 2px;
-  margin-bottom: 12px;
+  padding: 6px 6px 6px 6px;
+  margin-bottom: 18px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 #mobile-mode-div {
   display: inline-block;
+  height: 20px;
+  vertical-align: middle;
 }
 
 #mobile-options-div {
@@ -334,17 +564,28 @@ html {
   max-width: 30em;
 }
 
+#overlay-loader-body span {
+  white-space: nowrap;
+}
+
+#overlay-loader-header div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 #overlay-settings {
   display: none;
 }
 
 #overlay-settings-content {
   vertical-align: middle;
+  width: 100%;
 }
 
-/* #overlay-toggle-btn {
-  display: none;
-} */
+#overlay-settings-content .overlay-settings-row:nth-of-type(odd){
+  background-color: #6c757d1a;
+}
 
 #pac-input {
   background-color: #fff;
@@ -372,17 +613,10 @@ html {
   border-color: #4d90fe;
 }
 
-/* #reset-btn {
-  position: absolute;
-  margin-left: -72px;
-  margin-bottom: 75px;
-} */
-
 #stat-display {
   text-align: center;
   margin: -11px 15px 0px 15px;
   padding: 10px 0px 10px 0px;
-  /*background-color: grey;*/
 }
 
 #top-alert {
@@ -399,7 +633,6 @@ html {
 #user-info-display {
   margin: 0px 15px 0px 15px;
   padding: 10px;
-  /*background-color: lightblue;*/
   text-align: center;
 }
 
