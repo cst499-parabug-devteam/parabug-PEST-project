@@ -1210,7 +1210,6 @@ class GMapsOverlayLoader {
     }
 }
 
-
 class GMapsOverlayLayer {
     constructor(map, polygons, bounds, name="Untitled Layer", description="", isVisible=false, parent) {
         this.map = map;
