@@ -102,7 +102,17 @@
     <div id="top-alert"></div>
 
 
-    <div style="padding-left: 20px;">
+    <div style="padding-left: 15px;">
+      <div id="session-options-dropdown">
+        <button id="session-options-dropdown-btn" onclick="showSessionOptions()"
+          title="Save/Import map and form data. Does not save overlays imported onto the map or uploaded ranch map files.">
+          Session
+        </button>
+        <div id="session-options-dropdown-content">
+          <a onclick="importSession()">Import</a>
+          <a onclick="exportSession()">Save</a>
+        </div>
+      </div>
       <span class="click-tip" onclick="showPrompt('shortcuts')">Shortcuts</span>
     </div>
 
@@ -443,6 +453,11 @@
       let fileInput = document.createElement("input");
       fileInput.setAttribute("type", "file");
       fileInput.setAttribute("accept", ".kml,.kmz, .tif, .zip, .json");
+      
+      // Allow for importing of an application area from KML
+      let sessionFileInput = document.createElement("input");
+      sessionFileInput.setAttribute("type", "file");
+      sessionFileInput.setAttribute("accept", ".json");
     
       /* FUNCTIONS */
       function applyDisplaySettings() {
@@ -1150,6 +1165,152 @@
         };
       }
 
+      /* Session Functions */
+      function importSession() {
+        sessionFileInput.click();
+      }
+
+      sessionFileInput.addEventListener("change", function(event) {
+        let fileURL = URL.createObjectURL(sessionFileInput.files[0]);
+        const xhr = new XMLHttpRequest();
+        // Read the current file as an XMLDocument to be used in @tmcw/togeojson library
+        xhr.onload = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              let formData = new FormData(document.getElementById("additional-info"));
+              let responseText = this.responseText;
+              let session = JSON.parse(responseText);
+              /***************************** Set Map Data *****************************/
+              if (session.map && session.map.ApplicationArea) {
+                try {
+                  appArea = new AppArea(map, session.map.ApplicationArea[0].shell);
+                  session.map.Hazards.forEach((hazard) => {
+                    appArea.addHazard(hazard[0].shell, hazard[0].holes);
+                  })
+                  session.map.VariableRateAreas.forEach((vra) => {
+                    appArea.addVariableRate(vra[0].shell, vra[0].holes);
+                  })
+                } catch (e) {
+                  // Error
+                  console.log(e);
+                }
+              }
+
+              /***************************** Set Form Data *****************************/
+              if (session.form.bugName) {
+                document.getElementById("bug-name").value = session.form.bugName;
+              }
+              if (session.form.bugsPerAcre) {
+                document.getElementById("num-bugs-per-acre").value = session.form.bugsPerAcre;
+              }
+              if (session.form.variableRate) {
+                document.getElementById("variable-rate").value = session.form.variableRate;
+              }
+              if (session.form.bugName2) {
+                if (!document.getElementById("add-bug-toggle").checked) {
+                  document.getElementById("add-bug-toggle").click();
+                }
+                document.getElementById("bug-name2").value = session.form.bugName2;
+                if (session.form.bugsPerAcre2) {
+                  document.getElementById("num-bugs-per-acre2").value = session.form.bugsPerAcre2;
+                }
+                if (session.form.variableRate2) {
+                  document.getElementById("variable-rate2").value = session.form.variableRate2;
+                }
+              }
+              if (session.form.contactName) {
+                document.getElementById("contact-name").value = session.form.contactName;
+              }
+              if (session.form.contactPhone) {
+                document.getElementById("contact-phone").value = session.form.contactPhone;
+              }
+              if (session.form.contactEmail) {
+                document.getElementById("contact-email").value = session.form.contactEmail;
+              }
+              if (session.form.billingAddress) {
+                document.getElementById("billing-address").value = session.form.billingAddress;
+              }
+              if (session.form.crop) {
+                document.getElementById("crop").value = session.form.crop;
+              }
+              if (session.form.rowSpacing) {
+                document.getElementById("row-spacing").value = session.form.rowSpacing;
+              }
+              if (session.form.ranchName) {
+                document.getElementById("ranch-name").value = session.form.ranchName;
+              }
+              if (session.form.correctedAcreage) {
+                document.getElementById("corrected-acreage").value = session.form.correctedAcreage;
+              }
+              if (session.form.applicationDate) {
+                document.getElementById("application-date").value = session.form.applicationDate;
+              }
+              if (session.form.operator) {
+                document.getElementById("operator").value = session.form.operator;
+              }
+              if (session.form.notes) {
+                document.getElementById("notes").value = session.form.notes;
+              }
+            } else {
+                createAlert("Failed to Load Session File", 10000, "error");
+            }
+        }
+        xhr.onerror = function() {
+            createAlert("Failed to Load Session File", 10000, "error");
+        }
+        xhr.open("GET", fileURL, true);
+        xhr.send();
+      });
+      
+      function exportSession() {
+        let formData = new FormData(document.getElementById("additional-info"));
+        let exportJson = {
+          map: (!!appArea) ? appArea.toEasyFormat() : null,
+          form: {
+            bugName: (formData.get("bug-name")) ? formData.get("bug-name") : null,
+            bugsPerAcre: (formData.get("bugs-per-acre")) ? formData.get("bugs-per-acre") : null,
+            variableRate: (formData.get("variable-rate")) ? formData.get("variable-rate") : null,
+            bugName2: (formData.get("bug-name2")) ? formData.get("bug-name2") : null,
+            bugsPerAcre2: (formData.get("bug-name2")) ? formData.get("bugs-per-acre2") : null,
+            variableRate2: (formData.get("bug-name2")) ? formData.get("variable-rate2") : null,
+            // User Information Input
+            contactName: (formData.get("contact_name")) ? formData.get("contact_name") : null,
+            contactPhone: (formData.get("contact_phone")) ? formData.get("contact_phone") : null,
+            contactEmail: (formData.get("contact_email")) ? formData.get("contact_email") : null,
+            billingAddress: (formData.get("billing_address")) ? formData.get("billing_address") : null,
+            // Application Area Input
+            crop: (formData.get("crop")) ? formData.get("crop") : null,
+            rowSpacing: (formData.get("row_spacing")) ? formData.get("row_spacing") : null,
+            ranchName: (formData.get("ranch-name")) ? formData.get("ranch-name") : null,
+            correctedAcreage: (formData.get("corrected-acreage")) ? formData.get("corrected-acreage") : null,
+            // Preferences Input
+            applicationDate: (formData.get("application-date")) ? formData.get("application-date") : null,
+            operator: (formData.get("operator")) ? formData.get("operator") : null,
+            notes: (formData.get("notes")) ? formData.get("notes") : null,
+          }
+        };
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(exportJson, null, 2)], {
+          type: "text/plain"
+        }));
+        a.setAttribute("download", "pest_session_"+ new Date() + ".json");
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } 
+
+      function showSessionOptions() {
+        document.getElementById("session-options-dropdown-content").classList.toggle("show");
+      }
+
+      window.onclick = function(event) {
+        if (!event.target.matches('#session-options-dropdown-btn')) {
+          let dropdowns = document.getElementById("session-options-dropdown-content");
+          if (dropdowns.classList.contains('show')) {
+            dropdowns.classList.remove('show');
+          }
+        }
+      }
+
       function hideModal() {
         modal.style.display = "none";
       }
@@ -1272,7 +1433,7 @@
         if (validate()) {
           createAlert("Processing...", 5000, "info");
           event.preventDefault();
-    
+
           let formData = new FormData(document.getElementById("additional-info"));
           // Create form data object to easily get form values
           let aa = (!!appArea) ? appArea.toEasyFormat() : null;

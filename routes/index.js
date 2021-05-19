@@ -874,7 +874,6 @@ function savePDFDocument(data, path, appAreaExists, callback) {
     );
   }
 
-
   dd.content.push({lineHeight: 1, text: ' '});
   dd.content.push('Created: ' + new Date());
 
@@ -894,6 +893,7 @@ function savePDFDocument(data, path, appAreaExists, callback) {
 }
 
 function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFileName, callback) {
+  // https://medium.com/@nickroach_50526/sending-emails-with-node-js-using-smtp-gmail-and-oauth2-316fe9c790a1
   // Get file path for files to be emailed
   let email_files = path.join(__dirname, "..", "email_files");
   let pdfPath = path.join(email_files, pdfFileName);
@@ -909,7 +909,7 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     "https://developers.google.com/oauthplayground" // Redirect URL
   );
   oauth2Client.setCredentials({refresh_token: privateKey.refreshToken });
-  const accessToken = oauth2Client.getAccessToken()
+  const accessToken = oauth2Client.getAccessToken();
 
   //set up transporter - OAUTH
   var transporter = nodeMailer.createTransport({
