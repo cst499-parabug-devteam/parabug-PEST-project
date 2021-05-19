@@ -993,6 +993,7 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     } else {
       console.log("User Message sent: " + info.response);
       // Send Parabug emal
+      callback(true);
       parabugTransporter.sendMail(parabugMailOptions, function (
         err,
         info
