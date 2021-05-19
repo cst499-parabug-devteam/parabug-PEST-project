@@ -688,3 +688,66 @@ html {
     opacity: 1;
   }
 }
+
+
+/* Session Dropdown Options */
+#session-options-dropdown-btn {
+  /* background-color: #3498DB; */
+  background-color: #f39325;
+  color: white;
+  padding: 8px;
+  font-size: 16px;
+  border: none;
+  border-radius: .25rem;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+#session-options-caret {
+  display: inline-block;
+  font-size: 1em;
+  font-weight: bolder;
+  line-height: 18px;
+  vertical-align: top;
+}
+
+/* Dropdown button on hover & focus */
+#session-options-dropdown-btn:hover, #session-options-dropdown-btn:focus {
+  /* background-color: #2980B9; */
+  background-color: #d27315;
+}
+
+/* The container <div> - needed to position the dropdown content */
+#session-options-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+#session-options-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+/* Links inside the dropdown */
+#session-options-dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Change color of dropdown links on hover */
+#session-options-dropdown-content a:hover {
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+.show {
+  display: block !important;
+}
