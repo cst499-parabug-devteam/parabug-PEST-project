@@ -1180,9 +1180,9 @@ class GMapsOverlayLoader {
         }
 
         /* Add all rows to row content element*/
-        // rowContent.append(tileSizeRow, useColorPaletteRow, colorPaletteSizeRow, autoColorPaletteRow, colorPaletteRow);
+        rowContent.append(tileSizeRow, useColorPaletteRow, colorPaletteSizeRow, autoColorPaletteRow, colorPaletteRow);
         // Only add tile size input for now, color palette is still experimental
-        rowContent.append(tileSizeRow);
+        // rowContent.append(tileSizeRow);
 
         /* Append Collapsible Row and Content*/
         const collapsibleRow = $(`<span></span>`).append(collapseToggleButton, deleteRowButton);
@@ -1227,6 +1227,102 @@ class GMapsOverlayLayer {
     }
 
     applyColorPalette(colorPalette=null) {
+        let frequencies = {};
+        if (!colorPalette) {
+            if (!this.colorPalette) {
+                this.generateColorPalette();
+            }
+            colorPalette = this.colorPalette;
+        }
+        else {
+            this.colorPalette = colorPalette;
+        }
+
+        this.polygons.forEach((polygon) => {
+            let color = polygon.fillColor;
+            frequencies[color] = (frequencies[color]) ? frequencies[color]+1 : 1;
+        });
+        // Get list of frequencies descending order of most commonly found
+        let descendingFrequencies = [];
+        for (const [color, count] of Object.entries(frequencies)) {
+            descendingFrequencies.push({color, count});
+        }
+        descendingFrequencies.sort((a,b)=> b.count-a.count);
+        let topColors = descendingFrequencies.slice(0,colorPalette.length).map((frequency) => frequency.color);
+        let otherColors = descendingFrequencies.slice(colorPalette.length).map((frequency) => frequency.color);
+        // Conversion key will keep the mapping of the top N color map elements to the N colors in the color palette
+        // Colors in the color map not in the top N will use this as a reference for conversion
+        let conversionKey = {};
+        // Conversion map will keep the mapping of the all color map elements to the N colors in the color palette
+        let conversionMap = {};
+        // colorMapHexKey : colorPaletteHexValue
+        let that = this;
+        colorPalette.forEach((color) => {
+            // Find closest topColor to color palette color
+            let closestTopColorIndex = 0;
+            for (let i = 1; i < topColors.length; i++) {
+                let oldDistance = that.getColorDistance(color, topColors[closestTopColorIndex]);
+                let newDistance = that.getColorDistance(color, topColors[i]);
+                if (newDistance < oldDistance) { closestTopColorIndex = i; }
+            }
+            // Add the pair to the conversion key and map
+            conversionKey[topColors[closestTopColorIndex]] = color;
+            conversionMap[topColors[closestTopColorIndex]] = color;
+            // remove the top color as an option for conversion
+            topColors.splice(closestTopColorIndex, 1);
+        });
+
+        // Repopulate top colors
+        topColors = descendingFrequencies.slice(0,colorPalette.length).map((frequency) => frequency.color);
+        // Fill out the rest of the conversion map
+        otherColors.forEach((color) => {
+            // Find closest topColor to this color
+            let closestTopColorIndex = 0;
+            for (let i = 1; i < topColors.length; i++) {
+                let oldDistance = that.getColorDistance(color, topColors[closestTopColorIndex]);
+                let newDistance = that.getColorDistance(color, topColors[i]);
+                if (newDistance < oldDistance) { closestTopColorIndex = i; }
+            }
+            // Add the pair to the conversion map, using the value mapped to the top color
+            conversionMap[color] = conversionKey[topColors[closestTopColorIndex]];
+        });
+
+        // Color map should now have every color found in the polygons mapped to a color from the desired color palette
+        // { polygonColorHex: colorPaletteHex}
+
+        let colorMap = {};
+        let opacity = null;
+        let zIndex = null
+        this.polygons.forEach((polygon) => {
+            let paletteColor = conversionMap[polygon.fillColor];
+            if (!colorMap[paletteColor]) { colorMap[paletteColor] = []; }
+            polygon.getPaths().getArray().forEach((path) => {
+                colorMap[paletteColor] = colorMap[paletteColor].concat([path]);
+            });
+            polygon.setMap(null);
+            if (opacity === null) { opacity = polygon.fillOpacity; }
+            if (zIndex === null) { zIndex = polygon.zIndex; }
+        });
+        this.polygons = [];
+        for (const [key, val] of Object.entries(colorMap)) {
+            const poly = new google.maps.Polygon({
+                paths: val,
+                strokeColor: "#000000",
+                strokeOpacity: opacity,
+                strokeWeight: .05,
+                fillColor: key,
+                fillOpacity: opacity,
+                zIndex: zIndex,
+                map: that.map
+            });
+            // External Events
+            poly.addListener("click", (event) => autoGenerateVRAsFromSelection(event));
+            poly.addListener("mousemove", (event) => magnifierMove(event));
+            that.polygons.push(poly);
+        }
+    }
+
+    applyColorPaletteOld(colorPalette=null) {
         if (!colorPalette) {
             if (!this.colorPalette) {
                 this.generateColorPalette();
@@ -1292,10 +1388,11 @@ class GMapsOverlayLayer {
         let frequencies = {};
         // Set required distance for colors to be considered distinct for palette
         // Adjustments to calculating required distance may be necessary
-        let requiredEuclidianDistance = 441/(n*2);
+        let requiredEuclidianDistance = 441/(n*2); // This could potentially be a user parameter
         this.polygons.forEach((polygon) => {
-            let color = polygon.fillColor;
-            frequencies[color] = (frequencies[color]) ? frequencies[color]+1 : 1;
+            const color = polygon.fillColor;
+            const numTiles = polygon.getPaths().length;
+            frequencies[color] = (frequencies[color]) ? frequencies[color]+numTiles : numTiles;
         });
         // Get list of frequencies descending order of most commonly found
         let descendingFrequencies = [];
@@ -1620,18 +1717,12 @@ class GMapsOverlay {
     generateVRAsFromOverlayLatLngSelection(latLng, appAreaExists) {
         const that = this;
         createAlert("Auto Generating Variable Rate Areas From Color Selection.\nThis May Take Several Seconds", 10000, "info", (finished) => {
-            let polygon = this.getPolygonAtLatLng(latLng);
-            const simplifiedPaths = this.simplifyPaths(polygon.getPaths().getArray());
-            if (!appAreaExists) {
-                appArea = new AppArea(that.map, simplifiedPaths.bounds);
-            }
-            simplifiedPaths.paths.forEach((path) => {
-                if (path.length === 1) {
-                    appArea.addVariableRate(path[0]);
-                } else {
-                    appArea.addVariableRate(path[0], path.slice(1));
-                }
-            });
+            const {poly, layer} = this.getPolygonAtLatLng(latLng);
+            const layerPaths = [].concat.apply([], layer.polygons.map((p) => p.getPaths().getArray()));
+            const simplifiedPaths = this.simplifyPaths(poly.getPaths().getArray());
+            const bounds = that.getLayerMinimumBounds([layerPaths.map((path) => path.getArray())]);
+            appArea = (!appAreaExists) ? new AppArea(that.map, bounds) : appArea;
+            simplifiedPaths.forEach((path) => { appArea.addVariableRate(path[0], path.slice(1)); });
             appArea.validateAndFix();
             // Update acres measurement
             updateStats();
@@ -1656,12 +1747,14 @@ class GMapsOverlay {
 
     getPolygonAtLatLng(latLng) {
         let poly;
+        let layer;
         for (let i = this.layers.length-1; i >= 0 && !poly; i--) {
             if (this.layers[i].getOpacity() > 0) {
                 poly = this.layers[i].getPolygonAtLatLng(latLng);
+                layer = this.layers[i]
             }
         }
-        return poly
+        return {poly, layer}
     }
 
     hasLayers() {
@@ -2158,13 +2251,14 @@ class GMapsOverlay {
         this.updateMenuAndDisplayOptions();
     }
 
-    simplifyPaths(paths) {
-        // let bounds = new google.maps.LatLngBounds();
-        // save paths in terms of edges, all paths assumed to contain 5 points
-        let groups = [paths.map((path) => path.getArray())];
+    /*  
+        Union all overlapping polygon paths, return the simplified path
+    */
+    simplifyPaths(polygonPaths) {
+        const that = this;
         const geometryFactory = new jsts.geom.GeometryFactory();
-        let unionedGroups = [];
         let allPolys = [];
+        let groups = [polygonPaths.map((path) => path.getArray())];
         groups.forEach((group) => {
             group.forEach((entry) => {
                 let path = entry.map((coord) => new jsts.geom.Coordinate(coord.lat(), coord.lng()));
@@ -2173,21 +2267,67 @@ class GMapsOverlay {
             });
         });
         
-        // let collection = new jsts.geom.GeometryCollection(allPolys, geometryFactory);
         let collection = geometryFactory.createMultiPolygon(allPolys);
         let unionedPoly = new jsts.operation.union.UnaryUnionOp(collection, geometryFactory).union();
+        let unionedGroups = [];
         for (let i = 0; i < unionedPoly.getNumGeometries(); i++) {
             let tempPoly = unionedPoly.getGeometryN(i);
             let geoShellHoles = AppArea.getGeoShellsHoles(tempPoly);
             let rings = AppArea.shellsHolesToCoords(geoShellHoles);
-            let temp = [];
-            for (let j = 0; j < rings[0].holes.length; j++) {
-                temp.push(rings[0].holes[j]);
-            }
-            temp.unshift(rings[0].shell);
-            unionedGroups.push(temp);
+            unionedGroups.push([rings[0].shell].concat(rings[0].holes));
         }
-        return { paths: unionedGroups };
+        return unionedGroups;
+    }
+
+
+    /**
+     * 1) Get all unique lat values and corresponding lng values which pair with them in the set of points
+     *      - This will end with several key (lat) to single value (lng) pairs, as adjacent tiles do not have overlapping points or line
+     *      - The keys (lats) will later be run through a conversion process that will round them to down nearest incremental value, allowing 1 key (lat) to pair with several values (lng)
+     * 2) Obtain the expected lat distance of each tile, this will be the increment value. (find the dimensions of one of the tiles in the data provided)
+     * 3) Obtain the lowest lat value found, this will be the lowest value expected and increment values start from here
+     *      - e.g. With a lowest value of 36.5 and an increment size of .25, a lat of 36.80 (anything from 36.75 to 36.999...) will be rounded down to 36.75 (hypothetical)
+     * 4) Run the previous key value pairs through the incremental filter, creating a new map which has our rounded lat values (keys) mapped to several lng values
+     * 5) Build the hull/bounds: For each lat (key) lowest to highest, find the lowest and highest lng values paired with it
+     *      - the lowest lng value will be the left border on this lat line
+     *      - the highest lng value will be the right border on this lat line
+     *      - *** NOTE: Orientation correlation to higher or lower value changes around equator (need to address this)
+     *      - While traversing the data, create a path starting in the top-left (north-west) most position and adding the points in a clockwise direction
+     */
+    getLayerMinimumBounds(allPaths) {
+        const latValueMap = {};
+        let latDiff;
+
+        allPaths[0].forEach((path) => {
+            latDiff = (latDiff == null) ? path[1].lat() - path[0].lat() : latDiff;
+            path.forEach((point) => {
+                latValueMap[point.lat()] = (latValueMap[point.lat()] == null)? [] : latValueMap[point.lat()];
+                if (!latValueMap[point.lat()].includes(point.lng())) { latValueMap[point.lat()].push(point.lng()); }
+            });
+        });
+        let arr = Object.entries(latValueMap).map((e) => parseFloat(e[0]));
+        arr.sort();
+
+        const latValueMapAdjusted = {};
+        latValueMapAdjusted[arr[0]] = latValueMap[arr[0]];
+        for(let i = 1; i < arr.length; i++) {
+            const adjustedLat = arr[0] + (Math.floor((arr[i] - arr[0])/latDiff) * latDiff);
+            if (latValueMapAdjusted[adjustedLat] == null) { latValueMapAdjusted[adjustedLat] = []; }
+            latValueMapAdjusted[adjustedLat] = latValueMapAdjusted[adjustedLat].concat(latValueMap[arr[i]]);
+        }
+
+        arr = Object.entries(latValueMapAdjusted).map((e) => parseFloat(e[0]));
+        arr.sort();
+        const pathHead = []; // Right Border
+        const pathTail = []; // Left Border
+        for (let i = 0; i < arr.length; i++) {
+            const min = Math.min.apply(Math, latValueMapAdjusted[arr[i]]);
+            const max = Math.max.apply(Math, latValueMapAdjusted[arr[i]]);
+            if (i === 0) { pathHead.push({ 'lat': arr[i], 'lng': min }); }
+            pathHead.push({ 'lat': arr[i], 'lng': max });
+            pathTail.unshift({ 'lat': arr[i], 'lng': min });
+        }
+        return pathHead.concat(pathTail);
     }
 
     updateDisplayOption(layer) {
