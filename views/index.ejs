@@ -409,6 +409,7 @@
       var appArea;
       let infoWindow;
       let centerMarker;
+      let centerMarkerLastMoveEvent;
       let overlayMarkers = [];
       let tempShape;
 
@@ -417,7 +418,7 @@
       let updatingViewBounds = false;
 
       // Overlay > VRA Auto Generation and Maginifying Class for Color Selection
-      let updatingMouse = false;
+      let updatingMagnifier = false;
       let magnifyingGlass;
       let vraAutoGenerationEnabled = false;
 
@@ -584,6 +585,7 @@
     
         // Value defaults in string, parse the int value
         mode = parseInt(mode, 10);
+        if (mode != 5) { hideMagnifier(); }
         switch (mode) {
           case 5:
             drawingManager.setOptions({ drawingMode: null });
@@ -667,6 +669,14 @@
           drawingControl: false,
           map: map,
           polygonOptions: { editable: true }
+        });
+
+        google.maps.event.addListener(centerMarker, "drag", function(e) {
+          // console.log(this);
+          // console.log(e);
+          // Set public values from mobile marker
+          centerMarkerLastMoveEvent = e;
+          magnifierMove(e);
         });
     
         google.maps.event.addListener(drawingManager, "polygoncomplete", function(p) {
@@ -854,12 +864,9 @@
       }
 
       function autoGenerateVRAsFromSelection(event) {
-        if (!appArea) {
-          createAlert("An application area needs to be drawn before variable rate areas are generated from color selection.", 10000, "error");
-        } else {
-          if (!!overlayManager && overlayManager.hasLayers() && vraAutoGenerationEnabled) {
-            overlayManager.generateVRAsFromOverlayLatLngSelection(event.latLng, !!appArea);
-          }
+        if (document.getElementById('mobile-mode').checked && !event.isCrosshairClick) { return; }
+        if (!!overlayManager && overlayManager.hasLayers() && vraAutoGenerationEnabled) {
+          overlayManager.generateVRAsFromOverlayLatLngSelection(event.latLng, !!appArea);
         }
       }
 
@@ -870,29 +877,46 @@
       }
 
       function magnifierMove(event) {
-        if (!!overlayManager && overlayManager.hasLayers() && vraAutoGenerationEnabled) {
-          if (!magnifyingGlass) {
-            /* Create magnifier glass: */
-            magnifyingGlass = document.createElement("div");
-            magnifyingGlass.setAttribute("class", "img-magnifier-glass");
-            document.getElementById('map').parentElement.insertBefore(magnifyingGlass, document.getElementById('map'));
-          }
-          magnifyingGlass.style.display = "block";
-  
-          if (!updatingMouse) { // Add conditional for new mode and overlay
-            updatingMouse = true;
-            let latLng = event.latLng;
-            let mousePosition = { 'x': event.domEvent.clientX, 'y': event.domEvent.clientY };
-            let x = event.domEvent.clientX;
-            let y = event.domEvent.clientY;
-            magnifyingGlass.style.left = (x+5)+"px";
-            magnifyingGlass.style.top = (y+5)+"px";
-            if (!!overlayManager && overlayManager.hasLayers()) {
-              magnifyingGlass.style.backgroundColor = overlayManager.getColorAtLatLng(latLng);
-            }
-            updatingMouse = false;
-          }
+        if (!(!!overlayManager && overlayManager.hasLayers() && vraAutoGenerationEnabled)) { return; }
+        if (updatingMagnifier) { return; }
+
+        // Create magnifier (if not already existing) and display it
+        if (!magnifyingGlass) {
+          magnifyingGlass = document.createElement("div");
+          magnifyingGlass.setAttribute("class", "img-magnifier-glass");
+          document.getElementById('map').parentElement.insertBefore(magnifyingGlass, document.getElementById('map'));
         }
+        magnifyingGlass.style.display = "block";
+        let x, y, latLng;
+        updatingMagnifier = true;
+        if (document.getElementById('mobile-mode').checked) {
+          // Update magnifier based on draggable google maps marker position
+          // Calculate marker position on screen from map location
+          const scale = Math.pow(2, map.getZoom());
+          const nw = new google.maps.LatLng(
+              map.getBounds().getNorthEast().lat(),
+              map.getBounds().getSouthWest().lng()
+          );
+          const worldCoordinateNW = map.getProjection().fromLatLngToPoint(nw);
+          const worldCoordinate = map.getProjection().fromLatLngToPoint(centerMarker.getPosition());
+          // Adjust the magnifiers position to not overlap with the marker
+          x = Math.floor((worldCoordinate.x - worldCoordinateNW.x) * scale) + 40;
+          y = Math.floor((worldCoordinate.y - worldCoordinateNW.y) * scale) - 80;
+          latLng = centerMarker.getPosition();
+        } else {
+          // Update magnifier based on mouse (and touch?) position
+          latLng = event.latLng;
+          x = (event.domEvent.clientX == null) ? event.domEvent.touches[0].clientX : event.domEvent.clientX;
+          y = (event.domEvent.clientY == null) ? event.domEvent.touches[0].clientY : event.domEvent.clientY;
+        }
+        x = ((x < 0) || !x) ? 0: x;
+        y = ((y < 0) || !y) ? 0: y;
+        magnifyingGlass.style.left = (x+5)+"px";
+        magnifyingGlass.style.top = (y+5)+"px";
+        if (!!overlayManager && overlayManager.hasLayers()) {
+          magnifyingGlass.style.backgroundColor = overlayManager.getColorAtLatLng(latLng);
+        }
+        updatingMagnifier = false
       }
       
       function setOverlayVisibility(isVisible) {
@@ -915,6 +939,11 @@
       }
 
       function makeMarker() {
+        if (drawModeControl.current == 5) {
+          // VRA Auto Generation Mode
+          autoGenerateVRAsFromSelection({ 'isCrosshairClick': true, 'latLng': centerMarker.getPosition()});
+          return;
+        }
         if (drawModeControl.current == 4) {
           // Delete Mode
           mobileClickSubPoly(centerMarker.getPosition());
@@ -1505,6 +1534,7 @@
           drawToggle(drawModeControl.current);
           centerMarker.setMap(null);
           document.getElementById("mobile-options-div").style.display = "none";
+          hideMagnifier();
         }
       });
       
