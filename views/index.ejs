@@ -511,22 +511,28 @@
         document.getElementById("overlay-loader-modal").style.display = "none";
       }
 
-      function createAlert(message, duration, type="success") {
-        let alertBox = $('#top-alert');
-        switch (type) {
-          case "success":
-            alertBox.attr("class","alert alert-success");
-            break;
-          case "info":
-            alertBox.attr("class","alert alert-info");
-            break;
-          case "error": default:
-            alertBox.attr("class","alert alert-danger");
-          break;
-        }
-        alertBox.text(message);
-        alertBox.fadeIn("slow");
-        setTimeout(function(){ alertBox.fadeOut("slow"); }, duration);
+      async function createAlert(message, duration, type="success", callback) {
+          let alertBox = $('#top-alert');
+          let alert = $('<div></div>');
+          switch (type) {
+              case "success":
+                  alert.attr("class","alert alert-success");
+                  break;
+              case "info":
+                  alert.attr("class","alert alert-info");
+                  break;
+              case "error": default:
+                  message = "Error: " + message;
+                  alert.attr("class","alert alert-danger");
+                  break;
+          }
+          alert.text(message);
+          alert.hide();
+          alertBox.append(alert);
+          alert.fadeIn("slow", function(){
+              setTimeout(function(){ alert.fadeOut("slow"); }, duration);
+              if (callback) { setTimeout(() => { callback(true); }, 500); }
+          });
       }
 
       function deleteSubPoly() {
@@ -926,12 +932,12 @@
       function importOverlayFromLoader() {
         if (overlayManager) {
           closeOverlayLoader();
-          createAlert("Importing Overlay . . .", 10000, "info", (finished) => {
+          createAlert("Importing Overlay . . .", 3000,"info", (finished) => {
             overlayManager.importOverlayFromLoader((success) => {
               if (success) {
-                createAlert("Overlay imported Successfully", 8000, "success");
+                createAlert("Overlay imported Successfully", 3000,"success");
               } else {
-                createAlert("Failed to Import Overlay", 8000, "error");
+                createAlert("Failed to Import Overlay", 3000,"error");
               }
             });
           });
@@ -1280,11 +1286,11 @@
                 document.getElementById("notes").value = session.form.notes;
               }
             } else {
-                createAlert("Failed to Load Session File", 10000, "error");
+                createAlert("Failed to Load Session File", 3000,"error");
             }
         }
         xhr.onerror = function() {
-            createAlert("Failed to Load Session File", 10000, "error");
+            createAlert("Failed to Load Session File", 3000,"error");
         }
         xhr.open("GET", fileURL, true);
         xhr.send();
@@ -1460,7 +1466,7 @@
       
       document.getElementById("additional-info").addEventListener("submit", function(event) {
         if (validate()) {
-          createAlert("Processing...", 5000, "info");
+          createAlert("Processing...", 3000,"info");
           event.preventDefault();
 
           let formData = new FormData(document.getElementById("additional-info"));
@@ -1508,7 +1514,7 @@
             if (this.readyState == 4 && this.status == 200) {
               let response = JSON.parse(this.responseText);
               if (response.success) {
-                createAlert("Request Complete!", 5000, "success");
+                createAlert("Request Complete!", 3000,"success");
               } else {
                 createAlert(response.message, 10000, "error");
               }
@@ -1520,7 +1526,7 @@
         } else {
           event.preventDefault();
           window.scrollTo(0, 0);
-          createAlert("Invalid map data. This could be due to a missing Application Area or Ranch Map.", 10000, 'error');
+          createAlert("Invalid map data. This could be due to a missing Application Area or Ranch Map.", 3000,'error');
         }
       });
 
