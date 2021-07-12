@@ -1048,7 +1048,7 @@ class GMapsOverlayLoader {
     }
 
     generateModalPrompt() {
-        createAlert("Overlay loaded Successfully", 2000, "success", (finished) => {
+        createAlert("Overlay loaded Successfully", 3000, "success", (finished) => {
             const that = this;
             const modal = $('#overlay-loader-modal');
             const header = $('#overlay-loader-header');
@@ -1211,11 +1211,12 @@ class GMapsOverlayLoader {
 }
 
 class GMapsOverlayLayer {
-    constructor(map, polygons, bounds, name="Untitled Layer", description="", isVisible=false, parent) {
+    constructor(map, polygons, bounds, name="Untitled Layer", isGeoJsonFormat = false, description="", isVisible=false, parent) {
         this.map = map;
         this.polygons = polygons;
         this.bounds = bounds;
         this.name = name;
+        this.isGeoJsonFormat = isGeoJsonFormat;
         this.description = description;
         this.isVisible = isVisible;
         this.parent = parent;
@@ -1304,63 +1305,6 @@ class GMapsOverlayLayer {
             if (zIndex === null) { zIndex = polygon.zIndex; }
         });
         this.polygons = [];
-        for (const [key, val] of Object.entries(colorMap)) {
-            const poly = new google.maps.Polygon({
-                paths: val,
-                strokeColor: "#000000",
-                strokeOpacity: opacity,
-                strokeWeight: .05,
-                fillColor: key,
-                fillOpacity: opacity,
-                zIndex: zIndex,
-                map: that.map
-            });
-            // External Events
-            poly.addListener("click", (event) => autoGenerateVRAsFromSelection(event));
-            poly.addListener("mousemove", (event) => magnifierMove(event));
-            that.polygons.push(poly);
-        }
-    }
-
-    applyColorPaletteOld(colorPalette=null) {
-        if (!colorPalette) {
-            if (!this.colorPalette) {
-                this.generateColorPalette();
-            }
-            colorPalette = this.colorPalette;
-        }
-        else {
-            this.colorPalette = colorPalette;
-        }
-
-        let colorMap = {};
-        let opacity = null;
-        let zIndex = null
-
-        this.polygons.forEach((polygon) => {
-            let originalColor = polygon.fillColor;
-            let closestPaletteColor;
-            colorPalette.forEach((color) => {
-                if (!closestPaletteColor) {
-                    closestPaletteColor = color;
-                } else {
-                    let oldDistance = this.getColorDistance(originalColor, closestPaletteColor);
-                    let newDistance = this.getColorDistance(originalColor, color);
-                    if (newDistance < oldDistance) {
-                        closestPaletteColor = color;
-                    }
-                }
-            });
-            if (!colorMap[closestPaletteColor]) { colorMap[closestPaletteColor] = []; }
-            polygon.getPaths().getArray().forEach((path) => {
-                colorMap[closestPaletteColor] = colorMap[closestPaletteColor].concat([path]);
-            });
-            polygon.setMap(null);
-            if (opacity === null) { opacity = polygon.fillOpacity; }
-            if (zIndex === null) { zIndex = polygon.zIndex; }
-        });
-        this.polygons = [];
-        const that = this;
         for (const [key, val] of Object.entries(colorMap)) {
             const poly = new google.maps.Polygon({
                 paths: val,
@@ -1546,7 +1490,7 @@ class GMapsOverlay {
         this.menuOptionsClass = 'overlay-visible-item';
     }
 
-    addLayer(polygonArray, bounds=null, layerName="Untitled Layer", layerDescription="", isVisible=false) {
+    addLayer(polygonArray, bounds=null, layerName="Untitled Layer", isGeoJsonFormat=false, layerDescription="", isVisible=false) {
         let names = [];
         this.layers.forEach((layer) => names.push(layer.getName()));
         layerName = layerName.replace(/\s+/g,'').replace(/\0/g, '');
@@ -1556,7 +1500,7 @@ class GMapsOverlay {
             name = layerName + " - " + i;
             i += 1;
         }
-        const layer = new GMapsOverlayLayer(this.map, polygonArray, bounds, name, layerDescription, isVisible, this);
+        const layer = new GMapsOverlayLayer(this.map, polygonArray, bounds, name, isGeoJsonFormat, layerDescription, isVisible, this);
         this.layers.push(layer);
         return layer;
     }
@@ -1666,7 +1610,7 @@ class GMapsOverlay {
         // Transforming geoJson features to thousands of tiles doesn't offer any advantages
         // But it heavily slows down systems when importing files which cover large areas
         // Forgo tile system for now
-        return [path];
+        // return [path];
         if (tileSizeFtSqrd != null) { this.ftSqrdPerTile = tileSizeFtSqrd; }
         // Apply restrictions to tile size
         if (!this.tileSizeFtSqrd) { this.tileSizeFtSqrd = 8; }
@@ -1716,17 +1660,47 @@ class GMapsOverlay {
 
     generateVRAsFromOverlayLatLngSelection(latLng, appAreaExists) {
         const that = this;
-        createAlert("Auto Generating Variable Rate Areas From Color Selection.\nThis May Take Several Seconds", 10000, "info", (finished) => {
+        createAlert("Auto Generating Variable Rate Areas From Color Selection.\nThis May Take Several Seconds", 3000,"info", (finished) => {
             const {poly, layer} = this.getPolygonAtLatLng(latLng);
-            const layerPaths = [].concat.apply([], layer.polygons.map((p) => p.getPaths().getArray()));
             const simplifiedPaths = this.simplifyPaths(poly.getPaths().getArray());
-            const bounds = that.getLayerMinimumBounds([layerPaths.map((path) => path.getArray())]);
-            appArea = (!appAreaExists) ? new AppArea(that.map, bounds) : appArea;
+            let bounds;
+            if (!appAreaExists) {
+                createAlert("No Application Area found, generating from selection...", 3000,"info");
+                if (layer.isGeoJsonFormat) {
+                    // Layer has not undergone tileization. Get a tileized version of layer
+                    const layerPaths = [].concat.apply([], layer.polygons.map((p) => p.getPaths().getArray()));
+                    const pathsTileized = [].concat.apply([], layerPaths.map((p) => that.dividePath(p.getArray())));
+                    bounds = that.getTileizedPathsMinimumBounds(pathsTileized);
+                } else {
+                    bounds = that.getLayerMinimumBounds(layer);
+                }
+                if (bounds.code != -1) {
+                    appArea = new AppArea(that.map, bounds.path);
+                }
+            }
             simplifiedPaths.forEach((path) => { appArea.addVariableRate(path[0], path.slice(1)); });
             appArea.validateAndFix();
             // Update acres measurement
             updateStats();
-            createAlert("Variable Rate Area Auto Generation Complete", 5000, "success"); 
+            if (appAreaExists) {
+                createAlert("Variable Rate Area Auto Generation Complete", 3000,"success");
+                return;
+            }
+            switch (bounds.code) {
+                case 1:
+                    // success, no issue
+                    createAlert("Variable Rate Area Auto Generation Complete", 3000,"success");
+                break;
+                case 2:
+                    // custom bounds could not be created. Default bounds were used.
+                    createAlert('Custom bounds could not be defined, using default bounds for Layer. This could be because the layer was imported via KML, GeoJson, or ShapeFile which do not undergo tileization.', 8000, "info");
+                    createAlert('Variable Rate Area Auto Generation Complete', 3000, "success");
+                    break;
+                default:
+                    // error, could not generate bounds
+                    createAlert("Could not generate Application Area from bounds information obtained. Manual drawing of app area needed.", 3000,"error");
+                    break;
+            }
         });
     }
 
@@ -1822,7 +1796,7 @@ class GMapsOverlay {
                             const tL = new google.maps.LatLng(tR.lat(), bL.lng());
                             const bR = new google.maps.LatLng(bL.lat(), tR.lng());
                             const polygons = this.canvasToOverlayWithRotation(layer.data.canvas, tL, bL, bR, tR, layer.data.rotation, true);
-                            const overlayLayer = this.addLayer(polygons, bounds, layer.name, "", true);
+                            const overlayLayer = this.addLayer(polygons, bounds, layer.name, false, "", true);
                             if (layer.useColorPalette) {
                                 if (layer.autoColorPalette) {
                                     overlayLayer.generateColorPalette(layer.colorPaletteSize);
@@ -1858,7 +1832,7 @@ class GMapsOverlay {
         this.fileType = file.name.substr(file.name.lastIndexOf('.') + 1);
         this.overlayVisible = displayWhenFinished;
 
-        createAlert(`Loading Overlay From ${this.fileType.toUpperCase()} . . .`, 5000, "info", (finished) => {
+        createAlert(`Loading Overlay From ${this.fileType.toUpperCase()} . . .`, 3000,"info", (finished) => {
             switch (this.fileType) {
                 case 'kml':
                     this.loadOverlayFromKML();
@@ -1876,7 +1850,7 @@ class GMapsOverlay {
                     this.loadOverlayFromGeoJson();
                     break;
                 default:
-                    createAlert("Unsupported File Type", 10000, "error");
+                    createAlert("Unsupported File Type", 3000,"error");
                     break;
             }
         });
@@ -1894,7 +1868,7 @@ class GMapsOverlay {
             that.loader.generateModalPrompt();
         };
         fr.onerror = function(e) {
-            createAlert("Failed to Load GeoJson File", 10000, "error");
+            createAlert("Failed to Load GeoJson File", 3000,"error");
         }
         // Read the JSON file as text to be easily parsed
         fr.readAsText(that.file);
@@ -1943,7 +1917,8 @@ class GMapsOverlay {
                             path.push(latLng);
                             bounds.extend(latLng);
                         });
-                        colorMap[fillColor] = colorMap[fillColor].concat(that.dividePath(path));
+                        colorMap[fillColor] = colorMap[fillColor].concat([path]);
+                        // colorMap[fillColor] = colorMap[fillColor].concat(that.dividePath(path));
                     });
                 });
             } else {
@@ -1954,7 +1929,8 @@ class GMapsOverlay {
                         path.push(latLng);
                         bounds.extend(latLng);
                     });
-                    colorMap[fillColor] = colorMap[fillColor].concat(that.dividePath(path));
+                    colorMap[fillColor] = colorMap[fillColor].concat([path]);
+                    // colorMap[fillColor] = colorMap[fillColor].concat(that.dividePath(path));
                 });
             }
         });
@@ -1971,7 +1947,7 @@ class GMapsOverlay {
                 map: that.map
             }));
         }
-        const layer = that.addLayer(polygons, bounds, that.file.name.substr(0, that.file.name.lastIndexOf('.')), "", true);
+        const layer = that.addLayer(polygons, bounds, that.file.name.substr(0, that.file.name.lastIndexOf('.')), true, "", true);
         that.updateMenuAndDisplayOptions();
         that.map.fitBounds(bounds);
         return layer;
@@ -1991,14 +1967,14 @@ class GMapsOverlay {
         sourceGeoKey = (!sourceGeoKey) ? gk.GeographicTypeGeoKey : sourceGeoKey;
         if (!sourceGeoKey) {
             // If this metadata is not found we cannot convert the file, error
-            createAlert("Geokey Missing For GeoTiff File", 10000, "error");
+            createAlert("Geokey Missing For GeoTiff File", 3000,"error");
             return;
         }
         sourceGeoKey = parseInt(sourceGeoKey);
 
         // User Defined Geokey (find out how to deal with these)
         if (sourceGeoKey === 32767) {
-            createAlert("Custom Geokey (Projection System) used in GeoTiff file. This feature is not yet supported.", 10000, "error");
+            createAlert("Custom Geokey (Projection System) used in GeoTiff file. This feature is not yet supported.", 3000,"error");
             return;
         }
 
@@ -2027,7 +2003,7 @@ class GMapsOverlay {
             cs = md[5]*ih + md[7];      
         } else {
             // Bounds cannot be determined becasue transformation information is missing, error
-            createAlert("No transformation information provided in GeoTiff", 10000, "error");
+            createAlert("No transformation information provided in GeoTiff", 3000,"error");
             return;
         }
 
@@ -2067,7 +2043,7 @@ class GMapsOverlay {
             }
         };
         xhr.onerror = function() {
-            createAlert("Failed to Load GeoTiff File", 10000, "error");
+            createAlert("Failed to Load GeoTiff File", 3000,"error");
         }
         xhr.responseType = 'arraybuffer';
         xhr.open('GET', that.fileURL);
@@ -2094,11 +2070,11 @@ class GMapsOverlay {
                 that.loader.addLayer("KML Layer", geoJson);
                 that.loader.generateModalPrompt();
             } else {
-                createAlert("Failed to Load KML", 10000, "error");
+                createAlert("Failed to Load KML", 3000,"error");
             }
         }
         xhr.onerror = function() {
-            createAlert("Failed to Load KML", 10000, "error");
+            createAlert("Failed to Load KML", 3000,"error");
         }
         xhr.open("GET", that.fileURL);
         xhr.responseType = "document";
@@ -2142,7 +2118,7 @@ class GMapsOverlay {
             });
             geoXML.parse(this.fileURL);
         } catch (e) {
-            createAlert("Failed to Load KMZ", 10000, "error");
+            createAlert("Failed to Load KMZ", 3000,"error");
         }
     }
 
@@ -2175,15 +2151,15 @@ class GMapsOverlay {
                             that.loader.generateModalPrompt();
                         })
                         .catch((error) => {
-                            createAlert("Error When Reading Shapefile Contents", 10000, "error");
+                            createAlert("Error When Reading Shapefile Contents", 3000,"error");
                         });             
                     });
                 });
             } else {
-                createAlert("Shapefile or Corresponding DBF File Missing in Zip", 10000, "error");
+                createAlert("Shapefile or Corresponding DBF File Missing in Zip", 3000,"error");
             }
         }, function() {
-            createAlert("Invalid Zip File Format", 10000, "error");
+            createAlert("Invalid Zip File Format", 3000,"error");
         });
     }
 
@@ -2279,7 +2255,6 @@ class GMapsOverlay {
         return unionedGroups;
     }
 
-
     /**
      * 1) Get all unique lat values and corresponding lng values which pair with them in the set of points
      *      - This will end with several key (lat) to single value (lng) pairs, as adjacent tiles do not have overlapping points or line
@@ -2294,40 +2269,57 @@ class GMapsOverlay {
      *      - *** NOTE: Orientation correlation to higher or lower value changes around equator (need to address this)
      *      - While traversing the data, create a path starting in the top-left (north-west) most position and adding the points in a clockwise direction
      */
-    getLayerMinimumBounds(allPaths) {
+    getLayerMinimumBounds(layer) {
+        const layerPaths = [].concat.apply([], layer.polygons.map((p) => p.getPaths().getArray()));
+        const allPaths = [layerPaths.map((path) => path.getArray())][0];
+        return this.getTileizedPathsMinimumBounds(allPaths);
+    }
+    
+    getTileizedPathsMinimumBounds(allPaths) {
         const latValueMap = {};
         let latDiff;
-
-        allPaths[0].forEach((path) => {
-            latDiff = (latDiff == null) ? path[1].lat() - path[0].lat() : latDiff;
-            path.forEach((point) => {
-                latValueMap[point.lat()] = (latValueMap[point.lat()] == null)? [] : latValueMap[point.lat()];
-                if (!latValueMap[point.lat()].includes(point.lng())) { latValueMap[point.lat()].push(point.lng()); }
+        try {
+            allPaths.forEach((path) => {
+                latDiff = (latDiff == null) ? path[1].lat() - path[0].lat() : latDiff;
+                path.forEach((point) => {
+                    latValueMap[point.lat()] = (latValueMap[point.lat()] == null)? [] : latValueMap[point.lat()];
+                    if (!latValueMap[point.lat()].includes(point.lng())) { latValueMap[point.lat()].push(point.lng()); }
+                });
             });
-        });
-        let arr = Object.entries(latValueMap).map((e) => parseFloat(e[0]));
-        arr.sort();
-
-        const latValueMapAdjusted = {};
-        latValueMapAdjusted[arr[0]] = latValueMap[arr[0]];
-        for(let i = 1; i < arr.length; i++) {
-            const adjustedLat = arr[0] + (Math.floor((arr[i] - arr[0])/latDiff) * latDiff);
-            if (latValueMapAdjusted[adjustedLat] == null) { latValueMapAdjusted[adjustedLat] = []; }
-            latValueMapAdjusted[adjustedLat] = latValueMapAdjusted[adjustedLat].concat(latValueMap[arr[i]]);
+            let arr = Object.entries(latValueMap).map((e) => parseFloat(e[0]));
+            arr.sort();
+    
+            const latValueMapAdjusted = {};
+            latValueMapAdjusted[arr[0]] = latValueMap[arr[0]];
+            for(let i = 1; i < arr.length; i++) {
+                const adjustedLat = arr[0] + (Math.floor((arr[i] - arr[0])/latDiff) * latDiff);
+                if (latValueMapAdjusted[adjustedLat] == null) { latValueMapAdjusted[adjustedLat] = []; }
+                latValueMapAdjusted[adjustedLat] = latValueMapAdjusted[adjustedLat].concat(latValueMap[arr[i]]);
+            }
+    
+            arr = Object.entries(latValueMapAdjusted).map((e) => parseFloat(e[0]));
+            arr.sort();
+            const pathHead = []; // Right Border
+            const pathTail = []; // Left Border
+            for (let i = 0; i < arr.length; i++) {
+                const min = Math.min.apply(Math, latValueMapAdjusted[arr[i]]);
+                const max = Math.max.apply(Math, latValueMapAdjusted[arr[i]]);
+                // Check for any NaN
+                if (isNaN(min) || isNaN(max) || isNaN(arr[i])) {
+                    throw "Expect Lat/Lng is Not a Number"; 
+                }
+                if (i === 0) { pathHead.push({ 'lat': arr[i], 'lng': min }); }
+                pathHead.push({ 'lat': arr[i], 'lng': max });
+                pathTail.unshift({ 'lat': arr[i], 'lng': min });
+            }
+            return {
+                code: 1,
+                path: pathHead.concat(pathTail)
+            };
+        } catch (err) {
+            console.log("Could not find minimum bounds for tileized paths, paths may not have been tileized");
+            return {code: -1, path: []};
         }
-
-        arr = Object.entries(latValueMapAdjusted).map((e) => parseFloat(e[0]));
-        arr.sort();
-        const pathHead = []; // Right Border
-        const pathTail = []; // Left Border
-        for (let i = 0; i < arr.length; i++) {
-            const min = Math.min.apply(Math, latValueMapAdjusted[arr[i]]);
-            const max = Math.max.apply(Math, latValueMapAdjusted[arr[i]]);
-            if (i === 0) { pathHead.push({ 'lat': arr[i], 'lng': min }); }
-            pathHead.push({ 'lat': arr[i], 'lng': max });
-            pathTail.unshift({ 'lat': arr[i], 'lng': min });
-        }
-        return pathHead.concat(pathTail);
     }
 
     updateDisplayOption(layer) {
@@ -2419,21 +2411,24 @@ function coordsAreUpright(coords) {
  */
 async function createAlert(message, duration, type="success", callback) {
     let alertBox = $('#top-alert');
+    let alert = $('<div></div>');
     switch (type) {
         case "success":
-            alertBox.attr("class","alert alert-success");
+            alert.attr("class","alert alert-success");
             break;
         case "info":
-            alertBox.attr("class","alert alert-info");
+            alert.attr("class","alert alert-info");
             break;
         case "error": default:
             message = "Error: " + message;
-            alertBox.attr("class","alert alert-danger");
+            alert.attr("class","alert alert-danger");
             break;
     }
-    alertBox.text(message);
-    alertBox.fadeIn("slow", function(){
-        setTimeout(function(){ alertBox.fadeOut("slow"); }, duration);
+    alert.text(message);
+    alert.hide();
+    alertBox.append(alert);
+    alert.fadeIn("slow", function(){
+        setTimeout(function(){ alert.fadeOut("slow"); }, duration);
         if (callback) { setTimeout(() => { callback(true); }, 500); }
     });
 }
