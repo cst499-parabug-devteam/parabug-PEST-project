@@ -1228,6 +1228,7 @@ class GMapsOverlayLayer {
     }
 
     applyColorPalette(colorPalette=null) {
+        // Need to account for GeoJson style overlays, which aren't Tileized
         let frequencies = {};
         if (!colorPalette) {
             if (!this.colorPalette) {
