@@ -1,23 +1,19 @@
 var express = require("express");
 var router = express.Router();
-var jsts = require("jsts");
 var nodeMailer = require("nodemailer");
-var bodyParser = require("body-parser");
 var { google } = require("googleapis");
 var OAuth2 = google.auth.OAuth2;
 var fs = require("fs");
-let privateKey = require("../private/fakeKey.json");
 var path = require("path");
 var ejs = require("ejs");
 var XMLWriter = require("xml-writer");
-var tmp = require("tmp");
-const e = require("express");
-const PdfPrinter = require("pdfmake");
-const { type } = require("os");
-
 var sanitize = require("sanitize-filename");
-const formidable = require('formidable');
+const PdfPrinter = require("pdfmake");
+var privateKey = require("../private/fakeKey.json");
 
+// JSTS Modules
+var jsts = require('../public/js/jsts.1.6.1');
+// JSTS Polygon/Point Buffer
 const BUFFER = 0.0000005;
 
 /* GET home page. */
@@ -28,17 +24,6 @@ router.get("/", function (req, res, next) {
   });
 });
 
-router.post("/test", function (req, res, next) {
-  try {
-    let ranchMap = (!!req.files)? req.files["ranchMap"] : null;
-    console.log(ranchMap);
-    res.json({ success: true });
-  } catch (e) {
-    console.log("ERROR");
-    res.json({ alertMessage: "Success" });
-  }
-});
-
 function validateRanchMap(ranchMap) {
   try {
     // Validate ranch map (size, mimetype, etc...)
@@ -46,15 +31,9 @@ function validateRanchMap(ranchMap) {
       case "image/png":
       case "image/jpeg":
       case "application/pdf":
-        if (((ranchMap.size / 1024) / 1024) < 11) {
-          return true;
-        } else {
-          return false;
-        }
-        break;
+        return (((ranchMap.size / 1024) / 1024) < 11) ? true : false;
       default:
         return false;
-        break;
     }
   } catch (e) {
     return false;
@@ -62,11 +41,11 @@ function validateRanchMap(ranchMap) {
 }
 
 router.post("/", function (req, res, next) {
-  let info = JSON.parse(req.body.info);
-  let appArea;
-  let hazards = [];
-  let vras = [];
-  let ranchMap = (!!req.files)? req.files["ranchMap"] : null;
+  var info = JSON.parse(req.body.info);
+  var appArea;
+  var hazards = [];
+  var vras = [];
+  var ranchMap = (!!req.files)? req.files["ranchMap"] : null;
 
   // If application area exist, validate the data
   if (!!info["appArea"]) {
@@ -80,15 +59,15 @@ router.post("/", function (req, res, next) {
       return;
     }
     // Check Hazards
-    let temp = info["appArea"]["Hazards"];
+    var temp = info["appArea"]["Hazards"];
     for (var i = 0; i < temp.length; i++) {
-      let tempPoly = jsonToJstsGeom(temp[i][0]);
+      var tempPoly = jsonToJstsGeom(temp[i][0]);
       if (tempPoly != null) { hazards.push(tempPoly); }
     }
     // Check Variable Rate Areas
     temp = info["appArea"]["VariableRateAreas"];
     for (i = 0; i < temp.length; i++) {
-      let tempPoly = jsonToJstsGeom(temp[i][0]);
+      var tempPoly = jsonToJstsGeom(temp[i][0]);
       if (tempPoly != null) { vras.push(tempPoly); }
     }
   }
@@ -104,7 +83,6 @@ router.post("/", function (req, res, next) {
     };
   }
 
-  
   if (validateAndFix(appArea, hazards, vras, !!ranchMap)) {
     // Start email process
     email(info, ranchMap, function (response) {
@@ -112,7 +90,6 @@ router.post("/", function (req, res, next) {
         success: response.success,
         message: response.message 
       });
-
       if (response.pdfPath) {
         fs.unlink(response.pdfPath, (err) => {
           if (err) {
@@ -167,7 +144,7 @@ router.post("/", function (req, res, next) {
   };
 */
 function checkBug(name, bpa, vr, defaultName) {
-  let result = {
+  var result = {
     name: name,
     bpa: 0,
     vr: 0
@@ -208,30 +185,30 @@ function deleteNonPolys(polyArr) {
 }
 
 function email(info, ranchMap, callback) {
-  let return_msg = { success: false };
-  let appAreaExists = !!info["appArea"];
+  var return_msg = { success: false };
+  var appAreaExists = !!info["appArea"];
   if (!appAreaExists && !ranchMap) {
     return_msg.message = "Both the Application Area and Ranch map were invalid or not supplied";
     callback(return_msg);
     return;
   }
 
-  let email_files = path.join(__dirname, "..", "email_files");
-  let dateTime = new Date().toISOString().slice(0, 19).replace('T','_').replace(/:/g, '-');
-  let fileNameBody = info["ranchName"] + "_" + info["contactName"] + "_" + dateTime;
+  var email_files = path.join(__dirname, "..", "email_files");
+  var dateTime = new Date().toISOString().slice(0, 19).replace('T','_').replace(/:/g, '-');
+  var fileNameBody = info["ranchName"] + "_" + info["contactName"] + "_" + dateTime;
   fileNameBody = sanitize(fileNameBody.replace(/\s+/g,'_').replace(/_{2,}/g, '_'));
 
 
-  let pdfFileName = 'PDF_' + fileNameBody + '.pdf';
-  let kmlFileName = (appAreaExists) ? 'KML_' + fileNameBody + '.kml' : null;
-  let ranchMapName = (!!ranchMap) ? 'RanchMap_' + fileNameBody + ranchMap.name.substr(ranchMap.name.lastIndexOf('.')) : null;
-  let csvFileName = (appAreaExists) ? 'CSV_' + fileNameBody + '.csv' : null;
+  var pdfFileName = 'PDF_' + fileNameBody + '.pdf';
+  var kmlFileName = (appAreaExists) ? 'KML_' + fileNameBody + '.kml' : null;
+  var ranchMapName = (!!ranchMap) ? 'RanchMap_' + fileNameBody + ranchMap.name.substr(ranchMap.name.lastIndexOf('.')) : null;
+  var csvFileName = (appAreaExists) ? 'CSV_' + fileNameBody + '.csv' : null;
 
 
-  let pdfPath = path.join(email_files, pdfFileName);
-  let kmlPath = (appAreaExists) ? path.join(email_files, kmlFileName) : null;
-  let ranchMapPath = (!!ranchMap) ? path.join(email_files, ranchMapName) : null;
-  let csvPath = (appAreaExists) ? path.join(email_files, csvFileName) : null; 
+  var pdfPath = path.join(email_files, pdfFileName);
+  var kmlPath = (appAreaExists) ? path.join(email_files, kmlFileName) : null;
+  var ranchMapPath = (!!ranchMap) ? path.join(email_files, ranchMapName) : null;
+  var csvPath = (appAreaExists) ? path.join(email_files, csvFileName) : null; 
   // Save paths for deletion (comment out to leave in file system)
   return_msg.pdfPath = pdfPath;
   return_msg.kmlPath = kmlPath;
@@ -330,22 +307,20 @@ function jsonToJstsGeom(json) {
       temp2.push(new jsts.geom.Coordinate(temp[j]["lat"], temp[j]["lng"]));
     }
     temp2 = gF.createLinearRing(temp2);
-    temp.push(temp2);
+    holes.push(temp2);
   }
   var result = gF.createPolygon(shell, holes);
-  // Get rid of self-intersections now
-  if (!result.isSimple()) {
-    return null;
-  }
-  return result;
+
+  // Get rid of self-intersections and return
+  return (!result.isSimple()) ? null : result;
 }
 
 function jstsCoordsToShellHoles(coords) {
-  let shell = [];
-  let holes = [];
-  let shellComplete = false;
+  var shell = [];
+  var holes = [];
+  var shellComplete = false;
 
-  for (let i = 0; i < coords.length; i++) {
+  for (var i = 0; i < coords.length; i++) {
     if (!shellComplete) {
       shell.push(coords[i]);
       if ((i != 0) && (coords[0].equals(coords[i]))) {
@@ -365,12 +340,12 @@ function writeCSV(csvPath, fileName, info, callback) {
 
   // Multipliers control the change of rate
   // When going from the standard rate to variable rate
-  let bug1Multiplier = 0;
-  let bug2Multiplier = 0;
+  var bug1Multiplier = 0;
+  var bug2Multiplier = 0;
 
   try {
-    let vr = parseInt(info["bugsPerAcre"]);
-    let sr = parseInt(info["variableRate"]);
+    var vr = parseInt(info["bugsPerAcre"]);
+    var sr = parseInt(info["variableRate"]);
     if (vr > 0) { bug1Multiplier = sr / vr; }
     if (info["bugsPerAcre2"]) {
       vr = parseInt(info["bugsPerAcre2"]);
@@ -394,24 +369,24 @@ function writeCSV(csvPath, fileName, info, callback) {
     if (csvErr) {
       callback(false);
     } else {
-      let csv = fs.createWriteStream(csvPath, {flags: 'a'}); // appending
+      var csv = fs.createWriteStream(csvPath, {flags: 'a'}); // appending
       csv.write(`Multiplier,${bug1Multiplier},${bug2Multiplier},,,\r\n`);
       csv.write(`Application Area,Application Area Bug: ${info["bugName"]} ${info["bugsPerAcre"]} per acre`);
       if (info["bugName2"] != null) {
         csv.write(` Bug2: ${info["bugName2"]} ${info["bugsPerAcre2"]} per acre`);
       }
       csv.write(` Crop: ${info["crop"]} with row spacing of ${info["rowSpacing"]}ft Notes: ${info["notes"]},`);
-      for (let j = 0; j < appArea.length; j++) {
+      for (var j = 0; j < appArea.length; j++) {
         if (j == 0) {
           csv.write(`${JSON.stringify(appArea[j]["lng"])},${JSON.stringify(appArea[j]["lat"])},0\r\n`);
         } else {
           csv.write(` , ,${JSON.stringify(appArea[j]["lng"])},${JSON.stringify(appArea[j]["lat"])},0\r\n`);
         }
       }
-      for (let i = 0; i < hazardArea.length; i++) {
-        let hazard = info["appArea"]["Hazards"][i][0]["shell"];
+      for (var i = 0; i < hazardArea.length; i++) {
+        var hazard = info["appArea"]["Hazards"][i][0]["shell"];
         csv.write(`Hazard Area,Hazard Area,`);
-        for (let j = 0; j < hazard.length; j++) {
+        for (var j = 0; j < hazard.length; j++) {
           if (j == 0) {
             csv.write(`${JSON.stringify(hazard[j]["lng"])},${JSON.stringify(hazard[j]["lat"])},0\r\n`);
           } else {
@@ -419,15 +394,14 @@ function writeCSV(csvPath, fileName, info, callback) {
           }
         }
       }
-      for (let i = 0; i < vRAArea.length; i++) {
-        let vra = info["appArea"]["VariableRateAreas"][i][0]["shell"];
-        console.log(info["appArea"]["VariableRateAreas"][i][0]["holes"]);
+      for (var i = 0; i < vRAArea.length; i++) {
+        var vra = info["appArea"]["VariableRateAreas"][i][0]["shell"];
         csv.write(`Variable Rate Area,Variable Rate Area Bug: ${info["bugName"]} ${info["variableRate"]} per acre`);
         if (info["bugName2"] != null) {
           csv.write(` Bug2: ${info["bugName2"]} ${info["variableRate2"]} per acre`);
         }
         csv.write(`,`);
-        for (let j = 0; j < vra.length; j++) {
+        for (var j = 0; j < vra.length; j++) {
           if (j == 0) {
             csv.write(`${JSON.stringify(vra[j]["lng"])},${JSON.stringify(vra[j]["lat"])},0\r\n`);
           } else {
@@ -449,12 +423,12 @@ function kml(info) {
 
   // Multipliers control the change of rate
   // When going from the standard rate to variable rate
-  let bug1Multiplier = 0;
-  let bug2Multiplier = 0;
+  var bug1Multiplier = 0;
+  var bug2Multiplier = 0;
 
   try {
-    let vr = parseInt(info["bugsPerAcre"]);
-    let sr = parseInt(info["variableRate"]);
+    var vr = parseInt(info["bugsPerAcre"]);
+    var sr = parseInt(info["variableRate"]);
     if (vr > 0) {
       bug1Multiplier = sr / vr;
     }
@@ -469,7 +443,6 @@ function kml(info) {
     console.log("Error when setting multipliers");
     console.log(e);
   }
-
 
   if (info["bugName"] === "") {
     info["bugName"] = "Not Specified";
@@ -530,7 +503,7 @@ function kml(info) {
   kml.startElement("Polygon"); // 2. polygon start
   kml.writeElement("extrude", "1");
   kml.writeElement("altitudeMode", "clampToGround");
-  kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
+  kml.startElement("outerBoundaryIs"); // 3. start 'shell' tag
   kml.startElement("LinearRing"); // 4. linear ring start
   kml.startElement("coordinates"); // 5. coordinate tag start
 
@@ -548,7 +521,7 @@ function kml(info) {
 
   kml.endElement(); // 5. end coordinate tag
   kml.endElement(); // 4. end linear ring tag
-  kml.endElement(); // 3, end 'hole' tag
+  kml.endElement(); // 3, end 'shell' tag
   kml.endElement(); // 2, polygon end
   kml.startElement("Style"); // start style tag
   kml.startElement("PolyStyle"); // start polystyle tag
@@ -579,7 +552,7 @@ function kml(info) {
     kml.startElement("Polygon"); // 2. polygon start
     kml.writeElement("extrude", "1");
     kml.writeElement("altitudeMode", "clampToGround");
-    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
+    kml.startElement("outerBoundaryIs"); // 3. start 'shell' tag
     kml.startElement("LinearRing"); // 4. linear ring start
     kml.startElement("coordinates"); // 5. coordinate tag start
 
@@ -597,7 +570,29 @@ function kml(info) {
 
     kml.endElement(); // 5. end coordinate tag
     kml.endElement(); // 4. end linear ring tag
-    kml.endElement(); // 3. end 'hole' tag
+    kml.endElement(); // 3. end 'shell' tag
+
+    // Create any holes (inner boundaries)
+    temp = info["appArea"]["Hazards"][i][0]["holes"];
+    temp.forEach((hole) => {
+      kml.startElement("innerBoundaryIs"); // 3. start 'hole' tag
+      kml.startElement("LinearRing"); // 4. linear ring start
+      kml.startElement("coordinates"); // 5. coordinate tag start
+      for (j = 0; j < hole.length; j++) {
+        kml.text(
+          "\n\t\t\t\t\t\t\t" +
+          JSON.stringify(hole[j]["lng"]) +
+          "," +
+          JSON.stringify(hole[j]["lat"]) +
+          ",0"
+        );
+        kml.text("\n\t\t\t\t\t\t");
+      }
+      kml.endElement(); // 5. end coordinate tag
+      kml.endElement(); // 4. end linear ring tag
+      kml.endElement(); // 3, end 'hole' tag
+    });
+
     kml.endElement(); // 2. polygon end
     kml.startElement("Style"); // start style tag
     kml.startElement("PolyStyle"); // start polystyle tag
@@ -646,7 +641,7 @@ function kml(info) {
     kml.startElement("Polygon"); // 2. polygon start
     kml.writeElement("extrude", "1");
     kml.writeElement("altitudeMode", "clampToGround");
-    kml.startElement("outerBoundaryIs"); // 3. start 'hole' tag
+    kml.startElement("outerBoundaryIs"); // 3. start 'shell' tag
     kml.startElement("LinearRing"); // 4. linear ring start
     kml.startElement("coordinates"); // 5. coordinate tag start
 
@@ -664,7 +659,29 @@ function kml(info) {
 
     kml.endElement(); // 5. end coordinate tag
     kml.endElement(); // 4. end linear ring tag
-    kml.endElement(); // 3. end 'hole' tag
+    kml.endElement(); // 3. end 'shell' tag
+
+    // Create any holes (inner boundaries)
+    temp = info["appArea"]["VariableRateAreas"][i][0]["holes"];
+    temp.forEach((hole) => {
+      kml.startElement("innerBoundaryIs"); // 3. start 'hole' tag
+      kml.startElement("LinearRing"); // 4. linear ring start
+      kml.startElement("coordinates"); // 5. coordinate tag start
+      for (j = 0; j < hole.length; j++) {
+        kml.text(
+          "\n\t\t\t\t\t\t\t" +
+          JSON.stringify(hole[j]["lng"]) +
+          "," +
+          JSON.stringify(hole[j]["lat"]) +
+          ",0"
+        );
+        kml.text("\n\t\t\t\t\t\t");
+      }
+      kml.endElement(); // 5. end coordinate tag
+      kml.endElement(); // 4. end linear ring tag
+      kml.endElement(); // 3, end 'hole' tag
+    });
+
     kml.endElement(); // 2. polygon end
     kml.startElement("Style"); // start style tag
     kml.startElement("PolyStyle"); // start polystyle tag
@@ -705,7 +722,7 @@ function round(value, decimals) {
 }
 
 function savePDFDocument(data, path, appAreaExists, callback) {
-  let dd = {
+  var dd = {
     content: [],
     styles: {
       centerAlign: {alignment: 'center', margin: [0, 2, 0, 0]},
@@ -743,7 +760,7 @@ function savePDFDocument(data, path, appAreaExists, callback) {
 
   if (data.correctedAcreage) {
     dd.content.push({lineHeight: 1, text: ' '});
-    let tableBody;
+    var tableBody;
     if (data.bug2) {
       tableBody = [
         [ {text: 'Application Area (Corrected Acreage)', colSpan: 4, style: 'tableHeader'}, {}, {}, {}],
@@ -788,7 +805,7 @@ function savePDFDocument(data, path, appAreaExists, callback) {
 
   if (appAreaExists) {
     dd.content.push({lineHeight: 1, text: ' '});
-    let tableBody;
+    var tableBody;
     if (data.bug2) {
       tableBody = [
         [ {text: 'Application Area (Raw Map Data)', colSpan: 5, style: 'tableHeader'}, {}, {}, {}, {}],
@@ -893,16 +910,24 @@ function savePDFDocument(data, path, appAreaExists, callback) {
 }
 
 function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFileName, callback) {
-  // https://medium.com/@nickroach_50526/sending-emails-with-node-js-using-smtp-gmail-and-oauth2-316fe9c790a1
-  // Get file path for files to be emailed
-  let email_files = path.join(__dirname, "..", "email_files");
-  let pdfPath = path.join(email_files, pdfFileName);
-  let kmlPath = (!!kmlFileName) ? path.join(email_files, kmlFileName) : null;
-  let ranchMapPath = (!!ranchMapName) ? path.join(email_files, ranchMapName) : null;
-  let csvPath = (csvFileName) ? path.join(email_files, csvFileName) : null; 
-  if (!kmlPath && !ranchMapPath) { return false; }
-  let parabug_email_path = "info@parabug.solutions";
+  /**
+   * Obtain file paths for files which will be emailed
+   */
+  var email_files = path.join(__dirname, "..", "email_files");
+  var pdfPath = path.join(email_files, pdfFileName);
+  var kmlPath = (!!kmlFileName) ? path.join(email_files, kmlFileName) : null;
+  var ranchMapPath = (!!ranchMapName) ? path.join(email_files, ranchMapName) : null;
+  var csvPath = (csvFileName) ? path.join(email_files, csvFileName) : null; 
+  if (!kmlPath && !ranchMapPath) { 
+    console.log("There was an issue determining directory paths for desired attachments. Email will not be sent.")
+    callback(false);
+    return; // Do not continue
+  }
 
+  /**
+   * Set up Oauth2Client and obtain an Access token (via a refresh token to avoid expiration)
+   * Guide: https://medium.com/@nickroach_50526/sending-emails-with-node-js-using-smtp-gmail-and-oauth2-316fe9c790a1    
+   */
   const oauth2Client = new OAuth2(
     privateKey.c_id,
     privateKey.c_secret, // Client Secret
@@ -911,24 +936,18 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
   oauth2Client.setCredentials({refresh_token: privateKey.refreshToken });
   const accessToken = oauth2Client.getAccessToken();
 
-  //set up transporter - OAUTH
-  var transporter = nodeMailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // use SSL
-    auth: {
-      type: "OAuth2",
-      user: privateKey.user,
-      clientId: privateKey.c_id,
-      clientSecret: privateKey.c_secret,
-      refreshToken: privateKey.refreshToken,
-      // accessToken: privateKey.accessToken,
-      accessToken: accessToken,
-      expires: 1484314697598
-    }
-  });
+  /**
+   * Create array of email attachment objects to be sent to the Parabug (not the client)
+   * This will include all available files (pdf, kml, csv, ranchMap)
+   */
+  var parabugAttachments = [{ filename: pdfFileName, path: pdfPath }];
+  if (!!kmlPath) { parabugAttachments.push({ filename: kmlFileName, path: kmlPath }); }
+  if (!!csvPath) { parabugAttachments.push({ filename: csvFileName, path: csvPath }); }
+  if (!!ranchMapPath) { parabugAttachments.push({ filename: ranchMapName, path: ranchMapPath }); }
 
-  //setup second transporter:
+  /**
+   * Set up transporter and mailing options for email being sent to Parabug
+   */
   var parabugTransporter = nodeMailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -939,18 +958,12 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
       clientId: privateKey.c_id,
       clientSecret: privateKey.c_secret,
       refreshToken: privateKey.refreshToken,
-      // accessToken: privateKey.accessToken,
       accessToken: accessToken,
       expires: 1484314697598
     }
   });
-
-  let parabugAttachments = [{ filename: pdfFileName, path: pdfPath }];
-  if (!!kmlPath) { parabugAttachments.push({ filename: kmlFileName, path: kmlPath }); }
-  if (!!csvPath) { parabugAttachments.push({ filename: csvFileName, path: csvPath }); }
-  if (!!ranchMapPath) { parabugAttachments.push({ filename: ranchMapName, path: ranchMapPath }); }
-
-  let parabugMailOptions = {
+  const parabug_email_path = "info@parabug.solutions";
+  var parabugMailOptions = {
     from:
       '"Requested Parabug Estimate Quote"' +
       "<" +
@@ -963,7 +976,24 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     attachments: parabugAttachments
   };
 
-  let mailOptions = {
+  /**
+   * Set up transporter and mailing options for email being sent to the Client
+   */
+  var clientTransporter = nodeMailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+      type: "OAuth2",
+      user: privateKey.user,
+      clientId: privateKey.c_id,
+      clientSecret: privateKey.c_secret,
+      refreshToken: privateKey.refreshToken,
+      accessToken: accessToken,
+      expires: 1484314697598
+    }
+  });
+  var clientMailOptions = {
     from:
       '"Requested Parabug Estimate Quote"' +
       "<" +
@@ -974,25 +1004,25 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     text: info.notes, // plain text body
     html: pdfData,
     attachments: [{ filename: pdfFileName, path: pdfPath }]
-    // For testing:
-    // attachments: parabugAttachments
   };
 
   // ************************ For Local Testing (No Emailing) ************************
   // callback(true);
-  // transporter.close();
+  // clientTransporter.close();
   // parabugTransporter.close();
   // return;
   // *********************************************************************************
   
-  // Send user email
-  transporter.sendMail(mailOptions, function (err, info) {
+  /**
+   * Send emails to Client and Parabug
+   * It is set up to send the request to the Parabug email only if the Client email was sent successfully.
+   */
+  clientTransporter.sendMail(clientMailOptions, function (err, info) {
     if (err) {
       console.log(err);
       callback(false);
     } else {
-      console.log("User Message sent: " + info.response);
-      // Send Parabug emal
+      console.log("Client Email sent: " + info.response);
       parabugTransporter.sendMail(parabugMailOptions, function (
         err,
         info
@@ -1001,34 +1031,34 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
           console.log(err);
           callback(false);
         } else {
-          console.log("Parabug Message sent: " + info.response);
+          console.log("Parabug Email sent: " + info.response);
           callback(true);
         }
       });
     }
   });
-  transporter.close();
+  clientTransporter.close();
   parabugTransporter.close();
 }
 
 function simplifyHazards(hazards) {
-  let gF = new jsts.geom.GeometryFactory();
+  var gF = new jsts.geom.GeometryFactory();
 
   // Simplify Hazard Areas
-  let newHazards = [];
-  for (let i = 0; i < hazards.length; i++) {
-    let hazard = hazards[i];
+  var newHazards = [];
+  for (var i = 0; i < hazards.length; i++) {
+    var hazard = hazards[i];
     if (hazard) {
-      let hazardCoords = jstsCoordsToShellHoles(hazard.getCoordinates());
-      for (let j = 1; j < hazardCoords.shell.length - 1; j++) {
-        let shellWithPoint = hazardCoords.shell.slice();
-        let shellWithoutPoint = shellWithPoint.slice();
+      var hazardCoords = jstsCoordsToShellHoles(hazard.getCoordinates());
+      for (var j = 1; j < hazardCoords.shell.length - 1; j++) {
+        var shellWithPoint = hazardCoords.shell.slice();
+        var shellWithoutPoint = shellWithPoint.slice();
         shellWithoutPoint.splice(j, 1);
         if (shellWithPoint.length > 2 && shellWithoutPoint.length > 2) {
-          let polygonWithPoint = gF.createPolygon(gF.createLinearRing(shellWithPoint), gF.createLinearRing(hazardCoords.holes));
-          let polygonWithoutPoint = gF.createPolygon(gF.createLinearRing(shellWithoutPoint), gF.createLinearRing(hazardCoords.holes));
-          let polygonWithPointBuffered = polygonWithPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
-          let polygonWithoutPointBuffered = polygonWithoutPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
+          var polygonWithPoint = gF.createPolygon(gF.createLinearRing(shellWithPoint), gF.createLinearRing(hazardCoords.holes));
+          var polygonWithoutPoint = gF.createPolygon(gF.createLinearRing(shellWithoutPoint), gF.createLinearRing(hazardCoords.holes));
+          var polygonWithPointBuffered = polygonWithPoint.buffer(BUFFER, 1, jstsO.operation.buffer.BufferParameters.CAP_SQUARE);
+          var polygonWithoutPointBuffered = polygonWithoutPoint.buffer(BUFFER, 1, jstsO.operation.buffer.BufferParameters.CAP_SQUARE);
           if (polygonWithPointBuffered.covers(polygonWithoutPoint) && polygonWithoutPointBuffered.covers(polygonWithPoint)) {
             hazardCoords.shell = shellWithoutPoint.slice();
           }
@@ -1041,23 +1071,23 @@ function simplifyHazards(hazards) {
 }
 
 function simplifyVariableRateAreas(vras) {
-  let gF = new jsts.geom.GeometryFactory();
+  var gF = new jsts.geom.GeometryFactory();
 
-  // Simplify Hazard Areas
-  let newVras = [];
-  for (let i = 0; i < newVras.length; i++) {
-    let vra = vras[i];
+  // Simplify Variable Rate Areas
+  var newVras = [];
+  for (var i = 0; i < newVras.length; i++) {
+    var vra = vras[i];
     if (vra) {
-      let vraCoords = jstsCoordsToShellHoles(vra.getCoordinates());
-      for (let j = 1; j < vraCoords.shell.length - 1; j++) {
-        let shellWithPoint = vraCoords.shell.slice();
-        let shellWithoutPoint = shellWithPoint.slice();
+      var vraCoords = jstsCoordsToShellHoles(vra.getCoordinates());
+      for (var j = 1; j < vraCoords.shell.length - 1; j++) {
+        var shellWithPoint = vraCoords.shell.slice();
+        var shellWithoutPoint = shellWithPoint.slice();
         shellWithoutPoint.splice(j, 1);
         if (shellWithPoint.length > 2 && shellWithoutPoint.length > 2) {
-          let polygonWithPoint = gF.createPolygon(gF.createLinearRing(shellWithPoint), gF.createLinearRing(vraCoords.holes));
-          let polygonWithoutPoint = gF.createPolygon(gF.createLinearRing(shellWithoutPoint), gF.createLinearRing(vraCoords.holes));
-          let polygonWithPointBuffered = polygonWithPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
-          let polygonWithoutPointBuffered = polygonWithoutPoint.buffer(BUFFER, 1, jsts.operation.buffer.BufferParameters.CAP_SQUARE);
+          var polygonWithPoint = gF.createPolygon(gF.createLinearRing(shellWithPoint), gF.createLinearRing(vraCoords.holes));
+          var polygonWithoutPoint = gF.createPolygon(gF.createLinearRing(shellWithoutPoint), gF.createLinearRing(vraCoords.holes));
+          var polygonWithPointBuffered = polygonWithPoint.buffer(BUFFER, 1, jstsO.operation.buffer.BufferParameters.CAP_SQUARE);
+          var polygonWithoutPointBuffered = polygonWithoutPoint.buffer(BUFFER, 1, jstsO.operation.buffer.BufferParameters.CAP_SQUARE);
           if (polygonWithPointBuffered.covers(polygonWithoutPoint) && polygonWithoutPointBuffered.covers(polygonWithPoint)) {
             vraCoords.shell = shellWithoutPoint.slice();
           }
@@ -1194,6 +1224,15 @@ function unionPolyArray(polyArr) {
 }
 
 function unionPolygons(jstsPoly1, jstsPoly2) {
+  if (!jstsPoly1 || !jstsPoly2) {
+    if (!jstsPoly1 && !jstsPoly2) {
+      return { unioned: 0 };
+    } else if (!jstsPoly1) {
+      return { unioned: 1, polygon: jstsPoly2 };
+    } else {
+      return { unioned: 1, polygon: jstsPoly1 };
+    }
+  }
   jstsPoly1.normalize();
   jstsPoly2.normalize();
   if (!jstsPoly1.intersects(jstsPoly2) || jstsPoly1.touches(jstsPoly2)) {
@@ -1207,28 +1246,35 @@ function unionPolygons(jstsPoly1, jstsPoly2) {
 }
 
 function validateAndFix(appArea, hazards, vras, ranchMapProvided = null) {
+  let validationStep = "";
   try {
     if (appArea == null || appArea === []) {
-      if (!!ranchMapProvided) { return true; }
-      return false;
+      return (!!ranchMapProvided) ? true : false;
     }
     if (numUniqueCoordinates(appArea) < 3) {
       return false;
     }
+    validationStep = "Deleting non-polys in hazards";
     var newHazards = deleteNonPolys(hazards);
+    validationStep = "Deleting non-polys in vras";
     var newVras = deleteNonPolys(vras);
+    validationStep = "Unioning hazards";
     newHazards = unionPolyArray(newHazards);
+    validationStep = "Unioning vras";
     newVras = unionPolyArray(newVras);
+    validationStep = "Trimming hazards to app area";
     newHazards = trimPolyArray(newHazards, appArea);
+    validationStep = "Trimming vras to hazards and app area";
     newVras = trimPolyArray(newVras, appArea, newHazards);
-    // Simplify currently bugged: vra's made with hazards internally get deleted
+    validationStep = "Simplifying hazards";
     newHazards = simplifyHazards(newHazards);
+    validationStep = "Simplifying vras";
     newVras = simplifyVariableRateAreas(newVras);
-
+    validationStep = "Done";
     // All the values at this point should be valid
     return true;
   } catch (e) {
-    console.log("Error during validation:");
+    console.log(`Error during validation step [${validationStep}]:`);
     console.log(e);
     return false;
   }
@@ -1237,7 +1283,7 @@ function validateAndFix(appArea, hazards, vras, ranchMapProvided = null) {
 // Returns null if fail or pdfData (ejs render from template)
 function writePDFile(path, info, callback) {
   if (!!info["appArea"]) {
-    let email_template = require("path").join(
+    var email_template = require("path").join(
       __dirname,
       "..",
       "public",
@@ -1252,27 +1298,27 @@ function writePDFile(path, info, callback) {
     info["vraAcres"] = parseFloat(info["vraAcres"], 10);
   
     // Check values, on per bug basis
-    let bug1 = checkBug(
+    var bug1 = checkBug(
       info.bugName,
       info.bugsPerAcre,
       info.variableRate,
       "bug1"
     );
-    let bug2 = checkBug(
+    var bug2 = checkBug(
       info.bugName2,
       info.bugsPerAcre2,
       info.variableRate2,
       "bug2"
     );
   
-    let standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
-    let standardBugs = (bug1.bpa + bug2.bpa) * standardAcres;
-    let vraBugs = (bug1.vr + bug2.vr) * info.vraAcres;
-    let sumBugs = standardBugs + vraBugs;
+    var standardAcres = info["appAcres"] - info["hazardAcres"] - info["vraAcres"];
+    var standardBugs = (bug1.bpa + bug2.bpa) * standardAcres;
+    var vraBugs = (bug1.vr + bug2.vr) * info.vraAcres;
+    var sumBugs = standardBugs + vraBugs;
   
-    let deployableAcres = info["appAcres"] - info["hazardAcres"];
+    var deployableAcres = info["appAcres"] - info["hazardAcres"];
   
-    let data = {
+    var data = {
       contact_name: info.contactName,
       contact_email: info.contactEmail,
       contact_phone: info.contactPhone,
@@ -1303,8 +1349,8 @@ function writePDFile(path, info, callback) {
   
     // Check if corrected acreage was supplied, if so provide additional bug estaimate
     if (info.correctedAcreage != null) {
-      let correctedAcreage = parseFloat(info.correctedAcreage);
-      let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
+      var correctedAcreage = parseFloat(info.correctedAcreage);
+      var sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
       data.sumBugsCorrected = round(sumBugsCorrected, 0);
     }
   
@@ -1329,7 +1375,7 @@ function writePDFile(path, info, callback) {
     });
 
   } else {
-    let email_template = require("path").join(
+    var email_template = require("path").join(
       __dirname,
       "..",
       "public",
@@ -1338,20 +1384,20 @@ function writePDFile(path, info, callback) {
     );
   
     // Check values, on per bug basis
-    let bug1 = checkBug(
+    var bug1 = checkBug(
       info.bugName,
       info.bugsPerAcre,
       info.variableRate,
       "bug1"
     );
-    let bug2 = checkBug(
+    var bug2 = checkBug(
       info.bugName2,
       info.bugsPerAcre2,
       info.variableRate2,
       "bug2"
     );
   
-    let data = {
+    var data = {
       contact_name: info.contactName,
       contact_email: info.contactEmail,
       contact_phone: info.contactPhone,
@@ -1374,8 +1420,8 @@ function writePDFile(path, info, callback) {
   
     // Check if corrected acreage was supplied, if so provide additional bug estaimate
     if (info.correctedAcreage != null) {
-      let correctedAcreage = parseFloat(info.correctedAcreage);
-      let sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
+      var correctedAcreage = parseFloat(info.correctedAcreage);
+      var sumBugsCorrected = correctedAcreage * (bug1.bpa + bug2.bpa);
       data.sumBugsCorrected = round(sumBugsCorrected, 0);
     }
   
