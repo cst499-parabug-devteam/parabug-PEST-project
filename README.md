@@ -18,7 +18,18 @@ The Parabug Estimate Solution Tool was designed to streamline contact informatio
 
 ## Usage
 
-To be Developed Soon...
+### Local development
+
+Requires Node.js 26.13.0 and npm 12.2.2. With nvm installed:
+
+```powershell
+nvm install 26.13.0
+nvm use 26.13.0
+npm install
+npm start
+```
+
+Open <http://localhost:3000>. Puppeteer downloads its Chromium browser during installation for PDF generation. Email submissions also require valid OAuth credentials in `private/key.json`; keep that file private and out of source control.
 
 ## Contributors
 

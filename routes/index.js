@@ -1,14 +1,14 @@
 var express = require("express");
 var router = express.Router();
-var jsts = require("jsts");
+var jsts;
+var jstsReady = import("jsts/dist/jsts.min.js").then(function() {
+  jsts = globalThis.jsts;
+});
 var nodeMailer = require("nodemailer");
-var bodyParser = require("body-parser");
-var { google } = require("googleapis");
-var OAuth2 = google.auth.OAuth2;
 var fs = require("fs");
 let privateKey = require("../private/fakeKey.json");
 var path = require("path");
-var pdf = require("html-pdf");
+var renderPdf = require("../lib/pdf-renderer");
 var ejs = require("ejs");
 var XMLWriter = require("xml-writer");
 var tmp = require("tmp");
@@ -68,8 +68,9 @@ var data = {
 };
 */
 
-router.post("/", function(req, res, next) {
+router.post("/", async function(req, res, next) {
   try {
+    await jstsReady;
     // Test Data (req.body)
     var info = req.body;
     var appArea = info["appArea"]["ApplicationArea"][0];
@@ -417,19 +418,18 @@ function writePDFile(path, info, callback) {
     data.sumBugsCorrected = round(sumBugsCorrected, 0);
   }
 
-  ejs.renderFile(email_template, data, function(err, pdfData) {
+  ejs.renderFile(email_template, data, async function(err, pdfData) {
     if (err) {
       console.log(err);
       callback(null);
     } else {
-      pdf.create(pdfData).toFile(path, function(err, res) {
-        if (err) {
-          callback(null);
-        } else {
-          callback(pdfData);
-        }
-        console.log(res);
-      });
+      try {
+        await renderPdf(pdfData, path);
+        callback(pdfData);
+      } catch (renderError) {
+        console.log(renderError);
+        callback(null);
+      }
     }
   });
 }

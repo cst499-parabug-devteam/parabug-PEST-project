@@ -6,27 +6,34 @@
     "start": "node ./bin/www",
     "test": "mocha"
   },
+  "engines": {
+    "node": ">=26.13.0 <27"
+  },
+  "packageManager": "npm@12.2.2",
   "dependencies": {
-    "body-parser": "^1.18.3",
-    "cookie-parser": "~1.4.3",
-    "debug": "~2.6.9",
-    "ejs": "^2.6.1",
-    "express": "~4.16.0",
-    "googleapis": "^41.0.1",
-    "html-pdf": "^2.2.0",
-    "http-errors": "~1.6.2",
-    "jquery": "^3.3.1",
-    "jsts": "^2.0.6",
-    "morgan": "~1.9.0",
-    "nodemailer": "^4.7.0",
-    "pug": "^2.0.4",
-    "serve-favicon": "2.5.0",
-    "tmp": "0.0.33",
-    "toastr": "^2.1.4",
+    "cookie-parser": "^1.4.7",
+    "debug": "^4.4.3",
+    "ejs": "^7.0.2",
+    "express": "^5.3.0",
+    "jsts": "^2.12.1",
+    "morgan": "^1.12.1",
+    "nodemailer": "^10.4.0",
+    "puppeteer": "^25.16.0",
+    "serve-favicon": "^2.5.1",
+    "tmp": "^0.2.7",
     "xml-writer": "^1.7.0"
   },
   "devDependencies": {
-    "mocha": "^5.1.1",
-    "supertest": "^3.4.2"
+    "mocha": "^12.0.3",
+    "supertest": "^7.3.2"
+  },
+  "overrides": {
+    "mocha": {
+      "glob": "14.0.4",
+      "minimatch": "11.0.5"
+    }
+  },
+  "allowScripts": {
+    "puppeteer@25.16.0": true
   }
 }
