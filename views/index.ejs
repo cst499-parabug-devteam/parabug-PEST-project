@@ -108,7 +108,12 @@
     <div id="top-alert"></div>
 
 
-    <div style="padding-left: 15px;">
+    <header class="request-toolbar">
+      <div class="request-brand">
+        <img id="logo-img" src="/img/logo-sml.jpg" alt="Parabug" />
+        <h1>Application request</h1>
+      </div>
+      <div class="request-actions">
       <div id="session-options-dropdown">
         <button id="session-options-dropdown-btn" onclick="showSessionOptions()"
           title="Save/Import map and form data. Does not save overlays imported onto the map or uploaded ranch map files.">
@@ -123,14 +128,22 @@
         <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/circle-help.svg" width="18" height="18" alt="">
         Help
       </button>
-    </div>
+      </div>
+    </header>
 
     <form id="additional-info" method="POST" enctype="multipart/form-data">
       <div id="stat-display">
+        <div class="rates-header">
+          <h2>Application rates</h2>
+          <label class="rate-toggle" for="add-bug-toggle">
+            <input type="checkbox" name="add-bug-toggle" id="add-bug-toggle" value="add-bug"/>
+            <span>Second bug</span>
+          </label>
+        </div>
   
         <!--Bug Name-->
         <div class="stat-item">
-          <label class="stat-text" for="bug-name" title="Bug Indicator">Bug:</label>
+          <label class="stat-text" for="bug-name" title="Bug Indicator">Bug</label>
           <div class="stat-input">
             <input type="text" name="bug-name" id="bug-name" />
           </div>
@@ -138,7 +151,7 @@
   
         <!--Bugs Per Acre-->
         <div class="stat-item">
-          <label class="stat-text" for="num-bugs-per-acre" title="Bugs per acre in the application area">Bugs / Acre:</label>
+          <label class="stat-text" for="num-bugs-per-acre" title="Bugs per acre in the application area">Bugs / acre<span class="required">*</span></label>
           <div class="stat-input">
             <input type="number" name="bugs-per-acre" id="num-bugs-per-acre" min="1" value="10000" required/>
           </div>
@@ -146,18 +159,17 @@
   
         <!--Variable Rate-->
         <div class="stat-item">
-          <label class="stat-text" for="variable-rate" title="Bugs per acre in variable rate areas">Variable Rate:</label>
+          <label class="stat-text" for="variable-rate" title="Bugs per acre in variable rate areas">Variable rate</label>
           <div class="stat-input">
             <input type="number" name="variable-rate" id="variable-rate" value="20000" min="0"/>
           </div>
         </div>
   
-        <br>
         <div id="add-bug-display">
   
           <!--Bug Name 2-->
           <div class="stat-item">
-            <label class="stat-text" for="bug-name2" title="Bug Indicator"> Bug 2:</label>
+            <label class="stat-text" for="bug-name2" title="Bug Indicator">Second bug</label>
             <div class="stat-input">
               <input type="text" name="bug-name2" id="bug-name2" />
             </div>
@@ -165,7 +177,7 @@
   
           <!--Bugs Per Acre 2-->
           <div class="stat-item">
-            <label class="stat-text" for="num-bugs-per-acre2" title="Bugs per acre in the application area"> Bugs / Acre 2:</label>
+            <label class="stat-text" for="num-bugs-per-acre2" title="Bugs per acre in the application area">Bugs / acre<span class="required">*</span></label>
             <div class="stat-input">
               <input type="number" name="bugs-per-acre2" id="num-bugs-per-acre2" min="1" value="10000" required/>
             </div>
@@ -173,20 +185,18 @@
   
           <!--Variable Rate 2-->
           <div class="stat-item">
-            <label class="stat-text" for="variable-rate2" title="Bugs per acre in variable rate areas"> Variable Rate 2:</label>
+            <label class="stat-text" for="variable-rate2" title="Bugs per acre in variable rate areas">Variable rate</label>
             <div class="stat-input">
               <input type="number" name="variable-rate2" id="variable-rate2" value="20000" min="0"/>
             </div>
           </div>
         </div>
   
-        <br>
-  
         <!--Estimated Number of Acres-->
-        <div class="stat-item">
+        <div class="stat-item estimate-field">
           <label class="stat-text" for="num-acres"
             title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in manual acreage value">
-            Acres:
+            Estimated acres
           </label>
           <div class="stat-input">
             <input type="number" name="num-acres" id="num-acres" class="read-only" value="0" readonly/>
@@ -194,20 +204,14 @@
         </div>
   
         <!--Estimated Total Bugs-->
-        <div class="stat-item">
-          <label class="stat-text" for="num-bugs" title="Estimated total number of bugs">Total Bugs:</label>
+        <div class="stat-item estimate-field">
+          <label class="stat-text" for="num-bugs-display" title="Estimated total number of bugs">Total bugs</label>
           <div class="stat-input">
-            <input type="number" name="num-bugs" id="num-bugs" class="read-only" value="0" readonly/>
+            <input type="hidden" name="num-bugs" id="num-bugs" value="0"/>
+            <input type="text" id="num-bugs-display" class="read-only" value="0" readonly/>
           </div>
         </div>
   
-        <!-- Add Bug -->
-        <div class="stat-item">
-          <label class="stat-text" for="add-bug-toggle" title="Toggle between 1 and 2 bugs for application">Add Bug:</label>
-          <div class="stat-input-checkbox">
-            <input type="checkbox" name="add-bug-toggle" id="add-bug-toggle" value="add-bug"/>
-          </div>
-        </div>
       </div>
   
       <div id="mobile-div">
@@ -234,61 +238,58 @@
       </div>
   
       <div id="user-info-display">
-        <img id="logo-img" src="/img/logo-sml.jpg" />
-        <br />
-  
         <div class="align-input">
           <fieldset class="form-fieldset" id="user-info-fields">
-            <legend>User Information</legend>
+            <legend>Contact details</legend>
   
             <!--Contact Name-->
             <div class="form-element">
-              <div class="form-text">
+              <label class="form-text" for="contact-name">
                 Contact Name<span class="required">*</span>
-              </div>
+              </label>
               <div class="form-input">
-                <input type="text" name="contact_name" id="contact-name" required/>
+                <input type="text" name="contact_name" id="contact-name" autocomplete="name" required/>
               </div>
             </div>
   
             <!--Contact Phone-->
             <div class="form-element">
-              <div class="form-text">
+              <label class="form-text" for="contact-phone">
                 Contact Phone<span class="required">*</span>
-              </div>
+              </label>
               <div class="form-input">
-                <input type="text" name="contact_phone" id="contact-phone" required/>
+                <input type="tel" name="contact_phone" id="contact-phone" autocomplete="tel" required/>
               </div>
             </div>
   
             <!--Contact Email-->
             <div class="form-element">
-              <div class="form-text">
+              <label class="form-text" for="contact-email">
                 Contact Email<span class="required">*</span>
-              </div>
+              </label>
               <div class="form-input">
-                <input type="text" name="contact_email" id="contact-email" required/>
+                <input type="email" name="contact_email" id="contact-email" autocomplete="email" required/>
               </div>
             </div>
   
             <!--Billing Address-->
             <div class="form-element">
-              <div class="form-text">
+              <label class="form-text" for="billing-address">
                 Billing Address<span class="required">*</span>
-              </div>
+              </label>
               <div class="form-input">
-                <input type="text" name="billing_address" id="billing-address" required />
+                <input type="text" name="billing_address" id="billing-address" autocomplete="street-address" required />
               </div>
             </div>
           </fieldset>
   
           <fieldset class="form-fieldset" id="application-area-fields">
-            <legend>Application Area</legend>
+            <legend>Application area</legend>
   
             <!--Crop-->
             <div class="form-element">
-              <label class="form-text">
-                <span class="click-tip" onclick="showPrompt(`crop`)">Crop</span>
+              <label class="form-text" for="crop">
+                <a class="click-tip" href="#help-field-crop" onclick="event.preventDefault(); showPrompt('crop')">Crop</a>
                 <span class="required">*</span>
               </label>
               <div class="form-input">
@@ -298,8 +299,8 @@
   
             <!--Row Spacing-->
             <div class="form-element">
-              <label class="form-text">
-                <span class="click-tip" onclick="showPrompt('row-spacing')">Spacing (ft)</span>
+              <label class="form-text" for="row-spacing">
+                <a class="click-tip" href="#help-field-row-spacing" onclick="event.preventDefault(); showPrompt('row-spacing')">Spacing (ft)</a>
                 <span class="required">*</span>
               </label>
               <div class="form-input">
@@ -320,8 +321,8 @@
   
             <!-- Corrected Acreage -->
             <div class="form-element">
-              <label class="form-text">
-                <span class="click-tip" onclick="showPrompt('corrected-acreage')"> Manual Acreage </span>
+              <label class="form-text" for="corrected-acreage">
+                <a class="click-tip" href="#help-field-corrected-acreage" onclick="event.preventDefault(); showPrompt('corrected-acreage')">Manual Acreage</a>
               </label>
               <div class="form-input">
                 <input type="number" step="0.01" name="corrected-acreage" id="corrected-acreage"/>
@@ -330,8 +331,8 @@
 
             <!-- Ranch Map -->
             <div class="form-element">
-              <label class="form-text">
-                <span class="click-tip" onclick="showPrompt('ranch-map')"> Ranch Map </span>
+              <label class="form-text" for="ranch-map">
+                <a class="click-tip" href="#help-field-ranch-map" onclick="event.preventDefault(); showPrompt('ranch-map')">Ranch Map</a>
               </label>
               <div class="form-input">
                 <input type="file" name="ranch-map" id="ranch-map" accept="image/jpeg, image/png, .pdf">
@@ -344,8 +345,8 @@
   
             <!-- Desired Application Date -->
             <div class="form-element">
-              <label class="form-text">
-                <span class="click-tip" onclick="showPrompt('application-date')"> Application Date </span>
+              <label class="form-text" for="application-date">
+                <a class="click-tip" href="#help-field-application-date" onclick="event.preventDefault(); showPrompt('application-date')">Application Date</a>
               </label>
               <div class="form-input">
                 <input type="date" name="application-date" id="application-date"/>
@@ -354,8 +355,8 @@
   
             <!-- Operator Preference -->
             <div class="form-element">
-              <label class="form-text">
-                <span class="click-tip" onclick="showPrompt('operator')"> Operator </span>
+              <label class="form-text" for="operator">
+                <a class="click-tip" href="#help-field-operator" onclick="event.preventDefault(); showPrompt('operator')">Operator</a>
               </label>
               <div class="form-input">
                 <input type="text" name="operator" id="operator"/>
@@ -364,8 +365,8 @@
   
             <!-- Notes -->
             <div class="form-element">
-              <label class="form-text">
-                <span class="click-tip" onclick="showPrompt('notes')">Notes</span>
+              <label class="form-text" for="notes">
+                <a class="click-tip" href="#help-field-notes" onclick="event.preventDefault(); showPrompt('notes')">Notes</a>
               </label>
               <div class="form-input">
                 <textarea name="notes" id="notes" rows="3"></textarea>
@@ -373,37 +374,18 @@
             </div>
           </fieldset>
   
-          <!-- Help -->
-          <div style="padding-left: 10px;">
-            <div style="cursor:help">Required<span class="required">*</span></div>
-            <span class="click-tip"> Click elements for more information </span>
-            <br />
-          </div>
         </div>
   
         <div class="form-element" id="submitRequest">
           <div class="form-input">
-            <input style="font-size: 16px;" type="submit" value="Submit Request"/>
+            <button type="submit" class="request-submit">Submit request</button>
           </div>
         </div>
       </div>
     </form>
 
-    <!-- Tips Modal -->
-    <div id="tip-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <span class="modal-close" id="modal-close">&times;</span>
-          <div id="modal-header-text"></div>
-        </div>
-        <div class="modal-body">
-          <div id="modal-body"></div>
-          <br />
-        </div>
-      </div>
-    </div>
-
     <dialog id="help-dialog" aria-labelledby="help-title">
+      <div class="help-navigation">
       <header class="help-header">
         <h2 id="help-title">Help</h2>
         <form method="dialog"><button type="submit" class="help-close" aria-label="Close help" title="Close help">&times;</button></form>
@@ -411,7 +393,9 @@
       <div class="help-tabs" role="tablist" aria-label="Help topics">
         <button type="button" id="help-drawing-tab" role="tab" aria-selected="true" aria-controls="help-drawing" tabindex="0">Drawing</button>
         <button type="button" id="help-files-tab" role="tab" aria-selected="false" aria-controls="help-files" tabindex="-1">Files</button>
+        <button type="button" id="help-fields-tab" role="tab" aria-selected="false" aria-controls="help-fields" tabindex="-1">Form fields</button>
         <button type="button" id="help-shortcuts-tab" role="tab" aria-selected="false" aria-controls="help-shortcuts" tabindex="-1">Shortcuts</button>
+      </div>
       </div>
       <section id="help-drawing" class="help-panel" role="tabpanel" aria-labelledby="help-drawing-tab" tabindex="0">
         <h3>Draw an application area</h3>
@@ -438,6 +422,37 @@
         <p>Follow the overlay import prompts to position or configure the layer. Overlay files and saved session JSON files serve different purposes; use Session Import only for session backups.</p>
         <h3>Attach a ranch map</h3>
         <p>The <strong>Ranch Map</strong> field accepts JPEG, PNG, or PDF files up to 10 MB. This is a request attachment, not a map overlay or session backup.</p>
+      </section>
+      <section id="help-fields" class="help-panel" role="tabpanel" aria-labelledby="help-fields-tab" tabindex="0" hidden>
+        <div class="help-field">
+          <h3 id="help-field-crop" tabindex="-1">Crop</h3>
+          <p>Enter the crop or crops grown in the application area.</p>
+        </div>
+        <div class="help-field">
+          <h3 id="help-field-row-spacing" tabindex="-1">Spacing (ft)</h3>
+          <p>Enter the distance, in feet, between rows of crops in the field.</p>
+        </div>
+        <div class="help-field">
+          <h3 id="help-field-corrected-acreage" tabindex="-1">Manual acreage</h3>
+          <p>If you know the exact field acreage, enter it here to use it instead of the estimated acreage.</p>
+          <p class="help-note">When manual acreage is supplied, hazard and variable rate areas are not incorporated into the initial bug estimate. Your map data is still sent with the request.</p>
+        </div>
+        <div class="help-field">
+          <h3 id="help-field-ranch-map" tabindex="-1">Ranch map</h3>
+          <p>Attach a JPEG, PNG, or PDF showing the ranch or desired application area (10 MB maximum). An attachment can be supplied instead of a manually drawn application area. It is not imported as a map overlay or included in a saved session.</p>
+        </div>
+        <div class="help-field">
+          <h3 id="help-field-application-date" tabindex="-1">Application date</h3>
+          <p>Choose your preferred date for the application. This field is optional.</p>
+        </div>
+        <div class="help-field">
+          <h3 id="help-field-operator" tabindex="-1">Operator</h3>
+          <p>Enter a preferred Parabug operator's name, if you have one. This field is optional.</p>
+        </div>
+        <div class="help-field">
+          <h3 id="help-field-notes" tabindex="-1">Notes</h3>
+          <p>Add any other details or requests for the application. This field is optional.</p>
+        </div>
       </section>
       <section id="help-shortcuts" class="help-panel" role="tabpanel" aria-labelledby="help-shortcuts-tab" tabindex="0" hidden>
         <p>Use these keys with the map focused, not while entering text in a form.</p>
@@ -530,7 +545,6 @@
       };
     
       // HTML Elements
-      let modal = document.getElementById("tip-modal");
       let fileInput = document.createElement("input");
       fileInput.setAttribute("type", "file");
       fileInput.setAttribute("accept", ".kml,.kmz, .tif, .zip, .json");
@@ -1417,20 +1431,41 @@
         updateTerraDrawPreviewStyles(drawModeControl.current);
       }
     
+      function setTotalBugs(totalBugs) {
+        document.getElementById("num-bugs").value = totalBugs;
+        document.getElementById("num-bugs-display").value = Number(totalBugs).toLocaleString("en-US");
+      }
+
       function resetMap() {
         if (!!appArea) { appArea.del(); }
         appArea = null;
         // Reset stat display
         document.getElementById("num-acres").value = 0;
-        document.getElementById("num-bugs").value = 0;
+        setTotalBugs(0);
       }
     
       function round(value, decimals) {
           return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
       }
     
-      function showHelp() {
-        document.getElementById("help-dialog").showModal();
+      function showHelp(topic = "drawing", anchorId = null) {
+        selectHelpTab(document.getElementById("help-" + topic + "-tab"));
+        if (!helpDialog.open) {
+          helpDialog.showModal();
+        }
+        helpDialog.scrollTop = 0;
+        if (anchorId) {
+          let anchor = document.getElementById(anchorId);
+          let fieldHelp = anchor.closest(".help-field");
+          fieldHelp.classList.add("is-highlighted");
+          fieldHelp.scrollIntoView({ block: "start" });
+          anchor.focus({ preventScroll: true });
+          window.requestAnimationFrame(function() {
+            if (helpDialog.open && document.activeElement === anchor) {
+              fieldHelp.scrollIntoView({ block: "start" });
+            }
+          });
+        }
       }
 
       const helpDialog = document.getElementById("help-dialog");
@@ -1442,12 +1477,16 @@
         }
       });
       function selectHelpTab(selectedTab) {
+        helpDialog.querySelectorAll(".help-field.is-highlighted").forEach(function(fieldHelp) {
+          fieldHelp.classList.remove("is-highlighted");
+        });
         helpTabs.forEach(function(tab) {
           let selected = tab === selectedTab;
           tab.setAttribute("aria-selected", String(selected));
           tab.tabIndex = selected ? 0 : -1;
           document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
         });
+        helpDialog.scrollTop = 0;
       }
       helpTabs.forEach(function(tab, index) {
         tab.addEventListener("click", function() { selectHelpTab(tab); });
@@ -1474,59 +1513,14 @@
       });
 
       function showPrompt(id, data = null) {
-        let header = "";
-        let body = "";
-        switch (id) {
-          case "application-date":
-            header = "Application Date";
-            body = "Enter a preferred date in which the job will take place";
-            break;
-          case "corrected-acreage":
-            header = "Corrected Acreage";
-            body =
-              "If exact field acreage is known, this number will be used in place of the estimate above." +
-              "<br>Note: if this number is given, variable rate areas and hazard areas will not be incorporated into initial bug estimates. Map data will still be sent";
-            break;
-          case "crop":
-            header = "Crop Type";
-            body = "The crop(s) contained in the field specified";
-            break;
-          case "notes":
-            header = "Notes";
-            body = "Enter any additional information desired";
-            break;
-          case "operator":
-            header = "Preferred Operator";
-            body = "Enter the name of a preferred Parabug operator, if desired";
-            break;
-          case "row-spacing":
-            header = "Row Spacing";
-            body =
-              "The spacing, in feet, between each row of crops in the field specified";
-            break;
-          case "shortcuts":
-            showHelp();
-            return;
-          case "ranch-map":
-            header = "Ranch Map File Upload";
-            body = "An Image/PDF file which displays the ranch map or desired application area. This file input can be used in place of the manually drawn application area. (10 MB Max)";
-            break;
-          default:
-          body = "tip not found";
-            return;
-            break;
+        if (id === "shortcuts") {
+          showHelp("shortcuts");
+          return;
         }
-    
-        modal.style.display = "block";
-        document.getElementById("modal-header-text").innerHTML = header;
-        document.getElementById("modal-body").innerHTML = body;
-    
-        // When the user clicks anywhere outside of the modal, close it
-        window.onclick = function(event) {
-          if (event.target == modal) {
-            modal.style.display = "none";
-          }
-        };
+        let anchorId = "help-field-" + id;
+        if (document.getElementById(anchorId)) {
+          showHelp("fields", anchorId);
+        }
       }
 
       /* Session Functions */
@@ -1675,10 +1669,6 @@
         }
       }
 
-      function hideModal() {
-        modal.style.display = "none";
-      }
-
       function toggleAdvancedOptions() {
         let controlTab = document.getElementById("advanced-options-control-tab");
         let btnText = document.getElementById("adv-btn-txt");
@@ -1770,14 +1760,14 @@
               totalBugs += appArea.getTotalBugs(bpa2, vr2);
             }
     
-            document.getElementById("num-bugs").value = round(totalBugs, 0);
+            setTotalBugs(round(totalBugs, 0));
           } else {
             document.getElementById("num-acres").value = 0;
-            document.getElementById("num-bugs").value = 0;
+            setTotalBugs(0);
           }
         } catch (e) {
           document.getElementById("num-acres").value = 0;
-          document.getElementById("num-bugs").value = 0;
+          setTotalBugs(0);
         }
       }
     
@@ -1814,7 +1804,7 @@
       document.getElementById("add-bug-toggle").addEventListener("click", function() {
         updateStats();
         if (this.checked) {
-          document.getElementById("add-bug-display").style.display = "inline-block";
+          document.getElementById("add-bug-display").style.display = "grid";
         } else {
           document.getElementById("add-bug-display").style.display = "none";
         }
@@ -1901,8 +1891,6 @@
         }
       });
       
-      document.getElementById("modal-close").addEventListener("click", function(event) { modal.style.display = "none"; });
-
       
       /* ADVANCED OPTIONS LISTENERS */
       document.getElementById("advanced-options-button").addEventListener("click", function(event) {
