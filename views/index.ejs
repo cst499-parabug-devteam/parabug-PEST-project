@@ -33,53 +33,59 @@
   <body>
     <div class="map-container">
       <div id="map"></div>
-      <input id="pac-input" class="controls" type="text" placeholder="Search..."/>
-      <div class="row" id="advanced-options" class="advanced-options-margin-fix"> 
+      <input id="pac-input" class="controls" type="text" placeholder="Search..." aria-label="Search map" hidden/>
+      <div class="row" id="advanced-options">
         <div class="col col-auto" id="advanced-options-button-tab">
-          <div id="advanced-options-button">
-            <span>&#8286;</span>
-          </div>
+          <button type="button" id="advanced-options-button" aria-label="Toggle Draw Settings" aria-expanded="false">
+            <span class="draw-settings-chevron" aria-hidden="true"></span>
+          </button>
         </div>
         <div id="advanced-options-controls">
           <div class="row justify-content-center mt-2 mb-1">
             <div class="col col-auto"><h4>Draw Settings</h4></div>
           </div>
           
-          <div class="row pl-2 pb-2 pt-2" style="background-color: #6c757d1a">
-            <div class="col col-12">
-              <h6>Application Area</h6>
+          <details class="draw-setting-details">
+            <summary class="draw-setting-summary">
+              <span class="draw-setting-name">Application Area</span>
+              <span class="draw-setting-meta">
+                <span class="draw-setting-swatch" id="app-area-swatch" style="background-color: #FFFF00"></span>
+                <span class="draw-setting-opacity" id="app-area-opacity-display">60%</span>
+              </span>
+            </summary>
+            <div class="draw-setting-editor">
+              <label class="draw-setting-field"><span>Color</span><input type="color" id="app-area-color" value="#FFFF00"></label>
+              <label class="draw-setting-field"><span>Opacity</span><span class="draw-setting-range"><input type="range" min="0" max="100" value="60" id="app-area-opacity"></span></label>
             </div>
-            <div class="col col-12">
-              <div>Color: <input type="color" id="app-area-color" value="#FFFF00"></div>
-            </div>
-            <div class="col col-12">
-              <div>Opacity: <input type="range" min="0" max="100" value="60" id="app-area-opacity"><span id="app-area-opacity-display">60%</span></div>
-            </div>
-          </div>
+          </details>
 
-          <div class="row pl-2 pb-2 pt-2">
-            <div class="col col-12">
-              <h6>Hazard Area</h6>
+          <details class="draw-setting-details">
+            <summary class="draw-setting-summary">
+              <span class="draw-setting-name">Hazard Area</span>
+              <span class="draw-setting-meta">
+                <span class="draw-setting-swatch" id="hazard-area-swatch" style="background-color: #FF0000"></span>
+                <span class="draw-setting-opacity" id="hazard-area-opacity-display">70%</span>
+              </span>
+            </summary>
+            <div class="draw-setting-editor">
+              <label class="draw-setting-field"><span>Color</span><input type="color" id="hazard-area-color" value="#FF0000"></label>
+              <label class="draw-setting-field"><span>Opacity</span><span class="draw-setting-range"><input type="range" min="0" max="100" value="70" id="hazard-area-opacity"></span></label>
             </div>
-            <div class="col col-12">
-              <div>Color: <input type="color" id="hazard-area-color" value="#FF0000"></div>
-            </div>
-            <div class="col col-12">
-              <div>Opacity: <input type="range" min="0" max="100" value="70" id="hazard-area-opacity"><span id="hazard-area-opacity-display">70%</span></div>
-            </div>
-          </div>
+          </details>
 
-          <div class="row pl-2 pb-2 pt-2" style="background-color: #6c757d1a">
-            <div class="col col-12">
-              <h6>Variable Rate Area</h6>
+          <details class="draw-setting-details">
+            <summary class="draw-setting-summary">
+              <span class="draw-setting-name">Variable Rate Area</span>
+              <span class="draw-setting-meta">
+                <span class="draw-setting-swatch" id="vr-area-swatch" style="background-color: #CCCCCC"></span>
+                <span class="draw-setting-opacity" id="vr-area-opacity-display">60%</span>
+              </span>
+            </summary>
+            <div class="draw-setting-editor">
+              <label class="draw-setting-field"><span>Color</span><input type="color" id="vr-area-color" value="#CCCCCC"></label>
+              <label class="draw-setting-field"><span>Opacity</span><span class="draw-setting-range"><input type="range" min="0" max="100" value="60" id="vr-area-opacity"></span></label>
             </div>
-            <div class="col col-12">
-              <div>Color: <input type="color" id="vr-area-color" value="#CCCCCC"></div>
-            </div>
-            <div class="col col-12">
-              <div>Opacity: <input type="range" min="0" max="100" value="60" id="vr-area-opacity"><span id="vr-area-opacity-display">60%</span></div>
-            </div>
-          </div>
+          </details>
 
           <div class="row justify-content-center mt-2">
             <div class="col col-auto"><input type="button" class="btn btn-outline-primary" value="Reset Draw Settings" onclick="resetDisplaySettings()"></div>
@@ -95,7 +101,6 @@
               <div class="col col-auto"><input type="button" class="btn btn-outline-primary" value="On" onclick="setOverlayVisibility(true)"></div>
             </div>
           </div>
-          <br>
         </div>
       </div>
     </div>
@@ -114,7 +119,10 @@
           <a onclick="exportSession()">Save</a>
         </div>
       </div>
-      <span class="click-tip" onclick="showPrompt('shortcuts')">Shortcuts</span>
+      <button type="button" id="help-menu-button" onclick="showHelp()" aria-haspopup="dialog">
+        <img src="https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/circle-help.svg" width="18" height="18" alt="">
+        Help
+      </button>
     </div>
 
     <form id="additional-info" method="POST" enctype="multipart/form-data">
@@ -204,12 +212,24 @@
   
       <div id="mobile-div">
         <div id="mobile-mode-div">
-          <label for="mobile-mode">Crosshair</label>
-          <input type="checkbox" value="mobile" id="mobile-mode" name="mobile-mode"/>
+          <label class="crosshair-icon-toggle" for="mobile-mode" title="Toggle Crosshair mode">
+            <input type="checkbox" value="mobile" id="mobile-mode" name="mobile-mode" aria-label="Crosshair mode"/>
+            <span class="crosshair-icon-frame" aria-hidden="true"></span>
+          </label>
         </div>
         <div id="mobile-options-div">
-          <input type="button" value="Mark / Select" onClick="makeMarker()" />
-          <input type="button" value="Finish" onClick="finishShape()" />
+          <button type="button" class="crosshair-action" onClick="makeMarker()" aria-label="Mark / Select" title="Mark / Select">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="5.5"></circle>
+              <circle cx="12" cy="12" r="1.5"></circle>
+              <path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"></path>
+            </svg>
+          </button>
+          <button type="button" class="crosshair-action" onClick="finishShape()" aria-label="Finish" title="Finish">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="m4.5 12.5 5 5L19.5 6.5"></path>
+            </svg>
+          </button>
         </div>
       </div>
   
@@ -383,6 +403,63 @@
       </div>
     </div>
 
+    <dialog id="help-dialog" aria-labelledby="help-title">
+      <header class="help-header">
+        <h2 id="help-title">Help</h2>
+        <form method="dialog"><button type="submit" class="help-close" aria-label="Close help" title="Close help">&times;</button></form>
+      </header>
+      <div class="help-tabs" role="tablist" aria-label="Help topics">
+        <button type="button" id="help-drawing-tab" role="tab" aria-selected="true" aria-controls="help-drawing" tabindex="0">Drawing</button>
+        <button type="button" id="help-files-tab" role="tab" aria-selected="false" aria-controls="help-files" tabindex="-1">Files</button>
+        <button type="button" id="help-shortcuts-tab" role="tab" aria-selected="false" aria-controls="help-shortcuts" tabindex="-1">Shortcuts</button>
+      </div>
+      <section id="help-drawing" class="help-panel" role="tabpanel" aria-labelledby="help-drawing-tab" tabindex="0">
+        <h3>Draw an application area</h3>
+        <ol>
+          <li>Choose <strong>Application Area</strong> in the map's Mode dropdown.</li>
+          <li>Click to place each corner of the boundary.</li>
+          <li>Click the first point again to close and finish the polygon.</li>
+        </ol>
+        <p class="help-note"><strong>Cancel a draft:</strong> right-click while drawing to discard the unfinished shape. Completed areas stay unchanged, and the drawing tool remains active.</p>
+        <h3>Hazards and variable rates</h3>
+        <p>Create an application area first, then select <strong>Hazard</strong> or <strong>Variable Rate Area</strong>. Hazards exclude acreage from treatment; variable rate areas use the separate Variable Rate value.</p>
+        <p>Use <strong>Delete</strong> mode and click an area to select it for deletion. Drawing a new application area resets the existing map areas.</p>
+        <h3>Crosshair drawing</h3>
+        <p>Turn on Crosshair mode in the lower-left map controls. Move the map to position the crosshair, use <strong>Mark / Select</strong> to place points, then <strong>Finish Shape</strong> to complete the boundary.</p>
+        <h3>Appearance and navigation</h3>
+        <p>Use <strong>Draw Settings</strong> on the right edge to change each area's color and opacity. Choose <strong>Drag</strong> to navigate without drawing, or open the search icon beside Mode to find a location.</p>
+      </section>
+      <section id="help-files" class="help-panel" role="tabpanel" aria-labelledby="help-files-tab" tabindex="0" hidden>
+        <h3>Save and resume a session</h3>
+        <p><strong>Session &gt; Save</strong> downloads a JSON backup of your application area, hazards, variable rate areas, and form entries. Use <strong>Session &gt; Import</strong> to restore a previously saved session JSON file.</p>
+        <p class="help-note"><strong>Not included in session backups:</strong> imported overlays and uploaded ranch-map attachments. Re-import or reattach these files when resuming your work.</p>
+        <h3>Import map overlays</h3>
+        <p>Use the map's <strong>Options</strong> menu to import an overlay. Supported extensions are <code>.kml</code>, <code>.kmz</code>, <code>.tif</code>, <code>.zip</code>, and <code>.json</code>. A ZIP shapefile should contain matching SHP and DBF files.</p>
+        <p>Follow the overlay import prompts to position or configure the layer. Overlay files and saved session JSON files serve different purposes; use Session Import only for session backups.</p>
+        <h3>Attach a ranch map</h3>
+        <p>The <strong>Ranch Map</strong> field accepts JPEG, PNG, or PDF files up to 10 MB. This is a request attachment, not a map overlay or session backup.</p>
+      </section>
+      <section id="help-shortcuts" class="help-panel" role="tabpanel" aria-labelledby="help-shortcuts-tab" tabindex="0" hidden>
+        <p>Use these keys with the map focused, not while entering text in a form.</p>
+        <table class="help-shortcuts-table">
+          <caption class="sr-only">Map keyboard shortcuts</caption>
+          <thead><tr><th scope="col">Key</th><th scope="col">Action</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>1</kbd></td><td>Drag mode</td></tr>
+            <tr><td><kbd>2</kbd></td><td>Application area</td></tr>
+            <tr><td><kbd>3</kbd></td><td>Hazard area</td></tr>
+            <tr><td><kbd>4</kbd></td><td>Variable rate area</td></tr>
+            <tr><td><kbd>5</kbd></td><td>Delete mode</td></tr>
+            <tr><td><kbd>6</kbd></td><td>Variable rate auto generation (requires an overlay)</td></tr>
+            <tr><td><kbd>T</kbd></td><td>Toggle Crosshair mode</td></tr>
+            <tr><td><kbd>S</kbd></td><td>Mark / Select in Crosshair mode</td></tr>
+            <tr><td><kbd>F</kbd></td><td>Finish shape in Crosshair mode</td></tr>
+          </tbody>
+        </table>
+        <p class="help-note"><strong>Right-click</strong> cancels an unfinished cursor-drawn shape. <kbd>Esc</kbd> closes this Help dialog.</p>
+      </section>
+    </dialog>
+
     <div id="overlay-loader-modal" class="overlay-loader-modal">
       <!-- Modal content -->
       <div class="overlay-loader-modal-content">
@@ -417,6 +494,8 @@
       let userLocation = false;
       let userLocationMarker;
       let updatingViewBounds = false;
+      let mapDisplayView = "satellite";
+      let mapLabelsVisible = true;
 
       // Overlay > VRA Auto Generation and Maginifying Class for Color Selection
       let updatingMagnifier = false;
@@ -462,6 +541,15 @@
       sessionFileInput.setAttribute("accept", ".json");
     
       /* FUNCTIONS */
+      function updateDrawSettingSummaries() {
+        ["app-area", "hazard-area", "vr-area"].forEach(function(settingsPrefix) {
+          let colorInput = document.getElementById(settingsPrefix + "-color");
+          let opacityInput = document.getElementById(settingsPrefix + "-opacity");
+          document.getElementById(settingsPrefix + "-swatch").style.backgroundColor = colorInput.value;
+          document.getElementById(settingsPrefix + "-opacity-display").textContent = opacityInput.value + "%";
+        });
+      }
+
       function applyDisplaySettings() {
         try {
           if (appArea) {
@@ -493,6 +581,7 @@
           console.log("Error when applying custom drawing display settings: " + e.message);
         }
 
+        updateDrawSettingSummaries();
         updateTerraDrawPreviewStyles(drawModeControl.current);
         if (overlayManager) { overlayManager.applyDisplaySettings(); }
       }
@@ -679,11 +768,9 @@
           center: { lat: 36.677756, lng: -121.729448 }, // default
           zoom: 15,
           mapTypeId: "hybrid",
+          mapTypeControl: false,
           streetViewControl: false,
-          rotateControl: false,
-          mapTypeControlOptions: {
-            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-          }
+          rotateControl: false
         });
 
         let image = {
@@ -761,6 +848,19 @@
           });
 
           terraDrawInstance.start();
+          document.getElementById("map").addEventListener("contextmenu", function(event) {
+            if (
+              terraDrawInstance.getMode() !== "polygon" ||
+              terraDrawInstance.getModeState() !== "drawing"
+            ) {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            terraDrawInstance.setMode("idle");
+            terraDrawInstance.setMode("polygon");
+          }, true);
         });
     
         map.setTilt(0);
@@ -795,7 +895,6 @@
         // Create the search box and link it to the UI element.
         let input = document.getElementById("pac-input");
         let searchBox = new google.maps.places.SearchBox(input);
-        map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
     
         // Bias the SearchBox results towards current map's viewport.
         map.addListener("bounds_changed", function(event) {
@@ -845,7 +944,7 @@
           controlUI.style.border = "2px solid #fff";
           controlUI.style.borderRadius = "3px";
           controlUI.style.cursor = "pointer";
-          controlUI.style.marginTop = "10px";
+          controlUI.style.marginTop = "0";
           controlUI.style.padding = "2px";
           controlUI.title = "Select Control Mode";
           controlUI.id = "mode-control-container";
@@ -887,13 +986,45 @@
     
           controlUI.appendChild(modeText);
           controlUI.appendChild(modeSelect);
+          let searchButton = document.createElement("button");
+          searchButton.type = "button";
+          searchButton.id = "map-search-toggle";
+          searchButton.title = "Search map";
+          searchButton.setAttribute("aria-label", "Search map");
+          searchButton.setAttribute("aria-controls", "pac-input");
+          searchButton.setAttribute("aria-expanded", "false");
+          searchButton.innerHTML = '<img src="https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/search.svg" width="18" height="18" alt="">';
+
+          function setSearchExpanded(expanded) {
+            let visible = expanded || input.value.trim().length > 0;
+            input.hidden = !visible;
+            searchButton.setAttribute("aria-expanded", String(visible));
+          }
+
+          searchButton.addEventListener("click", function() {
+            setSearchExpanded(input.hidden);
+            if (!input.hidden) {
+              input.focus();
+            }
+          });
+          input.addEventListener("blur", function(event) {
+            if (event.relatedTarget !== searchButton) {
+              setSearchExpanded(false);
+            }
+          });
+          input.addEventListener("keydown", function(event) {
+            if (event.key === "Escape") {
+              setSearchExpanded(false);
+              searchButton.focus();
+            }
+          });
+          controlUI.appendChild(searchButton);
+          controlUI.appendChild(input);
           divHolder.appendChild(controlUI);
         }
     
         /* Advanced Options Button and Tab*/
         let advancedOptions = document.getElementById('advanced-options');
-        map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(advancedOptions);
-        document.getElementById("advanced-options-button").click();
     
         /* Map Modes Control */
         let modeSelectionDiv = document.createElement("div");
@@ -952,6 +1083,62 @@
               })
               .addClass("btn btn-white dropdown-toggle");
 
+        let mapDisplaySubmenu = $('<div></div>').attr("id", "map-display-submenu");
+        let mapDisplayToggle = $('<button type="button">Map display <span aria-hidden="true">&#9662;</span></button>')
+          .attr({ id: "map-display-toggle", "aria-expanded": "false" })
+          .addClass("dropdown-item map-display-toggle");
+        let mapDisplayOptions = $('<div></div>').attr("id", "map-display-options");
+
+        let locationIconToggle = $('<input type="checkbox" id="location-icon-toggle">')
+          .prop("checked", !!userLocationMarker)
+          .on("change", function(event) {
+            event.stopPropagation();
+            if (!userLocation) {
+              this.checked = !!userLocationMarker;
+              toggleLocationIcon();
+              return;
+            }
+            toggleLocationIcon();
+            this.checked = !!userLocationMarker;
+          });
+        mapDisplayOptions.append(
+          $('<label class="map-display-row"><span>Location icon</span></label>').append(locationIconToggle)
+        );
+
+        let mapViewSelect = $('<select id="map-view-select"><option value="map">Map</option><option value="satellite">Satellite</option></select>')
+          .val(mapDisplayView)
+          .on("change", function(event) {
+            event.stopPropagation();
+            mapDisplayView = this.value;
+            applyMapDisplaySettings();
+          });
+        mapDisplayOptions.append(
+          $('<label class="map-display-row"><span>View</span></label>').append(mapViewSelect)
+        );
+
+        let mapLabelsToggle = $('<input type="checkbox" id="map-labels-toggle">')
+          .prop("checked", mapLabelsVisible)
+          .on("change", function(event) {
+            event.stopPropagation();
+            mapLabelsVisible = this.checked;
+            applyMapDisplaySettings();
+          });
+        mapDisplayOptions.append(
+          $('<label class="map-display-row"><span>Map labels</span></label>').append(mapLabelsToggle)
+        );
+
+        mapDisplayToggle.on("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          let expanded = mapDisplaySubmenu.hasClass("expanded");
+          mapDisplaySubmenu.toggleClass("expanded", !expanded);
+          $(this).attr("aria-expanded", String(!expanded));
+        });
+        mapDisplayOptions.on("click", function(event) {
+          event.stopPropagation();
+        });
+        mapDisplaySubmenu.append(mapDisplayToggle, mapDisplayOptions);
+
         let dropUpMenuContent = $('<div></div>')
             .attr({
               'id':"dropUpMenuButtons"
@@ -960,12 +1147,16 @@
             .append($('<button>Center on App Area</button>').click(centerMap).attr({"id":"center-btn"}).addClass("dropdown-item"))
             .append($('<button>Clear Drawings</button>').click(resetMap).attr({"id":"reset-btn"}).addClass("dropdown-item"))
             .append($('<button>Import Overlay</button>').click(importOverlay).attr({"id":"import-btn"}).addClass("dropdown-item"))
-            .append($('<button>Toggle Location Icon</button>').click(toggleLocationIcon).attr({"id":"user-location-toggle-btn"}).addClass("dropdown-item"))
+            .append(mapDisplaySubmenu)
             .append($('<div class="dropdown-divider"></div>').addClass("overlay-visible-item"))
             .append($('<button>Center on Overlays</button>').click(() => { if (overlayManager){ overlayManager.setMapBoundsToAllLayers()} }).attr({"id":"center-btn"}).addClass("dropdown-item overlay-visible-item"))
             .append($('<button>Clear Overlays</button>').click(() => { if (overlayManager){ overlayManager.removeAllLayers()} }).addClass("dropdown-item overlay-visible-item"));
         
         let dropUpMenu = $('<div></div>').attr({"id":"maps-options"}).addClass("btn-group dropup").append(dropUpMenuButton).append(dropUpMenuContent);
+        dropUpMenu.on("hidden.bs.dropdown", function() {
+          mapDisplaySubmenu.removeClass("expanded");
+          mapDisplayToggle.attr("aria-expanded", "false");
+        });
         mapControlStack.appendChild(dropUpMenu[0]);
         mapControlStack.appendChild(mobileControl);
         //********************************* End Custom Controls*********************************
@@ -1192,6 +1383,7 @@
         $('#vr-area-color').val(vrAreaColor);
         $('#vr-area-opacity').val(vrAreaOpacity * 100);
         $('#vr-area-opacity-display').text((vrAreaOpacity * 100) + "%");
+        updateDrawSettingSummaries();
     
         try {
           if (appArea) {
@@ -1237,6 +1429,50 @@
           return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
       }
     
+      function showHelp() {
+        document.getElementById("help-dialog").showModal();
+      }
+
+      const helpDialog = document.getElementById("help-dialog");
+      const helpTabs = Array.from(helpDialog.querySelectorAll('[role="tab"]'));
+      helpDialog.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          helpDialog.close();
+        }
+      });
+      function selectHelpTab(selectedTab) {
+        helpTabs.forEach(function(tab) {
+          let selected = tab === selectedTab;
+          tab.setAttribute("aria-selected", String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+        });
+      }
+      helpTabs.forEach(function(tab, index) {
+        tab.addEventListener("click", function() { selectHelpTab(tab); });
+        tab.addEventListener("keydown", function(event) {
+          let nextIndex;
+          switch (event.key) {
+            case "ArrowRight": nextIndex = (index + 1) % helpTabs.length; break;
+            case "ArrowLeft": nextIndex = (index + helpTabs.length - 1) % helpTabs.length; break;
+            case "Home": nextIndex = 0; break;
+            case "End": nextIndex = helpTabs.length - 1; break;
+            default: return;
+          }
+          event.preventDefault();
+          selectHelpTab(helpTabs[nextIndex]);
+          helpTabs[nextIndex].focus();
+        });
+      });
+      helpDialog.addEventListener("click", function(event) {
+        if (event.target !== helpDialog) { return; }
+        let bounds = helpDialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+          helpDialog.close();
+        }
+      });
+
       function showPrompt(id, data = null) {
         let header = "";
         let body = "";
@@ -1269,27 +1505,8 @@
               "The spacing, in feet, between each row of crops in the field specified";
             break;
           case "shortcuts":
-            header = "Shortcuts / Hotkeys"
-            body = 
-              '<div class="row">' + 
-                '<div class="col col-6 s-key">1</div>' +
-                '<div class="col col-6 s-name">Drag Mode</div>' +
-                '<div class="col col-6 s-key">2</div>' +
-                '<div class="col col-6 s-name">Application Area Mode</div>' +
-                '<div class="col col-6 s-key">3</div>' +
-                '<div class="col col-6 s-name">Hazard Area Mode</div>' +
-                '<div class="col col-6 s-key">4</div>' +
-                '<div class="col col-6 s-name">Variable Rate Mode</div>' +
-                '<div class="col col-6 s-key">5</div>' +
-                '<div class="col col-6 s-name">Delete Mode</div>' +
-                '<div class="col col-6 s-key">t</div>' +
-                '<div class="col col-6 s-name">Toggle Crosshair Mode</div>' +
-                '<div class="col col-6 s-key">s</div>' +
-                '<div class="col col-6 s-name">Mark/Select (Crosshair Mode)</div>' +
-                '<div class="col col-6 s-key">f</div>' +
-                '<div class="col col-6 s-name">Finish Shape (Crosshair Mode)</div>' +
-              '</div>';
-            break;
+            showHelp();
+            return;
           case "ranch-map":
             header = "Ranch Map File Upload";
             body = "An Image/PDF file which displays the ranch map or desired application area. This file input can be used in place of the manually drawn application area. (10 MB Max)";
@@ -1509,6 +1726,33 @@
         }
       }
 
+      function applyMapDisplaySettings() {
+        if (!map) {
+          return;
+        }
+
+        if (mapDisplayView === "satellite") {
+          map.setMapTypeId(
+            mapLabelsVisible
+              ? google.maps.MapTypeId.HYBRID
+              : google.maps.MapTypeId.SATELLITE
+          );
+          map.setOptions({ styles: null });
+          return;
+        }
+
+        map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+        map.setOptions({
+          styles: mapLabelsVisible
+            ? null
+            : [{
+                featureType: "all",
+                elementType: "labels",
+                stylers: [{ visibility: "off" }]
+              }]
+        });
+      }
+
       function updateStats() {
         try {
           if (appArea != null) {
@@ -1643,11 +1887,12 @@
       });
 
       document.getElementById("mobile-mode").addEventListener("click", function() {
+        document.getElementById("mobile-div").classList.toggle("is-active", this.checked);
         if (this.checked) {
           terraDrawInstance.setMode("idle");
           centerMarker.setPosition(map.getCenter());
           centerMarker.setMap(map);
-          document.getElementById("mobile-options-div").style.display = "inline-block";
+          document.getElementById("mobile-options-div").style.display = "grid";
         } else {
           drawToggle(drawModeControl.current);
           centerMarker.setMap(null);
@@ -1661,16 +1906,11 @@
       
       /* ADVANCED OPTIONS LISTENERS */
       document.getElementById("advanced-options-button").addEventListener("click", function(event) {
-        let controls = document.getElementById("advanced-options-controls");
-        let settingsButton = document.getElementById("advanced-options-button");
-        if (controls.style.display === "none") {
-          controls.style.display = "block";
-          settingsButton.style.marginRight = "0px";
-        } else {
-          controls.style.display = "none";
-          settingsButton.style.marginRight = "12px";
-        }
-        $('#advanced-options').toggleClass("advanced-options-margin-fix");
+        let settingsButton = event.currentTarget;
+        let advancedOptions = document.getElementById("advanced-options");
+        let expanded = settingsButton.getAttribute("aria-expanded") === "true";
+        advancedOptions.classList.toggle("is-expanded", !expanded);
+        settingsButton.setAttribute("aria-expanded", String(!expanded));
       });
 
       document.getElementById("app-area-color").addEventListener("input", function(event) {
