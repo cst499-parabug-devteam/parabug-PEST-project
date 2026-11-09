@@ -19,6 +19,14 @@ describe('App', function() {
       .expect(200, done);
   });
 
+  it('serves Terra Draw and its Google Maps adapter', async function() {
+    const terraDraw = await request(app).get('/vendor/terra-draw/terra-draw.umd.js');
+    const adapter = await request(app).get('/vendor/terra-draw-google-maps-adapter/terra-draw-google-maps-adapter.umd.js');
+
+    assert.equal(terraDraw.status, 200);
+    assert.equal(adapter.status, 200);
+  });
+
   it('uses the geometry library to reject a self-intersecting application area', async function() {
     const response = await request(app)
       .post('/')

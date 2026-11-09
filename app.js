@@ -17,6 +17,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use('/vendor/jsts', express.static(path.join(__dirname, 'node_modules', 'jsts', 'dist')));
+app.use('/vendor/terra-draw', express.static(path.join(__dirname, 'node_modules', 'terra-draw', 'dist')));
+app.use('/vendor/terra-draw-google-maps-adapter', express.static(path.join(__dirname, 'node_modules', 'terra-draw-google-maps-adapter', 'dist')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(favicon(path.join(__dirname, 'public', 'img', 'favicon.jpg')));

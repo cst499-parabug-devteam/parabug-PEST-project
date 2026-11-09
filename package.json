@@ -20,6 +20,8 @@
     "nodemailer": "^10.4.0",
     "puppeteer": "^25.16.0",
     "serve-favicon": "^2.5.1",
+    "terra-draw": "^1.39.0",
+    "terra-draw-google-maps-adapter": "^1.7.0",
     "tmp": "^0.2.7",
     "xml-writer": "^1.7.0"
   },

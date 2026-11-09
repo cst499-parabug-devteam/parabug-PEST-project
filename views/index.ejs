@@ -5,7 +5,15 @@
     <meta name="viewport" content="initial-scale=1.0" />
     <meta charset="utf-8" />
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDitClMVJevw5A4FUgjEn9Y0foHzVZfi7Y&callback=initMap&libraries=drawing,places"
+      src="/vendor/terra-draw/terra-draw.umd.js"
+      defer
+    ></script>
+    <script
+      src="/vendor/terra-draw-google-maps-adapter/terra-draw-google-maps-adapter.umd.js"
+      defer
+    ></script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDitClMVJevw5A4FUgjEn9Y0foHzVZfi7Y&callback=initMap&libraries=geometry,places"
       defer
     ></script>
 
@@ -17,15 +25,24 @@
       }
 
       body {
-        height: 100%;
+        min-height: 100vh;
         margin: 0px;
         padding: 0px;
         display: grid;
-        grid-template-rows: 80%;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(360px, 76vh) auto;
+        align-content: start;
+        min-width: 0;
       }
 
       .map-container {
+        --map-gutter: 15px;
+        position: relative;
         padding: 15px;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        box-sizing: border-box;
       }
 
       .sidebar {
@@ -38,21 +55,21 @@
 
       /* Move reset button above google logo */
       #reset-btn {
-        position: absolute;
-        margin-left: -72px;
-        margin-bottom: 85px;
+        margin: 4px;
       }
 
       /* Move center button above google logo */
       #center-btn {
-        position: absolute;
-        margin-left: -76px;
-        margin-bottom: 25px;
+        margin: 4px;
       }
 
       #map {
         height: 100%;
+        min-height: 330px;
+        width: 100%;
         border: 2px solid black;
+        box-sizing: border-box;
+        overflow: hidden;
       }
 
       #pac-input {
@@ -64,13 +81,21 @@
         margin-top: 10px;
         padding: 0 11px 0 13px;
         text-overflow: ellipsis;
-        width: 15%;
+        width: 18rem;
+        max-width: calc(100vw - 120px);
         line-height: 32px;
-        border: "2px solid #fff";
+        border: 2px solid #fff;
+        box-sizing: border-box;
       }
 
       #pac-input:focus {
         border-color: #4d90fe;
+      }
+
+      #map-top-controls {
+        display: flex;
+        align-items: flex-start;
+        gap: 4px;
       }
 
       #mode-control-container {
@@ -184,22 +209,31 @@
         display: none;
       }
 
-      <style > html {
+      html {
         height: 100%;
         margin: 0px;
         padding: 0px;
       }
 
       body {
-        height: 100%;
+        min-height: 100vh;
         margin: 0px;
         padding: 0px;
         display: grid;
-        grid-template-rows: 80%;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(360px, 76vh) auto;
+        align-content: start;
+        min-width: 0;
       }
 
       .map-container {
+        --map-gutter: 15px;
+        position: relative;
         padding: 15px;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        box-sizing: border-box;
       }
 
       .sidebar {
@@ -212,21 +246,21 @@
 
       /* Move reset button above google logo */
       #reset-btn {
-        position: absolute;
-        margin-left: -72px;
-        margin-bottom: 85px;
+        margin: 4px;
       }
 
       /* Move center button above google logo */
       #center-btn {
-        position: absolute;
-        margin-left: -76px;
-        margin-bottom: 25px;
+        margin: 4px;
       }
 
       #map {
         height: 100%;
+        min-height: 330px;
+        width: 100%;
         border: 2px solid black;
+        box-sizing: border-box;
+        overflow: hidden;
       }
 
       #pac-input {
@@ -238,9 +272,11 @@
         margin-top: 10px;
         padding: 0 11px 0 13px;
         text-overflow: ellipsis;
-        width: 15%;
+        width: 18rem;
+        max-width: calc(100vw - 120px);
         line-height: 32px;
-        border: "2px solid #fff";
+        border: 2px solid #fff;
+        box-sizing: border-box;
       }
 
       #pac-input:focus {
@@ -510,6 +546,69 @@
           opacity: 1;
         }
       }
+
+      html,
+      body {
+        overflow-x: hidden;
+      }
+
+      @media (max-width: 600px) {
+        .map-container {
+          --map-gutter: 8px;
+          padding: 8px;
+        }
+
+        #map-top-controls {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          width: 35vw;
+          min-width: 7rem;
+          max-width: 8.5rem;
+        }
+
+        #mode-control-container {
+          width: 100%;
+          max-width: none;
+          min-width: 0;
+          grid-template-columns: minmax(0, 40%) minmax(0, 60%);
+        }
+
+        #mode-control-container select {
+          min-width: 0;
+          width: 100%;
+        }
+
+        #pac-input {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+        }
+
+      }
+
+      #map-control-stack {
+        position: absolute;
+        left: calc(var(--map-gutter) + 10px);
+        bottom: calc(var(--map-gutter) + 10px);
+        z-index: 5;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        pointer-events: none;
+      }
+
+      #map-control-stack #center-btn,
+      #map-control-stack #reset-btn,
+      #map-control-stack #mobile-div {
+        margin: 0;
+        pointer-events: auto;
+      }
+
+      #mobile-mode-div label {
+        font-weight: 700;
+      }
     </style>
   </head>
 
@@ -523,7 +622,6 @@
       />
       <div id="map"></div>
     </div>
-  </body>
   <form id="additional-info" method="POST">
     <div id="stat-display">
       <!--Bug Name-->
@@ -923,8 +1021,6 @@
       </div>
     </div>
   </div>
-</html>
-
 <script type="text/javascript" src="/vendor/jsts/jsts.min.js"></script>
 <script type="text/javascript" src="/js/classes.js"></script>
 <link
@@ -991,7 +1087,7 @@
 
   // GLOBAL VARIABLES
   var map;
-  var drawingManager;
+  var terraDrawInstance;
   var appArea;
   var infoWindow;
   var centerMarker;
@@ -1048,19 +1144,67 @@
       zIndex: 3
     });
 
-    drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: null,
-      drawingControl: false,
-      map: map,
-      polygonOptions: { editable: true }
-    });
+    map.addListener("projection_changed", function() {
+      if (terraDrawInstance) {
+        return;
+      }
 
-    google.maps.event.addListener(drawingManager, "polygoncomplete", function(
-      p
-    ) {
-      draw(p.getPath());
-      p.setMap(null);
-      path = null;
+      terraDrawInstance = new terraDraw.TerraDraw({
+        adapter: new terraDrawGoogleMapsAdapter.TerraDrawGoogleMapsAdapter({
+          map: map,
+          lib: google.maps
+        }),
+        modes: [
+          new terraDraw.TerraDrawPolygonMode({
+            styles: {
+              fillColor: "#FFFF00",
+              fillOpacity: 0.6,
+              outlineColor: "#000000",
+              outlineOpacity: 1,
+              outlineWidth: 1
+            }
+          }),
+          new terraDraw.TerraDrawRenderMode({
+            modeName: "idle",
+            styles: {}
+          })
+        ]
+      });
+
+      terraDrawInstance.on("ready", function() {
+        terraDrawInstance.setMode("idle");
+      });
+
+      terraDrawInstance.on("finish", function(id, context) {
+        if (context.action === "draw") {
+          var feature = terraDrawInstance
+            .getSnapshot()
+            .find(function(candidate) {
+              return candidate.id === id;
+            });
+
+          if (feature && feature.geometry.type === "Polygon") {
+            var path = feature.geometry.coordinates[0].map(function(coordinate) {
+              return { lat: coordinate[1], lng: coordinate[0] };
+            });
+            draw(path);
+          }
+        }
+
+        terraDrawInstance.setMode("idle");
+        terraDrawInstance.removeFeatures([id]);
+        window.setTimeout(function() {
+          var mode = drawModeControl.current;
+          if (
+            !document.getElementById("mobile-mode").checked &&
+            mode >= 1 &&
+            mode <= 3
+          ) {
+            terraDrawInstance.setMode("polygon");
+          }
+        }, 0);
+      });
+      terraDrawInstance.start();
     });
 
     map.setTilt(0);
@@ -1092,7 +1236,6 @@
     // Create the search box and link it to the UI element.
     var input = document.getElementById("pac-input");
     var searchBox = new google.maps.places.SearchBox(input);
-    map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
 
     // Bias the SearchBox results towards current map's viewport.
     map.addListener("bounds_changed", function() {
@@ -1178,7 +1321,11 @@
     var modeSelectionDiv = document.createElement("div");
     MapModeControl(modeSelectionDiv);
     modeSelectionDiv.index = 1;
-    map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
+    var mapTopControls = document.createElement("div");
+    mapTopControls.id = "map-top-controls";
+    mapTopControls.appendChild(modeSelectionDiv);
+    mapTopControls.appendChild(input);
+    map.controls[google.maps.ControlPosition.TOP_LEFT].push(mapTopControls);
 
     function CenterControl(divHolder) {
       // Set CSS for the control border.
@@ -1187,7 +1334,7 @@
       controlUI.style.border = "2px solid #fff";
       controlUI.style.borderRadius = "3px";
       controlUI.style.cursor = "pointer";
-      controlUI.style.margin = "10px";
+      controlUI.style.margin = "0";
       controlUI.title = "Center Map on Application Area";
       controlUI.style.padding = "2px";
       controlUI.style.textAlign = "center";
@@ -1208,8 +1355,6 @@
     var centerDiv = document.createElement("div");
     centerDiv.id = "center-btn";
     CenterControl(centerDiv);
-    centerDiv.index = 1;
-    map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(centerDiv);
 
     function ResetButtonControl(divHolder) {
       // Set CSS for the control border.
@@ -1218,8 +1363,7 @@
       controlUI.style.border = "2px solid #fff";
       controlUI.style.borderRadius = "3px";
       controlUI.style.cursor = "pointer";
-      controlUI.style.marginTop = "10px";
-      controlUI.style.marginLeft = "10px";
+      controlUI.style.margin = "0";
       controlUI.title = "Reset (Clear Map)";
       controlUI.style.padding = "2px";
       controlUI.style.textAlign = "center";
@@ -1239,13 +1383,53 @@
 
     var resetDiv = document.createElement("div");
     ResetButtonControl(resetDiv);
-    resetDiv.index = 1;
     resetDiv.id = "reset-btn";
-    map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(resetDiv);
 
     var mobileControl = document.getElementById("mobile-div");
-    mobileControl.index = 1;
-    map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(mobileControl);
+    var mapControlStack = document.createElement("div");
+    mapControlStack.id = "map-control-stack";
+    mapControlStack.appendChild(centerDiv);
+    mapControlStack.appendChild(resetDiv);
+    mapControlStack.appendChild(mobileControl);
+    document.querySelector(".map-container").appendChild(mapControlStack);
+
+    var logoAlignmentScheduled = false;
+    function alignControlStackWithGoogleLogo() {
+      if (logoAlignmentScheduled) {
+        return;
+      }
+
+      logoAlignmentScheduled = true;
+      window.requestAnimationFrame(function() {
+        logoAlignmentScheduled = false;
+        var googleLogo = document.querySelector("#map img[alt='Google']");
+        var mapBounds = document.getElementById("map").getBoundingClientRect();
+        var logoBounds = googleLogo && googleLogo.getBoundingClientRect();
+        if (!logoBounds || mapBounds.bottom - logoBounds.bottom > 20) {
+          return;
+        }
+
+        var containerBounds = mapControlStack.parentElement.getBoundingClientRect();
+        var bottom = Math.max(0, containerBounds.bottom - logoBounds.top + 10) + "px";
+        if (mapControlStack.style.bottom !== bottom) {
+          mapControlStack.style.bottom = bottom;
+        }
+      });
+    }
+
+    var mapLayoutObserver = new MutationObserver(alignControlStackWithGoogleLogo);
+    mapLayoutObserver.observe(document.getElementById("map"), {
+      attributes: true,
+      attributeFilter: ["style"],
+      childList: true,
+      subtree: true
+    });
+    map.addListener("idle", alignControlStackWithGoogleLogo);
+    map.addListener("tilesloaded", alignControlStackWithGoogleLogo);
+    window.addEventListener("resize", function() {
+      alignControlStackWithGoogleLogo();
+    });
+    window.requestAnimationFrame(alignControlStackWithGoogleLogo);
     //********************************* End Custom Controls*********************************
   }
 
@@ -1277,18 +1461,16 @@
     switch (mode) {
       case 4:
       case 0:
-        drawingManager.setOptions({ drawingMode: null });
+        terraDrawInstance.setMode("idle");
         drawModeControl.current = mode;
         break;
       case 1: // Fall through
       case 2: // Fall through
       case 3:
         if (document.getElementById("mobile-mode").checked) {
-          drawingManager.setOptions({ drawingMode: null });
+          terraDrawInstance.setMode("idle");
         } else {
-          drawingManager.setOptions({
-            drawingMode: google.maps.drawing.OverlayType.POLYGON
-          });
+          terraDrawInstance.setMode("polygon");
         }
         drawModeControl.current = mode;
         break;
@@ -1566,7 +1748,7 @@
 
   document.getElementById("mobile-mode").addEventListener("click", function() {
     if (this.checked) {
-      drawingManager.setOptions({ drawingMode: null });
+      terraDrawInstance.setMode("idle");
       centerMarker.setPosition(map.getCenter());
       centerMarker.setMap(map);
       document.getElementById("mobile-options-div").style.display =
@@ -1590,3 +1772,5 @@
       }
     });
 </script>
+</body>
+</html>
