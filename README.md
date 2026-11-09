@@ -26,11 +26,11 @@ Requires Node.js 26.13.0 and npm 12.2.2. With nvm installed:
 nvm install 26.13.0
 nvm use 26.13.0
 npm install
-$env:GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY"
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 npm start
 ```
 
-Open <http://localhost:3000>. The Maps key must allow the local origin `http://localhost:3000`. PDF reports are generated with PdfMake. Estimate submissions support drawn areas with KML/CSV attachments or an uploaded PNG, JPEG, or PDF ranch map. Email submissions require valid OAuth credentials in `private/key.json`; keep that file private and out of source control.
+Set the Maps key and Gmail OAuth values in `.env` before starting. The Maps key must allow the local origin `http://localhost:3000`. PDF reports are generated with PdfMake. Estimate submissions support drawn areas with KML/CSV attachments or an uploaded PNG, JPEG, or PDF ranch map. Keep `.env` private and out of source control.
 
 ## Contributors
 

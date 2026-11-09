@@ -493,7 +493,38 @@
           console.log("Error when applying custom drawing display settings: " + e.message);
         }
 
+        updateTerraDrawPreviewStyles(drawModeControl.current);
         if (overlayManager) { overlayManager.applyDisplaySettings(); }
+      }
+
+      function getTerraDrawPreviewStyles(mode) {
+        let settingsPrefix = "app-area";
+        switch (parseInt(mode, 10)) {
+          case 2:
+            settingsPrefix = "hazard-area";
+            break;
+          case 3:
+            settingsPrefix = "vr-area";
+            break;
+        }
+
+        let fillColor = $("#" + settingsPrefix + "-color").val();
+        let fillOpacity = parseInt($("#" + settingsPrefix + "-opacity").val(), 10) / 100;
+        return {
+          fillColor: fillColor,
+          fillOpacity: fillOpacity,
+          outlineColor: fillColor,
+          outlineOpacity: 1,
+          outlineWidth: 1
+        };
+      }
+
+      function updateTerraDrawPreviewStyles(mode) {
+        if (terraDrawInstance && mode >= 1 && mode <= 3) {
+          terraDrawInstance.updateModeOptions("polygon", {
+            styles: getTerraDrawPreviewStyles(mode)
+          });
+        }
       }
     
       function centerMap() {
@@ -609,6 +640,7 @@
           case 2: // Fall through
           case 3:
             vraAutoGenerationEnabled = false;
+            updateTerraDrawPreviewStyles(mode);
             if (document.getElementById("mobile-mode").checked) {
               terraDrawInstance.setMode("idle");
             } else {
@@ -689,13 +721,7 @@
             }),
             modes: [
               new terraDraw.TerraDrawPolygonMode({
-                styles: {
-                  fillColor: "#FFFF00",
-                  fillOpacity: 0.6,
-                  outlineColor: "#000000",
-                  outlineOpacity: 1,
-                  outlineWidth: 1
-                }
+                styles: getTerraDrawPreviewStyles(drawModeControl.current)
               }),
               new terraDraw.TerraDrawRenderMode({ modeName: "idle", styles: {} })
             ]
@@ -879,26 +905,6 @@
         let mobileControl = document.getElementById("mobile-div");
         let mapControlStack = document.createElement("div");
         mapControlStack.id = "map-control-stack";
-
-        let centerControlButton = document.createElement("button");
-        centerControlButton.type = "button";
-        centerControlButton.id = "map-center-control-btn";
-        centerControlButton.className = "map-control-button";
-        centerControlButton.textContent = "Center";
-        centerControlButton.title = "Center map on application area";
-        centerControlButton.addEventListener("click", centerMap);
-
-        let resetControlButton = document.createElement("button");
-        resetControlButton.type = "button";
-        resetControlButton.id = "map-reset-control-btn";
-        resetControlButton.className = "map-control-button";
-        resetControlButton.textContent = "Reset";
-        resetControlButton.title = "Clear map drawings";
-        resetControlButton.addEventListener("click", resetMap);
-
-        mapControlStack.appendChild(centerControlButton);
-        mapControlStack.appendChild(resetControlButton);
-        mapControlStack.appendChild(mobileControl);
         document.querySelector(".map-container").appendChild(mapControlStack);
 
         let logoAlignmentScheduled = false;
@@ -960,7 +966,8 @@
             .append($('<button>Clear Overlays</button>').click(() => { if (overlayManager){ overlayManager.removeAllLayers()} }).addClass("dropdown-item overlay-visible-item"));
         
         let dropUpMenu = $('<div></div>').attr({"id":"maps-options"}).addClass("btn-group dropup").append(dropUpMenuButton).append(dropUpMenuContent);
-        map.controls[google.maps.ControlPosition.BOTTOM_RIGHT].push(dropUpMenu[0]);
+        mapControlStack.appendChild(dropUpMenu[0]);
+        mapControlStack.appendChild(mobileControl);
         //********************************* End Custom Controls*********************************
 
         // Show color magnification if overlay exists and in vra auto generation mode
@@ -1215,6 +1222,7 @@
         } catch (e) {
           console.log("Error when resetting custom drawing display settings: " + e.message);
         }
+        updateTerraDrawPreviewStyles(drawModeControl.current);
       }
     
       function resetMap() {

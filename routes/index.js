@@ -11,7 +11,12 @@ var ejs = require("ejs");
 var XMLWriter = require("xml-writer");
 var sanitize = require("sanitize-filename");
 var writePdf = require("../lib/pdf-generator");
-var privateKey = require("../private/key.json");
+var privateKey = {
+  user: process.env.GMAIL_USER,
+  c_id: process.env.GMAIL_CLIENT_ID,
+  c_secret: process.env.GMAIL_CLIENT_SECRET,
+  refreshToken: process.env.GMAIL_REFRESH_TOKEN
+};
 
 // JSTS Polygon/Point Buffer
 const BUFFER = 0.0000005;

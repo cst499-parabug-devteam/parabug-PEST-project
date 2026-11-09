@@ -200,7 +200,7 @@ html {
   /* Hidden by default */
   position: fixed;
   /* Stay in place */
-  z-index: 1;
+  z-index: 2000;
   /* Sit on top */
   left: 0;
   top: 0;
@@ -275,7 +275,7 @@ html {
 .overlay-loader-modal {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
+  z-index: 2000; /* Sit above map controls */
   padding-top: 100px; /* Location of the box */
   left: 0;
   top: 0;
@@ -516,7 +516,8 @@ html {
 }
 
 #maps-options {
-  margin: 8px;
+  position: relative;
+  margin: 0;
 }
 
 #map-control-stack {
@@ -526,21 +527,9 @@ html {
   z-index: 5;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  align-items: flex-end;
+  gap: 10px;
   pointer-events: none;
-}
-
-.map-control-button {
-  min-width: 64px;
-  padding: 6px 8px;
-  color: #191919;
-  background: #fff;
-  border: 2px solid #fff;
-  border-radius: 3px;
-  font: 600 15px/20px Roboto, Arial, sans-serif;
-  cursor: pointer;
-  pointer-events: auto;
 }
 
 #map-control-stack #mobile-div {
@@ -548,8 +537,8 @@ html {
   pointer-events: auto;
 }
 
-#mobile-mode-div label {
-  font-weight: 700;
+#map-control-stack #maps-options {
+  pointer-events: auto;
 }
 
 @media (max-width: 600px) {
