@@ -1,18 +1,23 @@
 var express = require("express");
 var router = express.Router();
+var jsts;
+var jstsReady = import("jsts/dist/jsts.min.js").then(function() {
+  jsts = globalThis.jsts;
+});
 var nodeMailer = require("nodemailer");
-var { google } = require("googleapis");
-var OAuth2 = google.auth.OAuth2;
 var fs = require("fs");
 var path = require("path");
 var ejs = require("ejs");
 var XMLWriter = require("xml-writer");
 var sanitize = require("sanitize-filename");
-const PdfPrinter = require("pdfmake");
-var privateKey = require("../private/fakeKey.json");
+var writePdf = require("../lib/pdf-generator");
+var privateKey = {
+  user: process.env.GMAIL_USER,
+  c_id: process.env.GMAIL_CLIENT_ID,
+  c_secret: process.env.GMAIL_CLIENT_SECRET,
+  refreshToken: process.env.GMAIL_REFRESH_TOKEN
+};
 
-// JSTS Modules
-var jsts = require('../public/js/jsts.1.6.1');
 // JSTS Polygon/Point Buffer
 const BUFFER = 0.0000005;
 
@@ -40,7 +45,8 @@ function validateRanchMap(ranchMap) {
   }
 }
 
-router.post("/", function (req, res, next) {
+router.post("/", async function (req, res, next) {
+  await jstsReady;
   var info = JSON.parse(req.body.info);
   var appArea;
   var hazards = [];
@@ -894,17 +900,10 @@ function savePDFDocument(data, path, appAreaExists, callback) {
   dd.content.push({lineHeight: 1, text: ' '});
   dd.content.push('Created: ' + new Date());
 
-  const doc = new PdfPrinter({
-    Roboto: {normal: Buffer.from(require('pdfmake/build/vfs_fonts.js').pdfMake.vfs['Roboto-Regular.ttf'], 'base64')}
-  }).createPdfKitDocument(dd);
-
-  const writeStream = fs.createWriteStream(path);
-  doc.pipe(writeStream);
-  doc.end();
-  writeStream.on('finish', function () {
+  writePdf(dd, path).then(function() {
       callback({success: true});
-  });
-  writeStream.on('error', function () {
+  }).catch(function(error) {
+      console.log(error);
       callback({success: false});
   });
 }
@@ -923,18 +922,6 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     callback(false);
     return; // Do not continue
   }
-
-  /**
-   * Set up Oauth2Client and obtain an Access token (via a refresh token to avoid expiration)
-   * Guide: https://medium.com/@nickroach_50526/sending-emails-with-node-js-using-smtp-gmail-and-oauth2-316fe9c790a1    
-   */
-  const oauth2Client = new OAuth2(
-    privateKey.c_id,
-    privateKey.c_secret, // Client Secret
-    "https://developers.google.com/oauthplayground" // Redirect URL
-  );
-  oauth2Client.setCredentials({refresh_token: privateKey.refreshToken });
-  const accessToken = oauth2Client.getAccessToken();
 
   /**
    * Create array of email attachment objects to be sent to the Parabug (not the client)
@@ -957,19 +944,16 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
       user: privateKey.user,
       clientId: privateKey.c_id,
       clientSecret: privateKey.c_secret,
-      refreshToken: privateKey.refreshToken,
-      accessToken: accessToken,
-      expires: 1484314697598
+      refreshToken: privateKey.refreshToken
     }
   });
-  const parabug_email_path = "info@parabug.solutions";
+  const parabug_email_path = process.env.PARABUG_EMAIL || privateKey.user;
   var parabugMailOptions = {
-    from:
-      '"Requested Parabug Estimate Quote"' +
-      "<" +
-      parabug_email_path +
-      ">", // sender address
-    to: " <" + parabug_email_path + ">", // list of receivers
+    from: {
+      name: "Requested Parabug Estimate Quote",
+      address: privateKey.user
+    },
+    to: parabug_email_path,
     subject: "Parabug Estimate Request", // Subject line
     text: info.notes, // plain text body
     html: pdfData,
@@ -988,17 +972,14 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
       user: privateKey.user,
       clientId: privateKey.c_id,
       clientSecret: privateKey.c_secret,
-      refreshToken: privateKey.refreshToken,
-      accessToken: accessToken,
-      expires: 1484314697598
+      refreshToken: privateKey.refreshToken
     }
   });
   var clientMailOptions = {
-    from:
-      '"Requested Parabug Estimate Quote"' +
-      "<" +
-      parabug_email_path +
-      ">", // sender address
+    from: {
+      name: "Requested Parabug Estimate Quote",
+      address: privateKey.user
+    },
     to: " <" + info.contactEmail + ">", // list of receivers
     subject: "Parabug Estimate Request", // Subject line
     text: info.notes, // plain text body
@@ -1020,7 +1001,10 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
   clientTransporter.sendMail(clientMailOptions, function (err, info) {
     if (err) {
       console.log(err);
+      clientTransporter.close();
+      parabugTransporter.close();
       callback(false);
+      return;
     } else {
       console.log("Client Email sent: " + info.response);
       parabugTransporter.sendMail(parabugMailOptions, function (
@@ -1029,16 +1013,18 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
       ) {
         if (err) {
           console.log(err);
+          clientTransporter.close();
+          parabugTransporter.close();
           callback(false);
         } else {
           console.log("Parabug Email sent: " + info.response);
+          clientTransporter.close();
+          parabugTransporter.close();
           callback(true);
         }
       });
     }
   });
-  clientTransporter.close();
-  parabugTransporter.close();
 }
 
 function simplifyHazards(hazards) {
@@ -1248,7 +1234,7 @@ function unionPolygons(jstsPoly1, jstsPoly2) {
 function validateAndFix(appArea, hazards, vras, ranchMapProvided = null) {
   let validationStep = "";
   try {
-    if (appArea == null || appArea === []) {
+    if (appArea == null || appArea.isEmpty()) {
       return (!!ranchMapProvided) ? true : false;
     }
     if (numUniqueCoordinates(appArea) < 3) {

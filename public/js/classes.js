@@ -1055,11 +1055,12 @@ class GMapsOverlayLoader {
             const body = $('#overlay-loader-body');
             header.empty();
             body.empty();
-            header.append($(`<div class="row justify-content-center">${this.fileName}.${this.fileType}</div>`));
+            header.text(`${this.fileName}.${this.fileType}`);
             this.layers.forEach((layer, index) => {
                 body.append(that.layerToHtml(layer, index+1));
             });
-            modal.show();
+            $('#overlay-loader-import').prop('disabled', !this.layers.some(layer => !layer.deleted));
+            if (!modal[0].open) { modal[0].showModal(); }
         });
     }
 
@@ -1067,30 +1068,35 @@ class GMapsOverlayLoader {
         let isFeatureCollection = layer.data.type && (layer.data.type === "FeatureCollection");
         const that = this;
         /* Create Collapsible Row and Visual Toggle*/        
-        const rowContent = $(`<div class="content"></div>`);
-        const collapseToggleButton = $(`<button type="button" class="collapsible">${index}: ${layer.name}</button>`);
-        collapseToggleButton.on("click", () => {
-            collapseToggleButton.toggleClass("active");
-            rowContent.toggle();
-        });
-        const deleteRowButton = $(`<button type="button" class="collapsible-delete">&times;</button>`)
-        deleteRowButton.on("click", () => {
+        const layerSection = $('<details class="overlay-import-layer" open></details>');
+        const rowContent = $('<div class="overlay-layer-settings"></div>');
+        const layerHeading = $('<summary class="overlay-layer-heading"></summary>');
+        layerHeading.append($('<span></span>').text(`${index}: ${layer.name}`));
+        const deleteRowButton = $('<button type="button" class="overlay-layer-remove"><img src="https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/trash-2.svg" width="16" height="16" alt=""></button>')
+            .attr({ 'aria-label': `Remove ${layer.name}`, title: `Remove ${layer.name}` });
+        deleteRowButton.on("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
             that.deleteLayer(index-1);
-            rowContent.empty();
-            rowContent.remove();
-            collapseToggleButton.remove();
-            deleteRowButton.remove();
+            layerSection.remove();
+            if (!that.layers.some(layer => !layer.deleted)) {
+                $('#overlay-loader-body').append($('<p class="overlay-import-empty" role="status"></p>').text('No layers selected. Cancel to choose another file.'));
+                $('#overlay-loader-import').prop('disabled', true);
+                document.querySelector('#overlay-loader-modal .overlay-import-cancel').focus();
+            } else {
+                $('#overlay-loader-body summary').first().trigger('focus');
+            }
         });
         
         /* Create Tile Size Input and Display*/
         const tileSizeRow = $(`<div class="modal-row-content"></div>`);
-        const tileSizeInput = $(`<input type="number" value="${layer.tileSize}" min=1 max=50>`);
+        const tileSizeInput = $(`<input type="number" value="${layer.tileSize}" min=1 max=50>`).attr('aria-label', `Tile size for ${layer.name}`);
         if (isFeatureCollection) { tileSizeInput.prop("disabled", true); } // Currently disable tile-ization of kml, geojson, and shp files (with featureCollections)
 
         tileSizeInput.on("keyup input change", function() { layer.tileSize = tileSizeInput.val(); });
         let tileSizeInputEndText = " sq.ft";
         if (isFeatureCollection) {
-            tileSizeInputEndText += '<p style="color: red;"> This option is disabled for KML, GeoJson, and SHP files. Dividing into tiles in unnecessary as paths are already defined on import.</p></br>';
+            tileSizeInputEndText += '<p class="overlay-import-note">Tile sizing is not needed for vector files. Existing polygon boundaries are preserved.</p>';
         } else {
             tileSizeInputEndText += "</br>";
         }
@@ -1100,7 +1106,7 @@ class GMapsOverlayLoader {
 
         /* Create Color Palette Size Input and Display*/
         const colorPaletteSizeRow = $(`<div class="modal-row-content"></div>`);
-        const colorPaletteSizeInput = $(`<input type="range" min="1" max="20" value="${layer.colorPaletteSize}">`);
+        const colorPaletteSizeInput = $(`<input type="range" min="1" max="20" value="${layer.colorPaletteSize}">`).attr('aria-label', `Palette size for ${layer.name}`);
         const paletteSizeDisplay = $(`<span>${layer.colorPaletteSize}</span>`);        
         colorPaletteSizeInput.on("input change keyup", function() {
             layer.colorPaletteSize = colorPaletteSizeInput.val();
@@ -1115,7 +1121,7 @@ class GMapsOverlayLoader {
                             if (!layer.colorPalette[i]) {
                                 layer.colorPalette[i] = "#000000";
                             }
-                            const colorInput = $(`<input type="color" value="${layer.colorPalette[i]}">`);
+                            const colorInput = $(`<input type="color" value="${layer.colorPalette[i]}">`).attr('aria-label', `Palette color ${i + 1} for ${layer.name}`);
                             colorInput.on("change", function() {
                                 layer.colorPalette[i] = colorInput.val();
                             });
@@ -1130,7 +1136,7 @@ class GMapsOverlayLoader {
 
         /* Create "Use Color Palette" Toggle and Display */
         const useColorPaletteInput =  $(`<input type="checkbox" ${(layer.useColorPalette) ? "checked" : "" }>`);
-        const useColorPaletteRow = $(`<div class="modal-row-content"></div>`).append(`<span>Use Color Palette</span>  `, useColorPaletteInput);
+        const useColorPaletteRow = $('<label class="modal-row-content overlay-palette-toggle"></label>').append(useColorPaletteInput, '<span>Use color palette</span>');
         
         /* Create "Auto Generate Color Palette" Toggle and Display */
         const colorInputs = $(`<div></div>`);
@@ -1143,7 +1149,7 @@ class GMapsOverlayLoader {
                 colorInputs.append(`<span>Color Palette: </span>`);
                 for (let i = 0 ; i < layer.colorPaletteSize; i++) {
                     layer.colorPalette[i] = (!layer.colorPalette[i]) ? "#000000" : layer.colorPalette[i];
-                    const colorInput = $(`<input type="color" value=${layer.colorPalette[i]}>`);
+                    const colorInput = $(`<input type="color" value=${layer.colorPalette[i]}>`).attr('aria-label', `Palette color ${i + 1} for ${layer.name}`);
                     colorInput.on("change", function() {
                         layer.colorPalette[i] = colorInput.val();
                     });
@@ -1151,7 +1157,7 @@ class GMapsOverlayLoader {
                 }
             }
         });
-        const autoColorPaletteRow = $(`<div class="modal-row-content"></div>`).append(`<span>Auto Generate Color Palette</span>  `, autoColorPaletteInput);
+        const autoColorPaletteRow = $('<label class="modal-row-content overlay-palette-toggle"></label>').append(autoColorPaletteInput, '<span>Generate palette automatically</span>');
         const colorPaletteRow = $(`<div class="modal-row-content"></div>`).append(colorInputs);
 
         /* Set up display toggle based on if a color palette will be used or not */
@@ -1185,8 +1191,8 @@ class GMapsOverlayLoader {
         // rowContent.append(tileSizeRow);
 
         /* Append Collapsible Row and Content*/
-        const collapsibleRow = $(`<span></span>`).append(collapseToggleButton, deleteRowButton);
-        return $(`<div></div>`).append(collapsibleRow, rowContent);
+        layerHeading.append(deleteRowButton);
+        return layerSection.append(layerHeading, rowContent);
     }
 
     setTileSize(index, feet) {

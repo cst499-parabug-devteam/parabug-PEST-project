@@ -1,4 +1,3 @@
-var createError = require('http-errors');
 var express = require('express');
 const fileUpload = require('express-fileupload');
 var path = require('path');
@@ -6,8 +5,6 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var app = express();
-var bodyParser = require('body-parser');
-
 
 var favicon = require('serve-favicon');
 
@@ -16,19 +13,18 @@ var favicon = require('serve-favicon');
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-
-// enable files upload
 app.use(fileUpload({
   createParentPath: true,
-  fileSize: 11 * 1024 * 1024 * 1024 //11MB max file(s) size
+  abortOnLimit: true,
+  limits: { fileSize: 10 * 1024 * 1024 }
 }));
-
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use('/vendor/jsts', express.static(path.join(__dirname, 'node_modules', 'jsts', 'dist')));
+app.use('/vendor/terra-draw', express.static(path.join(__dirname, 'node_modules', 'terra-draw', 'dist')));
+app.use('/vendor/terra-draw-google-maps-adapter', express.static(path.join(__dirname, 'node_modules', 'terra-draw-google-maps-adapter', 'dist')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(favicon(path.join(__dirname, 'public', 'img', 'favicon.jpg')));
