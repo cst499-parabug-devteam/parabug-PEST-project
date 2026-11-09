@@ -1,4 +1,5 @@
 var express = require('express');
+const fileUpload = require('express-fileupload');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
@@ -12,6 +13,11 @@ var favicon = require('serve-favicon');
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
+app.use(fileUpload({
+  createParentPath: true,
+  abortOnLimit: true,
+  limits: { fileSize: 10 * 1024 * 1024 }
+}));
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

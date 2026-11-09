@@ -3,1774 +3,1815 @@
   <head>
     <title>Parabug Estimate Solution Tool</title>
     <meta name="viewport" content="initial-scale=1.0" />
-    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" type="text/css" href="stylesheets/bootstrap-4.0.0.min.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/style.css">
+    <script src="/js/jquery-3.5.1.min.js"></script>
+    <script src="/js/popper-1.12.9.min.js"></script>
+    <script src="/js/bootstrap-4.0.0.min.js"></script>
+    <script defer src="/vendor/terra-draw/terra-draw.umd.js"></script>
+    <script defer src="/vendor/terra-draw-google-maps-adapter/terra-draw-google-maps-adapter.umd.js"></script>
+    <script defer src="/vendor/jsts/jsts.min.js"></script>
     <script
-      src="/vendor/terra-draw/terra-draw.umd.js"
       defer
+      src="https://maps.googleapis.com/maps/api/js?key=<%= api_key %>&callback=initMap&libraries=places,geometry"
     ></script>
-    <script
-      src="/vendor/terra-draw-google-maps-adapter/terra-draw-google-maps-adapter.umd.js"
-      defer
-    ></script>
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDitClMVJevw5A4FUgjEn9Y0foHzVZfi7Y&callback=initMap&libraries=geometry,places"
-      defer
-    ></script>
-
-    <style>
-      html {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-      }
-
-      body {
-        min-height: 100vh;
-        margin: 0px;
-        padding: 0px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(360px, 76vh) auto;
-        align-content: start;
-        min-width: 0;
-      }
-
-      .map-container {
-        --map-gutter: 15px;
-        position: relative;
-        padding: 15px;
-        width: 100%;
-        min-width: 0;
-        min-height: 0;
-        box-sizing: border-box;
-      }
-
-      .sidebar {
-        padding: 10px;
-      }
-
-      #add-bug-display {
-        display: none;
-      }
-
-      /* Move reset button above google logo */
-      #reset-btn {
-        margin: 4px;
-      }
-
-      /* Move center button above google logo */
-      #center-btn {
-        margin: 4px;
-      }
-
-      #map {
-        height: 100%;
-        min-height: 330px;
-        width: 100%;
-        border: 2px solid black;
-        box-sizing: border-box;
-        overflow: hidden;
-      }
-
-      #pac-input {
-        background-color: #fff;
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 300;
-        margin-left: 10px;
-        margin-top: 10px;
-        padding: 0 11px 0 13px;
-        text-overflow: ellipsis;
-        width: 18rem;
-        max-width: calc(100vw - 120px);
-        line-height: 32px;
-        border: 2px solid #fff;
-        box-sizing: border-box;
-      }
-
-      #pac-input:focus {
-        border-color: #4d90fe;
-      }
-
-      #map-top-controls {
-        display: flex;
-        align-items: flex-start;
-        gap: 4px;
-      }
-
-      #mode-control-container {
-        display: grid;
-        grid-template-columns: 30% 70%;
-        grid-template-rows: 100%;
-      }
-
-      #additional-info {
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 400;
-        line-height: 32px;
-      }
-
-      #stat-display {
-        text-align: center;
-        margin: -11px 15px 0px 15px;
-        padding: 10px 0px 10px 0px;
-        /*background-color: grey;*/
-      }
-
-      .stat-item {
-        display: inline-block;
-      }
-
-      .stat-text {
-        display: inline-block;
-        min-width: 80px;
-        margin: 5px;
-        text-align: right;
-      }
-
-      .stat-input {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-      }
-
-      .stat-input-checkbox {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-        vertical-align: middle;
-        text-align: left;
-      }
-
-      /* Read only inputs */
-      .read-only {
-        background-color: lightgrey;
-      }
-
-      #user-info-display {
-        margin: 0px 15px 0px 15px;
-        padding: 10px;
-        /*background-color: lightblue;*/
-        text-align: center;
-      }
-
-      #user-info-display > h2 {
-        margin-bottom: 5px;
-      }
-
-      .form-element {
-        margin-top: 10px;
-        vertical-align: middle;
-      }
-
-      .form-text {
-        display: inline-block;
-        min-width: 120px;
-        vertical-align: middle;
-      }
-
-      .form-input {
-        display: inline-block;
-        line-height: 40px;
-        vertical-align: middle;
-      }
-
-      .align-input {
-        display: inline-block;
-        text-align: left;
-      }
-
-      #crosshair-center {
-        vertical-align: center;
-        text-align: center;
-        display: none;
-      }
-
-      #mobile-div {
-        display: inline-block;
-        background-color: #fff;
-        border: 2px solid #fff;
-        border-radius: 3px;
-        cursor: pointer;
-        text-align: center;
-        vertical-align: center;
-        font-family: Roboto, Arial, sans-serif;
-        font-size: 15px;
-        padding: 2px;
-        margin-bottom: 12px;
-      }
-
-      #mobile-mode-div {
-        display: inline-block;
-      }
-
-      #mobile-options-div {
-        display: none;
-      }
-
-      html {
-        height: 100%;
-        margin: 0px;
-        padding: 0px;
-      }
-
-      body {
-        min-height: 100vh;
-        margin: 0px;
-        padding: 0px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(360px, 76vh) auto;
-        align-content: start;
-        min-width: 0;
-      }
-
-      .map-container {
-        --map-gutter: 15px;
-        position: relative;
-        padding: 15px;
-        width: 100%;
-        min-width: 0;
-        min-height: 0;
-        box-sizing: border-box;
-      }
-
-      .sidebar {
-        padding: 10px;
-      }
-
-      #add-bug-display {
-        display: none;
-      }
-
-      /* Move reset button above google logo */
-      #reset-btn {
-        margin: 4px;
-      }
-
-      /* Move center button above google logo */
-      #center-btn {
-        margin: 4px;
-      }
-
-      #map {
-        height: 100%;
-        min-height: 330px;
-        width: 100%;
-        border: 2px solid black;
-        box-sizing: border-box;
-        overflow: hidden;
-      }
-
-      #pac-input {
-        background-color: #fff;
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 300;
-        margin-left: 10px;
-        margin-top: 10px;
-        padding: 0 11px 0 13px;
-        text-overflow: ellipsis;
-        width: 18rem;
-        max-width: calc(100vw - 120px);
-        line-height: 32px;
-        border: 2px solid #fff;
-        box-sizing: border-box;
-      }
-
-      #pac-input:focus {
-        border-color: #4d90fe;
-      }
-
-      #mode-control-container {
-        display: grid;
-        grid-template-columns: 30% 70%;
-        grid-template-rows: 100%;
-      }
-
-      #additional-info {
-        font-family: Roboto;
-        font-size: 15px;
-        font-weight: 400;
-        line-height: 32px;
-      }
-
-      #stat-display {
-        text-align: center;
-        margin: -11px 15px 0px 15px;
-        padding: 10px 0px 10px 0px;
-        /*background-color: grey;*/
-      }
-
-      .stat-item {
-        display: inline-block;
-      }
-
-      .stat-text {
-        display: inline-block;
-        min-width: 80px;
-        margin: 5px;
-        text-align: right;
-      }
-
-      .stat-input {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-      }
-
-      .stat-input-checkbox {
-        display: inline-block;
-        min-width: 140px;
-        margin: 5px;
-        vertical-align: middle;
-        text-align: left;
-      }
-
-      /* Read only inputs */
-      .read-only {
-        background-color: lightgrey;
-      }
-
-      #user-info-display {
-        margin: 0px 15px 0px 15px;
-        padding: 10px;
-        /*background-color: lightblue;*/
-        text-align: center;
-      }
-
-      #user-info-display > h2 {
-        margin-bottom: 5px;
-      }
-
-      .form-element {
-        margin-top: 10px;
-        vertical-align: middle;
-      }
-
-      .form-text {
-        display: inline-block;
-        min-width: 140px;
-        vertical-align: middle;
-        font-size: 16px;
-      }
-
-      .form-input {
-        display: inline-block;
-        line-height: 40px;
-        vertical-align: middle;
-      }
-
-      .align-input {
-        display: inline-block;
-        text-align: left;
-      }
-
-      #crosshair-center {
-        vertical-align: center;
-        text-align: center;
-        display: none;
-      }
-
-      #mobile-div {
-        display: inline-block;
-        background-color: #fff;
-        border: 2px solid #fff;
-        border-radius: 3px;
-        cursor: pointer;
-        text-align: center;
-        vertical-align: center;
-        font-family: Roboto, Arial, sans-serif;
-        font-size: 15px;
-        padding: 2px;
-        margin-bottom: 12px;
-      }
-
-      #mobile-mode-div {
-        display: inline-block;
-      }
-
-      #mobile-options-div {
-        display: none;
-      }
-
-      hr {
-        border: none;
-      }
-
-      .form-fieldset {
-        border-top: 0.5px solid black;
-        border-radius: 5px;
-        margin-bottom: 12px;
-        padding: 2px 12px 12px 12px;
-      }
-
-      .form-fieldset legend {
-        font-size: 20px;
-        font-weight: bold;
-      }
-
-      .required {
-        color: red;
-      }
-
-      .helpful-tips {
-        cursor: help;
-      }
-
-      .click-tip {
-        cursor: pointer;
-        border-bottom: dotted 1px black;
-      }
-
-      /* The Modal (background) */
-      .modal {
-        display: none;
-        /* Hidden by default */
-        position: fixed;
-        /* Stay in place */
-        z-index: 1;
-        /* Sit on top */
-        left: 0;
-        top: 0;
-        width: 100%;
-        /* Full width */
-        height: 100%;
-        /* Full height */
-        overflow: auto;
-        /* Enable scroll if needed */
-        background-color: rgb(0, 0, 0);
-        /* Fallback color */
-        background-color: rgba(0, 0, 0, 0.4);
-        /* Black w/ opacity */
-        -webkit-animation-name: fadeIn;
-        /* Fade in the background */
-        -webkit-animation-duration: 0.4s;
-        animation-name: fadeIn;
-        animation-duration: 0.4s;
-      }
-
-      /* Modal Content */
-      .modal-content {
-        position: fixed;
-        bottom: 0;
-        background-color: #fefefe;
-        width: 100%;
-        -webkit-animation-name: slideIn;
-        -webkit-animation-duration: 0.4s;
-        animation-name: slideIn;
-        animation-duration: 0.4s;
-      }
-
-      /* The Close Button */
-      .modal-close {
-        color: white;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-      }
-
-      .modal-close:hover,
-      .modal-close:focus {
-        color: #000;
-        text-decoration: none;
-        cursor: pointer;
-      }
-
-      .modal-header {
-        padding: 2px 16px;
-        background-color: #4395cc;
-        color: white;
-      }
-
-      .modal-body {
-        padding: 2px 16px;
-      }
-
-      #modal-header {
-        text-align: center;
-        font-size: 32px;
-        font-weight: bold;
-        line-height: 46px;
-      }
-
-      #modal-body {
-        padding: 10px;
-        text-align: center;
-        font-size: 24px;
-        line-height: 28px;
-      }
-
-      /* Add Animation */
-      @-webkit-keyframes slideIn {
-        from {
-          bottom: -300px;
-          opacity: 0;
-        }
-
-        to {
-          bottom: 0;
-          opacity: 1;
-        }
-      }
-
-      @keyframes slideIn {
-        from {
-          bottom: -300px;
-          opacity: 0;
-        }
-
-        to {
-          bottom: 0;
-          opacity: 1;
-        }
-      }
-
-      @-webkit-keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-
-        to {
-          opacity: 1;
-        }
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-
-        to {
-          opacity: 1;
-        }
-      }
-
-      html,
-      body {
-        overflow-x: hidden;
-      }
-
-      @media (max-width: 600px) {
-        .map-container {
-          --map-gutter: 8px;
-          padding: 8px;
-        }
-
-        #map-top-controls {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 4px;
-          width: 35vw;
-          min-width: 7rem;
-          max-width: 8.5rem;
-        }
-
-        #mode-control-container {
-          width: 100%;
-          max-width: none;
-          min-width: 0;
-          grid-template-columns: minmax(0, 40%) minmax(0, 60%);
-        }
-
-        #mode-control-container select {
-          min-width: 0;
-          width: 100%;
-        }
-
-        #pac-input {
-          width: 100%;
-          min-width: 0;
-          max-width: 100%;
-        }
-
-      }
-
-      #map-control-stack {
-        position: absolute;
-        left: calc(var(--map-gutter) + 10px);
-        bottom: calc(var(--map-gutter) + 10px);
-        z-index: 5;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-        pointer-events: none;
-      }
-
-      #map-control-stack #center-btn,
-      #map-control-stack #reset-btn,
-      #map-control-stack #mobile-div {
-        margin: 0;
-        pointer-events: auto;
-      }
-
-      #mobile-mode-div label {
-        font-weight: 700;
-      }
-    </style>
+    <script src="/js/toGeoJson.js"></script>
+    <script src="/js/geoxml3.js"></script>
+    <script src="/js/ZipFile.js"></script>
+    <script defer src="/js/ProtectedOverlay.js"></script>
+    <script defer src="/js/classes.js"></script>
+    <script src="/js/geotiff.js"></script>
+    <script src="/js/proj4.js"></script>
+    <script src="./js/esri-proj-codes.js"></script>
+    <script src="./js/tiff.js"></script>
+    <script src="./js/shapefile.js"></script>
+    <script src="./js/jszip.js"></script>
+    <script defer src="./js/geolocation-marker.js"></script>
   </head>
 
   <body>
     <div class="map-container">
-      <input
-        id="pac-input"
-        class="controls"
-        type="text"
-        placeholder="Search..."
-      />
       <div id="map"></div>
-    </div>
-  <form id="additional-info" method="POST">
-    <div id="stat-display">
-      <!--Bug Name-->
-      <div class="stat-item">
-        <label class="stat-text" for="bug-name" title="Bug Indicator"
-          >Bug:</label
-        >
-        <div class="stat-input">
-          <input type="text" name="bug-name" id="bug-name" />
+      <input id="pac-input" class="controls" type="text" placeholder="Search..."/>
+      <div class="row" id="advanced-options" class="advanced-options-margin-fix"> 
+        <div class="col col-auto" id="advanced-options-button-tab">
+          <div id="advanced-options-button">
+            <span>&#8286;</span>
+          </div>
         </div>
-      </div>
-      <!--Bugs Per Acre-->
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="num-bugs-per-acre"
-          title="Bugs per acre in the application area"
-          >Bugs / Acre:</label
-        >
-        <div class="stat-input">
-          <input
-            type="number"
-            name="bugs-per-acre"
-            id="num-bugs-per-acre"
-            min="1"
-            value="10000"
-            required
-          />
-        </div>
-      </div>
-      <!--Variable Rate-->
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="variable-rate"
-          title="Bugs per acre in variable rate areas"
-          >Variable Rate:</label
-        >
-        <div class="stat-input">
-          <input
-            type="number"
-            name="variable-rate"
-            id="variable-rate"
-            value="20000"
-            min="0"
-          />
-        </div>
-      </div>
+        <div id="advanced-options-controls">
+          <div class="row justify-content-center mt-2 mb-1">
+            <div class="col col-auto"><h4>Draw Settings</h4></div>
+          </div>
+          
+          <div class="row pl-2 pb-2 pt-2" style="background-color: #6c757d1a">
+            <div class="col col-12">
+              <h6>Application Area</h6>
+            </div>
+            <div class="col col-12">
+              <div>Color: <input type="color" id="app-area-color" value="#FFFF00"></div>
+            </div>
+            <div class="col col-12">
+              <div>Opacity: <input type="range" min="0" max="100" value="60" id="app-area-opacity"><span id="app-area-opacity-display">60%</span></div>
+            </div>
+          </div>
 
-      <hr />
-      <div id="add-bug-display">
-        <!--Bug Name 2-->
+          <div class="row pl-2 pb-2 pt-2">
+            <div class="col col-12">
+              <h6>Hazard Area</h6>
+            </div>
+            <div class="col col-12">
+              <div>Color: <input type="color" id="hazard-area-color" value="#FF0000"></div>
+            </div>
+            <div class="col col-12">
+              <div>Opacity: <input type="range" min="0" max="100" value="70" id="hazard-area-opacity"><span id="hazard-area-opacity-display">70%</span></div>
+            </div>
+          </div>
+
+          <div class="row pl-2 pb-2 pt-2" style="background-color: #6c757d1a">
+            <div class="col col-12">
+              <h6>Variable Rate Area</h6>
+            </div>
+            <div class="col col-12">
+              <div>Color: <input type="color" id="vr-area-color" value="#CCCCCC"></div>
+            </div>
+            <div class="col col-12">
+              <div>Opacity: <input type="range" min="0" max="100" value="60" id="vr-area-opacity"><span id="vr-area-opacity-display">60%</span></div>
+            </div>
+          </div>
+
+          <div class="row justify-content-center mt-2">
+            <div class="col col-auto"><input type="button" class="btn btn-outline-primary" value="Reset Draw Settings" onclick="resetDisplaySettings()"></div>
+          </div>
+          <div id="overlay-settings" class="mt-4">
+            <div class="row justify-content-center mb-1">
+              <div class="col col-auto"><h4>Overlay Settings</h4></div>
+            </div>
+            <div id="overlay-settings-content"></div>
+            <div class="row align-items-center justify-content-center mt-2">
+              <div class="col col-auto">Overlay Display: </div>
+              <div class="col col-auto"><input type="button" class="btn btn-outline-primary" value="Off" onclick="setOverlayVisibility(false)"></div>
+              <div class="col col-auto"><input type="button" class="btn btn-outline-primary" value="On" onclick="setOverlayVisibility(true)"></div>
+            </div>
+          </div>
+          <br>
+        </div>
+      </div>
+    </div>
+
+    <div id="top-alert"></div>
+
+
+    <div style="padding-left: 15px;">
+      <div id="session-options-dropdown">
+        <button id="session-options-dropdown-btn" onclick="showSessionOptions()"
+          title="Save/Import map and form data. Does not save overlays imported onto the map or uploaded ranch map files.">
+          Session
+        </button>
+        <div id="session-options-dropdown-content">
+          <a onclick="importSession()">Import</a>
+          <a onclick="exportSession()">Save</a>
+        </div>
+      </div>
+      <span class="click-tip" onclick="showPrompt('shortcuts')">Shortcuts</span>
+    </div>
+
+    <form id="additional-info" method="POST" enctype="multipart/form-data">
+      <div id="stat-display">
+  
+        <!--Bug Name-->
         <div class="stat-item">
-          <label class="stat-text" for="bug-name2" title="Bug Indicator"
-            >Bug 2:</label
-          >
+          <label class="stat-text" for="bug-name" title="Bug Indicator">Bug:</label>
           <div class="stat-input">
-            <input type="text" name="bug-name2" id="bug-name2" />
+            <input type="text" name="bug-name" id="bug-name" />
           </div>
         </div>
-        <!--Bugs Per Acre 2-->
+  
+        <!--Bugs Per Acre-->
         <div class="stat-item">
-          <label
-            class="stat-text"
-            for="num-bugs-per-acre2"
-            title="Bugs per acre in the application area"
-            >Bugs / Acre 2:</label
-          >
+          <label class="stat-text" for="num-bugs-per-acre" title="Bugs per acre in the application area">Bugs / Acre:</label>
           <div class="stat-input">
-            <input
-              type="number"
-              name="bugs-per-acre2"
-              id="num-bugs-per-acre2"
-              min="1"
-              value="10000"
-              required
-            />
+            <input type="number" name="bugs-per-acre" id="num-bugs-per-acre" min="1" value="10000" required/>
           </div>
         </div>
-        <!--Variable Rate 2-->
+  
+        <!--Variable Rate-->
         <div class="stat-item">
-          <label
-            class="stat-text"
-            for="variable-rate2"
-            title="Bugs per acre in variable rate areas"
-            >Variable Rate 2:</label
-          >
+          <label class="stat-text" for="variable-rate" title="Bugs per acre in variable rate areas">Variable Rate:</label>
           <div class="stat-input">
-            <input
-              type="number"
-              name="variable-rate2"
-              id="variable-rate2"
-              value="20000"
-              min="0"
-            />
+            <input type="number" name="variable-rate" id="variable-rate" value="20000" min="0"/>
+          </div>
+        </div>
+  
+        <br>
+        <div id="add-bug-display">
+  
+          <!--Bug Name 2-->
+          <div class="stat-item">
+            <label class="stat-text" for="bug-name2" title="Bug Indicator"> Bug 2:</label>
+            <div class="stat-input">
+              <input type="text" name="bug-name2" id="bug-name2" />
+            </div>
+          </div>
+  
+          <!--Bugs Per Acre 2-->
+          <div class="stat-item">
+            <label class="stat-text" for="num-bugs-per-acre2" title="Bugs per acre in the application area"> Bugs / Acre 2:</label>
+            <div class="stat-input">
+              <input type="number" name="bugs-per-acre2" id="num-bugs-per-acre2" min="1" value="10000" required/>
+            </div>
+          </div>
+  
+          <!--Variable Rate 2-->
+          <div class="stat-item">
+            <label class="stat-text" for="variable-rate2" title="Bugs per acre in variable rate areas"> Variable Rate 2:</label>
+            <div class="stat-input">
+              <input type="number" name="variable-rate2" id="variable-rate2" value="20000" min="0"/>
+            </div>
+          </div>
+        </div>
+  
+        <br>
+  
+        <!--Estimated Number of Acres-->
+        <div class="stat-item">
+          <label class="stat-text" for="num-acres"
+            title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in manual acreage value">
+            Acres:
+          </label>
+          <div class="stat-input">
+            <input type="number" name="num-acres" id="num-acres" class="read-only" value="0" readonly/>
+          </div>
+        </div>
+  
+        <!--Estimated Total Bugs-->
+        <div class="stat-item">
+          <label class="stat-text" for="num-bugs" title="Estimated total number of bugs">Total Bugs:</label>
+          <div class="stat-input">
+            <input type="number" name="num-bugs" id="num-bugs" class="read-only" value="0" readonly/>
+          </div>
+        </div>
+  
+        <!-- Add Bug -->
+        <div class="stat-item">
+          <label class="stat-text" for="add-bug-toggle" title="Toggle between 1 and 2 bugs for application">Add Bug:</label>
+          <div class="stat-input-checkbox">
+            <input type="checkbox" name="add-bug-toggle" id="add-bug-toggle" value="add-bug"/>
           </div>
         </div>
       </div>
-      <hr />
-      <!--Estimated Number of Acres-->
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="num-acres"
-          title="Estimated number acres = application area - sum(hazard areas). If incorrect fill in corrected acreage value"
-          >Acres:</label
-        >
-        <div class="stat-input">
-          <input
-            type="number"
-            name="num-acres"
-            id="num-acres"
-            class="read-only"
-            value="0"
-            readonly
-          />
+  
+      <div id="mobile-div">
+        <div id="mobile-mode-div">
+          <label for="mobile-mode">Crosshair</label>
+          <input type="checkbox" value="mobile" id="mobile-mode" name="mobile-mode"/>
+        </div>
+        <div id="mobile-options-div">
+          <input type="button" value="Mark / Select" onClick="makeMarker()" />
+          <input type="button" value="Finish" onClick="finishShape()" />
         </div>
       </div>
-      <!--Estimated Total Bugs-->
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="num-bugs"
-          title="Estimated total number of bugs"
-          >Total Bugs:</label
-        >
-        <div class="stat-input">
-          <input
-            type="number"
-            name="num-bugs"
-            id="num-bugs"
-            class="read-only"
-            value="0"
-            readonly
-          />
-        </div>
-      </div>
-
-      <div class="stat-item">
-        <label
-          class="stat-text"
-          for="add-bug-toggle"
-          title="Toggle between 1 and 2 bugs for application"
-          >Add Bug:</label
-        >
-        <div class="stat-input-checkbox">
-          <input
-            type="checkbox"
-            name="add-bug-toggle"
-            id="add-bug-toggle"
-            value="add-bug"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div id="mobile-div">
-      <div id="mobile-mode-div">
-        <label for="mobile-mode">Crosshair</label>
-        <input
-          type="checkbox"
-          value="mobile"
-          id="mobile-mode"
-          name="mobile-mode"
-        />
-      </div>
-      <div id="mobile-options-div">
-        <input type="button" value="Mark / Select" onClick="makeMarker()" />
-        <input type="button" value="Finish" onClick="finishShape()" />
-      </div>
-    </div>
-
-    <div id="user-info-display">
-      <img id="logo-img" src="/img/logo-sml.jpg" />
-      <br />
-
-      <div class="align-input">
-        <fieldset class="form-fieldset" id="user-info-fields">
-          <legend>User Information</legend>
-          <!--Contact Name-->
-          <div class="form-element">
-            <div class="form-text">
-              Contact Name<span class="required">*</span>
-            </div>
-            <div class="form-input">
-              <input
-                type="text"
-                name="contact_name"
-                id="contact-name"
-                style="width:30em"
-                required
-              />
-            </div>
-          </div>
-          <!--Contact Phone-->
-          <div class="form-element">
-            <div class="form-text">
-              Contact Phone<span class="required">*</span>
-            </div>
-            <div class="form-input">
-              <input
-                type="text"
-                name="contact_phone"
-                id="contact-phone"
-                style="width:30em"
-                required
-              />
-            </div>
-          </div>
-          <!--Contact Email-->
-          <div class="form-element">
-            <div class="form-text">
-              Contact Email<span class="required">*</span>
-            </div>
-            <div class="form-input">
-              <input
-                type="text"
-                name="contact_email"
-                id="contact-email"
-                style="width:30em"
-                required
-              />
-            </div>
-          </div>
-          <!--Billing Address-->
-          <div class="form-element">
-            <div class="form-text">
-              Billing Address<span class="required">*</span>
-            </div>
-            <div class="form-input">
-              <input
-                type="text"
-                name="billing_address"
-                id="billing-address"
-                style="width:30em"
-                required
-              />
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset class="form-fieldset" id="application-area-fields">
-          <legend>Application Area</legend>
-
-          <!--Crop-->
-          <div class="form-element">
-            <label class="form-text">
-              <span class="click-tip" onclick="showTip('crop')">Crop</span>
-              <span class="required">*</span>
-            </label>
-            <div class="form-input">
-              <input
-                type="text"
-                name="crop"
-                id="crop"
-                style="width:30em"
-                required
-              />
-            </div>
-          </div>
-
-          <!--Row Spacing-->
-          <div class="form-element">
-            <label class="form-text">
-              <span class="click-tip" onclick="showTip('row-spacing')"
-                >Spacing (ft)</span
-              >
-              <span class="required">*</span></label
-            >
-            <div class="form-input">
-              <input
-                type="number"
-                step="0.01"
-                name="row_spacing"
-                id="row-spacing"
-                style="width:30em"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Ranch Name -->
-          <div class="form-element">
-            <label class="form-text" for="ranch-name">Ranch Name</label>
-            <div class="form-input">
-              <input
-                type="text"
-                name="ranch-name"
-                id="ranch-name"
-                style="width:30em"
-              />
-            </div>
-          </div>
-
-          <!-- Corrected Acreage -->
-          <div class="form-element">
-            <label class="form-text">
-              <span class="click-tip" onclick="showTip('corrected-acreage')"
-                >Corrected Acreage</span
-              >
-            </label>
-            <div class="form-input">
-              <input
-                type="number"
-                step="0.01"
-                name="corrected-acreage"
-                id="corrected-acreage"
-                style="width:30em"
-              />
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset class="form-fieldset" id="user-preference-fields">
-          <legend>Preferences</legend>
-
-          <!-- Desired Application Date -->
-          <div class="form-element">
-            <label class="form-text">
-              <span class="click-tip" onclick="showTip('application-date')">
-                Application Date
-              </span>
-            </label>
-            <div class="form-input">
-              <input
-                type="date"
-                name="application-date"
-                id="application-date"
-                style="width:30em"
-              />
-            </div>
-          </div>
-
-          <!-- Operator Preference -->
-          <div class="form-element">
-            <label class="form-text">
-              <span class="click-tip" onclick="showTip('operator')">
-                Operator
-              </span>
-            </label>
-            <div class="form-input">
-              <input
-                type="text"
-                name="operator"
-                id="operator"
-                style="width:30em"
-              />
-            </div>
-          </div>
-
-          <!-- Notes -->
-          <div class="form-element">
-            <label class="form-text">
-              <span class="click-tip" onclick="showTip('notes')">Notes</span>
-            </label>
-            <div class="form-input">
-              <textarea
-                name="notes"
-                id="notes"
-                rows="3"
-                style="width:30em; max-width: 30em;"
-              ></textarea>
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Help -->
-        <div style="padding-left: 10px;">
-          <div style="cursor:help">Required<span class="required">*</span></div>
-          <span class="click-tip"> Click elements for more information </span
-          ><br />
-        </div>
-      </div>
-
-      <div class="form-element" id="submitRequest">
-        <div class="form-input">
-          <input
-            style="font-size: 16px;"
-            type="submit"
-            value="Submit Request"
-          />
-        </div>
-      </div>
-    </div>
-  </form>
-
-  <!-- The Modal -->
-  <div id="tip-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <span class="modal-close" id="modal-close">&times;</span>
-        <div id="modal-header"></div>
-      </div>
-      <div class="modal-body">
-        <div id="modal-body"></div>
+  
+      <div id="user-info-display">
+        <img id="logo-img" src="/img/logo-sml.jpg" />
         <br />
+  
+        <div class="align-input">
+          <fieldset class="form-fieldset" id="user-info-fields">
+            <legend>User Information</legend>
+  
+            <!--Contact Name-->
+            <div class="form-element">
+              <div class="form-text">
+                Contact Name<span class="required">*</span>
+              </div>
+              <div class="form-input">
+                <input type="text" name="contact_name" id="contact-name" required/>
+              </div>
+            </div>
+  
+            <!--Contact Phone-->
+            <div class="form-element">
+              <div class="form-text">
+                Contact Phone<span class="required">*</span>
+              </div>
+              <div class="form-input">
+                <input type="text" name="contact_phone" id="contact-phone" required/>
+              </div>
+            </div>
+  
+            <!--Contact Email-->
+            <div class="form-element">
+              <div class="form-text">
+                Contact Email<span class="required">*</span>
+              </div>
+              <div class="form-input">
+                <input type="text" name="contact_email" id="contact-email" required/>
+              </div>
+            </div>
+  
+            <!--Billing Address-->
+            <div class="form-element">
+              <div class="form-text">
+                Billing Address<span class="required">*</span>
+              </div>
+              <div class="form-input">
+                <input type="text" name="billing_address" id="billing-address" required />
+              </div>
+            </div>
+          </fieldset>
+  
+          <fieldset class="form-fieldset" id="application-area-fields">
+            <legend>Application Area</legend>
+  
+            <!--Crop-->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showPrompt(`crop`)">Crop</span>
+                <span class="required">*</span>
+              </label>
+              <div class="form-input">
+                <input type="text" name="crop" id="crop" required/>
+              </div>
+            </div>
+  
+            <!--Row Spacing-->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showPrompt('row-spacing')">Spacing (ft)</span>
+                <span class="required">*</span>
+              </label>
+              <div class="form-input">
+                <input type="number" step="0.01" name="row_spacing" id="row-spacing" required/>
+              </div>
+            </div>
+  
+            <!-- Ranch Name -->
+            <div class="form-element">
+              <label class="form-text" for="ranch-name">
+                Ranch Name
+                <span class="required">*</span>
+              </label>
+              <div class="form-input">
+                <input type="text" name="ranch-name" id="ranch-name" required/>
+              </div>
+            </div>
+  
+            <!-- Corrected Acreage -->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showPrompt('corrected-acreage')"> Manual Acreage </span>
+              </label>
+              <div class="form-input">
+                <input type="number" step="0.01" name="corrected-acreage" id="corrected-acreage"/>
+              </div>
+            </div>
+
+            <!-- Ranch Map -->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showPrompt('ranch-map')"> Ranch Map </span>
+              </label>
+              <div class="form-input">
+                <input type="file" name="ranch-map" id="ranch-map" accept="image/jpeg, image/png, .pdf">
+              </div>
+            </div>
+          </fieldset>
+  
+          <fieldset class="form-fieldset" id="user-preference-fields">
+            <legend>Preferences</legend>
+  
+            <!-- Desired Application Date -->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showPrompt('application-date')"> Application Date </span>
+              </label>
+              <div class="form-input">
+                <input type="date" name="application-date" id="application-date"/>
+              </div>
+            </div>
+  
+            <!-- Operator Preference -->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showPrompt('operator')"> Operator </span>
+              </label>
+              <div class="form-input">
+                <input type="text" name="operator" id="operator"/>
+              </div>
+            </div>
+  
+            <!-- Notes -->
+            <div class="form-element">
+              <label class="form-text">
+                <span class="click-tip" onclick="showPrompt('notes')">Notes</span>
+              </label>
+              <div class="form-input">
+                <textarea name="notes" id="notes" rows="3"></textarea>
+              </div>
+            </div>
+          </fieldset>
+  
+          <!-- Help -->
+          <div style="padding-left: 10px;">
+            <div style="cursor:help">Required<span class="required">*</span></div>
+            <span class="click-tip"> Click elements for more information </span>
+            <br />
+          </div>
+        </div>
+  
+        <div class="form-element" id="submitRequest">
+          <div class="form-input">
+            <input style="font-size: 16px;" type="submit" value="Submit Request"/>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- Tips Modal -->
+    <div id="tip-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-close" id="modal-close">&times;</span>
+          <div id="modal-header-text"></div>
+        </div>
+        <div class="modal-body">
+          <div id="modal-body"></div>
+          <br />
+        </div>
       </div>
     </div>
-  </div>
-<script type="text/javascript" src="/vendor/jsts/jsts.min.js"></script>
-<script type="text/javascript" src="/js/classes.js"></script>
-<link
-  href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css"
-  rel="stylesheet"
-/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
-<script>
-  let modal = document.getElementById("tip-modal");
-  document
-    .getElementById("modal-close")
-    .addEventListener("click", function(event) {
-      modal.style.display = "none";
-    });
 
-  function showTip(id) {
-    let header = "";
-    let text = "";
-    switch (id) {
-      case "application-date":
-        header = "Application Date";
-        text = "Enter a preferred date in which the job will take place";
-        break;
-      case "corrected-acreage":
-        header = "Corrected Acreage";
-        text =
-          "If exact field acreage is known, this number will be used in place of the estimate above." +
-          "<br>Note: if this number is given, variable rate areas and hazard areas will not be incorporated into initial bug estimates. Map data will still be sent";
-        break;
-      case "crop":
-        header = "Crop Type";
-        text = "The crop(s) contained in the field specified";
-        break;
-      case "notes":
-        header = "Notes";
-        text = "Enter any additional information desired";
-        break;
-      case "operator":
-        header = "Preferred Operator";
-        text = "Enter the name of a preferred Parabug operator, if desired";
-        break;
-      case "row-spacing":
-        header = "Row Spacing";
-        text =
-          "The spacing, in feet, between each row of crops in the field specified";
-        break;
-      default:
-        text = "tip not found";
-        return;
-        break;
-    }
+    <div id="overlay-loader-modal" class="overlay-loader-modal">
+      <!-- Modal content -->
+      <div class="overlay-loader-modal-content">
+        <div class="overlay-loader-modal-header">
+          <span class="overlay-loader-close" onclick="closeOverlayLoader()">&times;</span>
+          <div id="overlay-loader-header"></div>
+        </div>
+        <div class="overlay-loader-modal-body">
+          <div id="overlay-loader-body"></div>
+        </div>
+        <div class="overlay-loader-modal-footer">
+          <span id="overlay-loader-footer">
+            <button class="btn btn-light mt-1" onclick="importOverlayFromLoader()">Import</button>
+            <button class="btn btn-light mt-1" onclick="closeOverlayLoader()">Cancel</button>
+          </span>
+        </div>
+      </div>
+    </div>
 
-    modal.style.display = "block";
-    document.getElementById("modal-header").innerHTML = header;
-    document.getElementById("modal-body").innerHTML = text;
+    <script>
+      "use strict"
+      /* GLOBAL VARIABLES */
+      let map;
+      let terraDrawInstance;
+      var appArea;
+      let infoWindow;
+      let centerMarker;
+      let centerMarkerLastMoveEvent;
+      let overlayMarkers = [];
+      let tempShape;
 
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function(event) {
-      if (event.target == modal) {
-        modal.style.display = "none";
-      }
-    };
-  }
+      let userLocation = false;
+      let userLocationMarker;
+      let updatingViewBounds = false;
 
-  // GLOBAL VARIABLES
-  var map;
-  var terraDrawInstance;
-  var appArea;
-  var infoWindow;
-  var centerMarker;
-  var overlayMarkers = [];
-  var tempShape;
+      // Overlay > VRA Auto Generation and Maginifying Class for Color Selection
+      let updatingMagnifier = false;
+      let magnifyingGlass;
+      let vraAutoGenerationEnabled = false;
 
-  // Internal object to help manage toggling between our custom
-  //  drawing modes
-  var drawModeControl = {
-    modes: [
-      "Drag",
-      "Application Area",
-      "Hazard",
-      "Variable Rate Area",
-      "Delete"
-    ],
-    hoverText: [
-      "Drag map view",
-      "Create an application area. \n- Redrawing will reset map.",
-      "Create a hazard area. \n- Application area must exist to create hazard areas.",
-      "Create a variable rate area. \n- Application area must exist to create variable rate areas. \n- Variable rate areas do not overlap with hazard areas.",
-      "Delete selection tool for deleting application areas, hazard areas, and variable rate areas."
-    ],
-    current: 0,
-    getCurrent: function() {
-      return this.modes[this.current];
-    }
-  };
-
-  function initMap() {
-    map = new google.maps.Map(document.getElementById("map"), {
-      center: { lat: 36.677756, lng: -121.729448 }, // default
-      zoom: 15,
-      mapTypeId: "hybrid",
-      streetViewControl: false,
-      rotateControl: false,
-      mapTypeControlOptions: {
-        style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-      }
-    });
-
-    var image = {
-      url: "/img/crosshair.png",
-      size: new google.maps.Size(200, 200),
-      origin: new google.maps.Point(0, 0),
-      anchor: new google.maps.Point(100, 100)
-    };
-
-    centerMarker = new google.maps.Marker({
-      position: map.getCenter(),
-      icon: image,
-      draggable: true,
-      // map: map,
-      zIndex: 3
-    });
-
-    map.addListener("projection_changed", function() {
-      if (terraDrawInstance) {
-        return;
-      }
-
-      terraDrawInstance = new terraDraw.TerraDraw({
-        adapter: new terraDrawGoogleMapsAdapter.TerraDrawGoogleMapsAdapter({
-          map: map,
-          lib: google.maps
-        }),
+      // An instance of the GMapsOverlay class to help manage overlay data and display
+      let overlayManager;
+    
+      // Internal object to help manage toggling between our custom drawing modes
+      let drawModeControl = {
         modes: [
-          new terraDraw.TerraDrawPolygonMode({
-            styles: {
-              fillColor: "#FFFF00",
-              fillOpacity: 0.6,
-              outlineColor: "#000000",
-              outlineOpacity: 1,
-              outlineWidth: 1
+          "Drag",
+          "Application Area",
+          "Hazard",
+          "Variable Rate Area",
+          "Delete",
+          "VRA Auto Generation"
+        ],
+        hoverText: [
+          "Drag map view",
+          "Create an application area. \n- Redrawing will reset map.",
+          "Create a hazard area. \n- Application area must exist to create hazard areas.",
+          "Create a variable rate area. \n- Application area must exist to create variable rate areas. \n- Variable rate areas do not overlap with hazard areas.",
+          "Delete selection tool for deleting application areas, hazard areas, and variable rate areas.",
+          "Auto generates variable rate areas based on color selected on the current overlay layer. Requires an overlay to be imported."
+        ],
+        current: 0,
+        getCurrent: function() {
+          return this.modes[this.current];
+        }
+      };
+    
+      // HTML Elements
+      let modal = document.getElementById("tip-modal");
+      let fileInput = document.createElement("input");
+      fileInput.setAttribute("type", "file");
+      fileInput.setAttribute("accept", ".kml,.kmz, .tif, .zip, .json");
+      
+      // Allow for importing of an application area from KML
+      let sessionFileInput = document.createElement("input");
+      sessionFileInput.setAttribute("type", "file");
+      sessionFileInput.setAttribute("accept", ".json");
+    
+      /* FUNCTIONS */
+      function applyDisplaySettings() {
+        try {
+          if (appArea) {
+            appArea.poly.setOptions({
+              fillColor: $('#app-area-color').val(),
+              fillOpacity: ($('#app-area-opacity').val()/100)
+            });
+            for(let i = 0; i < appArea.getNumHazard(); i++) {
+              appArea.getHazard(i).poly.setOptions({
+                fillColor: $('#hazard-area-color').val(),
+                fillOpacity: ($('#hazard-area-opacity').val()/100)
+              });
             }
-          }),
-          new terraDraw.TerraDrawRenderMode({
-            modeName: "idle",
-            styles: {}
-          })
-        ]
-      });
+            for(let i = 0; i < appArea.getNumVariableRateAreas(); i++) {
+              appArea.getVariableRateArea(i).poly.setOptions({
+                fillColor: $('#vr-area-color').val(),
+                fillOpacity: ($('#vr-area-opacity').val()/100)
+              });
+            }
+          }
+          // Static Values
+          AppArea.fill = $('#app-area-color').val();
+          AppArea.opacity = $('#app-area-opacity').val()/100;
+          AppArea.hazardFill = $('#hazard-area-color').val();
+          AppArea.hazardOpacity = $('#hazard-area-opacity').val()/100;
+          AppArea.vrFill = $('#vr-area-color').val();
+          AppArea.vrOpacity = $('#vr-area-opacity').val()/100;
+        } catch (e) {
+          console.log("Error when applying custom drawing display settings: " + e.message);
+        }
 
-      terraDrawInstance.on("ready", function() {
-        terraDrawInstance.setMode("idle");
-      });
+        if (overlayManager) { overlayManager.applyDisplaySettings(); }
+      }
+    
+      function centerMap() {
+        if (appArea == null) {
+          return;
+        }
+        let center = appArea.getCentroid();
+        if (center == null) {
+          return;
+        }
+        map.setCenter(center);
+        map.setZoom(15);
+      }
 
-      terraDrawInstance.on("finish", function(id, context) {
-        if (context.action === "draw") {
-          var feature = terraDrawInstance
-            .getSnapshot()
-            .find(function(candidate) {
-              return candidate.id === id;
+      function closeOverlayLoader() {
+        document.getElementById("overlay-loader-modal").style.display = "none";
+      }
+
+      async function createAlert(message, duration, type="success", callback) {
+          let alertBox = $('#top-alert');
+          let alert = $('<div></div>');
+          switch (type) {
+              case "success":
+                  alert.attr("class","alert alert-success");
+                  break;
+              case "info":
+                  alert.attr("class","alert alert-info");
+                  break;
+              case "error": default:
+                  message = "Error: " + message;
+                  alert.attr("class","alert alert-danger");
+                  break;
+          }
+          alert.text(message);
+          alert.hide();
+          alertBox.append(alert);
+          alert.fadeIn("slow", function(){
+              setTimeout(function(){ alert.fadeOut("slow"); }, duration);
+              if (callback) { setTimeout(() => { callback(true); }, 500); }
+          });
+      }
+
+      function deleteSubPoly() {
+        if ((appArea != null) && (appArea.deleteIdentifier != null)) {
+          let index = appArea.getIndexOfIdentifier(appArea.deleteIdentifier.id, appArea.deleteIdentifier.type);
+          if (appArea.deleteIdentifier.type == "hazard") {
+              appArea.removeHazard(index);
+          } else if (appArea.deleteIdentifier.type = "variable") {
+              appArea.removeVariableRateArea(index);
+          }
+          appArea.resetGlobals();
+          updateStats();
+        }
+      }
+
+      function draw(path) {
+        let mode = drawModeControl.getCurrent();
+        switch (mode) {
+          case "Application Area":
+            if (appArea) {
+              try {
+                appArea.del();
+              } catch (e) {
+                // Continue
+              }
+              appArea = new AppArea(map, path);
+            } else {
+              appArea = new AppArea(map, path);
+            }
+            break;
+          case "Hazard":
+            if (appArea == null) {
+              console.log("No application area defined for hazard");
+              return;
+            }
+            appArea.addHazard(path);
+            break;
+          case "Variable Rate Area":
+            if (appArea == null) {
+              console.log("No application area defined for variate rate area");
+              return;
+            }
+            appArea.addVariableRate(path);
+            break;
+          default:
+            break; // unexpected input
+        }
+        let success = validate();
+        updateStats();
+      }
+    
+      function drawToggle(mode) {
+        if (appArea != null) {
+          appArea.resetGlobals();
+        }
+    
+        // Value defaults in string, parse the int value
+        mode = parseInt(mode, 10);
+        if (mode != 5) { hideMagnifier(); }
+        switch (mode) {
+          case 5:
+            terraDrawInstance.setMode("idle");
+            drawModeControl.current = mode;
+            vraAutoGenerationEnabled = true;
+            break;
+            case 4:
+              case 0:
+            vraAutoGenerationEnabled = false;
+            terraDrawInstance.setMode("idle");
+            drawModeControl.current = mode;
+            break;
+          case 1: // Fall through
+          case 2: // Fall through
+          case 3:
+            vraAutoGenerationEnabled = false;
+            if (document.getElementById("mobile-mode").checked) {
+              terraDrawInstance.setMode("idle");
+            } else {
+              terraDrawInstance.setMode("polygon");
+            }
+            drawModeControl.current = mode;
+            break;
+          default:
+            break; // unexpected input
+        }
+      }
+      
+      function finishShape() {
+        if (!!tempShape) {
+          draw(tempShape.getPath());
+          tempShape.setMap(null);
+        }
+        overlayMarkers = [];
+        tempShape = null;
+      }
+
+      function handleLocationError(browserHasGeolocation) {
+        let message = browserHasGeolocation
+          ? "Error: The Geolocation service failed."
+          : "Error: Your browser doesn't support geolocation.";
+        console.log(message);
+        userLocation = false;
+      }
+    
+      function importOverlay() {
+        fileInput.click();
+      }
+    
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 36.677756, lng: -121.729448 }, // default
+          zoom: 15,
+          mapTypeId: "hybrid",
+          streetViewControl: false,
+          rotateControl: false,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
+          }
+        });
+
+        let image = {
+          url: "/img/crosshair.png",
+          size: new google.maps.Size(200, 200),
+          origin: new google.maps.Point(0, 0),
+          anchor: new google.maps.Point(100, 100)
+        };
+    
+        centerMarker = new google.maps.Marker({
+          position: map.getCenter(),
+          icon: image,
+          draggable: true,
+          // map: map,
+          zIndex: 3
+        });
+    
+        google.maps.event.addListener(centerMarker, "drag", function(e) {
+          // console.log(this);
+          // console.log(e);
+          // Set public values from mobile marker
+          centerMarkerLastMoveEvent = e;
+          magnifierMove(e);
+        });
+    
+        map.addListener("projection_changed", function() {
+          if (terraDrawInstance) {
+            return;
+          }
+
+          terraDrawInstance = new terraDraw.TerraDraw({
+            adapter: new terraDrawGoogleMapsAdapter.TerraDrawGoogleMapsAdapter({
+              map: map,
+              lib: google.maps
+            }),
+            modes: [
+              new terraDraw.TerraDrawPolygonMode({
+                styles: {
+                  fillColor: "#FFFF00",
+                  fillOpacity: 0.6,
+                  outlineColor: "#000000",
+                  outlineOpacity: 1,
+                  outlineWidth: 1
+                }
+              }),
+              new terraDraw.TerraDrawRenderMode({ modeName: "idle", styles: {} })
+            ]
+          });
+
+          terraDrawInstance.on("ready", function() {
+            terraDrawInstance.setMode("idle");
+          });
+
+          terraDrawInstance.on("finish", function(id, context) {
+            if (context.action === "draw") {
+              var feature = terraDrawInstance.getSnapshot().find(function(candidate) {
+                return candidate.id === id;
+              });
+
+              if (feature && feature.geometry.type === "Polygon") {
+                var paths = feature.geometry.coordinates.map(function(ring) {
+                  return ring.map(function(coordinate) {
+                    return { lat: coordinate[1], lng: coordinate[0] };
+                  });
+                });
+                draw(paths.length === 1 ? paths[0] : paths);
+              }
+            }
+
+            terraDrawInstance.setMode("idle");
+            terraDrawInstance.removeFeatures([id]);
+            window.setTimeout(function() {
+              if (
+                !document.getElementById("mobile-mode").checked &&
+                drawModeControl.current >= 1 &&
+                drawModeControl.current <= 3
+              ) {
+                terraDrawInstance.setMode("polygon");
+              }
+            }, 0);
+          });
+
+          terraDrawInstance.start();
+        });
+    
+        map.setTilt(0);
+    
+        //*********************************** User Location ************************************
+        // Try HTML5 geolocation.
+        try {
+          if (navigator.geolocation) {
+            userLocation = true;
+            navigator.geolocation.getCurrentPosition(
+              function(position) {
+                let pos = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude
+                };
+                
+              },
+              function() {
+                handleLocationError(true);
+              }
+            );
+          } else {
+            // Browser doesn't support Geolocation
+            handleLocationError(false);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+        //********************************* End User Location **********************************
+    
+        //************************************* Search Box *************************************
+        // Create the search box and link it to the UI element.
+        let input = document.getElementById("pac-input");
+        let searchBox = new google.maps.places.SearchBox(input);
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+    
+        // Bias the SearchBox results towards current map's viewport.
+        map.addListener("bounds_changed", function(event) {
+          if (!updatingViewBounds) {
+            searchBox.setBounds(map.getBounds());
+            updatingViewBounds = true;
+            setTimeout(() => {
+              // console.log(map.getBounds());
+              updatingViewBounds = false;
+            }, 500);
+          }
+
+        });
+    
+        // Listen for the event fired when the user selects a prediction
+        searchBox.addListener("places_changed", function() {
+          let places = searchBox.getPlaces();
+          if (places.length == 0) {
+            return;
+          }
+    
+          // For each place, get the location.
+          let bounds = new google.maps.LatLngBounds();
+          places.forEach(function(place) {
+            if (!place.geometry) {
+              console.log("Returned place contains no geometry");
+              return;
+            }
+    
+            // Only geocodes have viewport
+            if (place.geometry.viewport) {
+              bounds.union(place.geometry.viewport);
+            } else {
+              bounds.extend(place.geometry.location);
+            }
+          });
+          map.fitBounds(bounds);
+          map.setTilt(0);
+        });
+        //*********************************** End search Box ***********************************
+    
+        //*********************************** Custom Controls***********************************
+        function MapModeControl(divHolder) {
+          // Set CSS for the control border.
+          let controlUI = document.createElement("div");
+          controlUI.style.backgroundColor = "#fff";
+          controlUI.style.border = "2px solid #fff";
+          controlUI.style.borderRadius = "3px";
+          controlUI.style.cursor = "pointer";
+          controlUI.style.marginTop = "10px";
+          controlUI.style.padding = "2px";
+          controlUI.title = "Select Control Mode";
+          controlUI.id = "mode-control-container";
+    
+          let modeText = document.createElement("div");
+          modeText.innerHTML = "Mode: ";
+          modeText.style.color = "rgb(25,25,25)";
+          modeText.style.fontFamily = "Roboto,Arial,sans-serif";
+          modeText.style.fontSize = "15px";
+          modeText.style.lineHeight = "30px";
+          modeText.style.marginRight = "10px";
+          modeText.style.fontWeight = "600";
+    
+          // Interior
+          let modeSelect = document.createElement("select");
+          modeSelect.id = "mode-selector";
+          modeSelect.style.color = "rgb(25,25,25)";
+          modeSelect.style.fontFamily = "Roboto,Arial,sans-serif";
+          modeSelect.style.fontSize = "15px";
+          modeSelect.style.lineHeight = "30px";
+    
+          let mode;
+          for (let i = 0; i < drawModeControl.modes.length; i++) {
+            mode = document.createElement("option");
+            mode.value = i;
+            mode.text = drawModeControl.modes[i];
+            mode.title = drawModeControl.hoverText[i];
+            if (i === 5) {
+              mode.id = "vra-auto-generation-mode";
+              mode.disabled = true;
+            }
+            modeSelect.appendChild(mode);
+          }
+          modeSelect.addEventListener("change", function() {
+            let index = modeSelect.selectedIndex;
+            let value = modeSelect.options[index].value;
+            drawToggle(value);
+          });
+    
+          controlUI.appendChild(modeText);
+          controlUI.appendChild(modeSelect);
+          divHolder.appendChild(controlUI);
+        }
+    
+        /* Advanced Options Button and Tab*/
+        let advancedOptions = document.getElementById('advanced-options');
+        map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(advancedOptions);
+        document.getElementById("advanced-options-button").click();
+    
+        /* Map Modes Control */
+        let modeSelectionDiv = document.createElement("div");
+        MapModeControl(modeSelectionDiv);
+        modeSelectionDiv.index = 1;
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelectionDiv);
+    
+        /* Mobile Controls (Crosshair) */
+        let mobileControl = document.getElementById("mobile-div");
+        let mapControlStack = document.createElement("div");
+        mapControlStack.id = "map-control-stack";
+
+        let centerControlButton = document.createElement("button");
+        centerControlButton.type = "button";
+        centerControlButton.id = "map-center-control-btn";
+        centerControlButton.className = "map-control-button";
+        centerControlButton.textContent = "Center";
+        centerControlButton.title = "Center map on application area";
+        centerControlButton.addEventListener("click", centerMap);
+
+        let resetControlButton = document.createElement("button");
+        resetControlButton.type = "button";
+        resetControlButton.id = "map-reset-control-btn";
+        resetControlButton.className = "map-control-button";
+        resetControlButton.textContent = "Reset";
+        resetControlButton.title = "Clear map drawings";
+        resetControlButton.addEventListener("click", resetMap);
+
+        mapControlStack.appendChild(centerControlButton);
+        mapControlStack.appendChild(resetControlButton);
+        mapControlStack.appendChild(mobileControl);
+        document.querySelector(".map-container").appendChild(mapControlStack);
+
+        let logoAlignmentScheduled = false;
+        function alignControlStackWithGoogleLogo() {
+          if (logoAlignmentScheduled) {
+            return;
+          }
+
+          logoAlignmentScheduled = true;
+          window.requestAnimationFrame(function() {
+            logoAlignmentScheduled = false;
+            let googleLogo = document.querySelector("#map img[alt='Google']");
+            let mapBounds = document.getElementById("map").getBoundingClientRect();
+            let logoBounds = googleLogo && googleLogo.getBoundingClientRect();
+            if (!logoBounds || mapBounds.bottom - logoBounds.bottom > 20) {
+              return;
+            }
+
+            let containerBounds = mapControlStack.parentElement.getBoundingClientRect();
+            let bottom = Math.max(0, containerBounds.bottom - logoBounds.top + 10) + "px";
+            if (mapControlStack.style.bottom !== bottom) {
+              mapControlStack.style.bottom = bottom;
+            }
+          });
+        }
+
+        let mapLayoutObserver = new MutationObserver(alignControlStackWithGoogleLogo);
+        mapLayoutObserver.observe(document.getElementById("map"), {
+          attributes: true,
+          attributeFilter: ["style"],
+          childList: true,
+          subtree: true
+        });
+        map.addListener("idle", alignControlStackWithGoogleLogo);
+        map.addListener("tilesloaded", alignControlStackWithGoogleLogo);
+        window.addEventListener("resize", alignControlStackWithGoogleLogo);
+        window.requestAnimationFrame(alignControlStackWithGoogleLogo);
+
+        /*  Dropup Menu With Additional Options */
+        let dropUpMenuButton = $('<button>Options</button>')
+              .attr({
+                "data-toggle":"dropdown",
+                "aria-haspopup":"true",
+                "aria-expanded":"false"
+              })
+              .addClass("btn btn-white dropdown-toggle");
+
+        let dropUpMenuContent = $('<div></div>')
+            .attr({
+              'id':"dropUpMenuButtons"
+            })
+            .addClass("dropdown-menu")
+            .append($('<button>Center on App Area</button>').click(centerMap).attr({"id":"center-btn"}).addClass("dropdown-item"))
+            .append($('<button>Clear Drawings</button>').click(resetMap).attr({"id":"reset-btn"}).addClass("dropdown-item"))
+            .append($('<button>Import Overlay</button>').click(importOverlay).attr({"id":"import-btn"}).addClass("dropdown-item"))
+            .append($('<button>Toggle Location Icon</button>').click(toggleLocationIcon).attr({"id":"user-location-toggle-btn"}).addClass("dropdown-item"))
+            .append($('<div class="dropdown-divider"></div>').addClass("overlay-visible-item"))
+            .append($('<button>Center on Overlays</button>').click(() => { if (overlayManager){ overlayManager.setMapBoundsToAllLayers()} }).attr({"id":"center-btn"}).addClass("dropdown-item overlay-visible-item"))
+            .append($('<button>Clear Overlays</button>').click(() => { if (overlayManager){ overlayManager.removeAllLayers()} }).addClass("dropdown-item overlay-visible-item"));
+        
+        let dropUpMenu = $('<div></div>').attr({"id":"maps-options"}).addClass("btn-group dropup").append(dropUpMenuButton).append(dropUpMenuContent);
+        map.controls[google.maps.ControlPosition.BOTTOM_RIGHT].push(dropUpMenu[0]);
+        //********************************* End Custom Controls*********************************
+
+        // Show color magnification if overlay exists and in vra auto generation mode
+        google.maps.event.addListener(map, "mousemove", function (event) {
+          magnifierMove(event);
+        });
+
+        google.maps.event.addListener(map, "mouseout", function(event) {
+          hideMagnifier();
+        });
+      }
+
+      function autoGenerateVRAsFromSelection(event) {
+        if (document.getElementById('mobile-mode').checked && !event.isCrosshairClick) { return; }
+        if (!!overlayManager && overlayManager.hasLayers() && vraAutoGenerationEnabled) {
+          overlayManager.generateVRAsFromOverlayLatLngSelection(event.latLng, !!appArea);
+        }
+      }
+
+      function hideMagnifier() {
+        if (magnifyingGlass) {
+          magnifyingGlass.style.display = "none";
+        }
+      }
+
+      function magnifierMove(event) {
+        if (!(!!overlayManager && overlayManager.hasLayers() && vraAutoGenerationEnabled)) { return; }
+        if (updatingMagnifier) { return; }
+
+        // Create magnifier (if not already existing) and display it
+        if (!magnifyingGlass) {
+          magnifyingGlass = document.createElement("div");
+          magnifyingGlass.setAttribute("class", "img-magnifier-glass");
+          document.getElementById('map').parentElement.insertBefore(magnifyingGlass, document.getElementById('map'));
+        }
+        magnifyingGlass.style.display = "block";
+        let x, y, latLng;
+        updatingMagnifier = true;
+        if (document.getElementById('mobile-mode').checked) {
+          // Update magnifier based on draggable google maps marker position
+          // Calculate marker position on screen from map location
+          const scale = Math.pow(2, map.getZoom());
+          const nw = new google.maps.LatLng(
+              map.getBounds().getNorthEast().lat(),
+              map.getBounds().getSouthWest().lng()
+          );
+          const worldCoordinateNW = map.getProjection().fromLatLngToPoint(nw);
+          const worldCoordinate = map.getProjection().fromLatLngToPoint(centerMarker.getPosition());
+          // Adjust the magnifiers position to not overlap with the marker
+          x = Math.floor((worldCoordinate.x - worldCoordinateNW.x) * scale) + 40;
+          y = Math.floor((worldCoordinate.y - worldCoordinateNW.y) * scale) - 80;
+          latLng = centerMarker.getPosition();
+        } else {
+          // Update magnifier based on mouse (and touch?) position
+          latLng = event.latLng;
+          x = (event.domEvent.clientX == null) ? event.domEvent.touches[0].clientX : event.domEvent.clientX;
+          y = (event.domEvent.clientY == null) ? event.domEvent.touches[0].clientY : event.domEvent.clientY;
+        }
+        x = ((x < 0) || !x) ? 0: x;
+        y = ((y < 0) || !y) ? 0: y;
+        magnifyingGlass.style.left = (x+5)+"px";
+        magnifyingGlass.style.top = (y+5)+"px";
+        if (!!overlayManager && overlayManager.hasLayers()) {
+          magnifyingGlass.style.backgroundColor = overlayManager.getColorAtLatLng(latLng);
+        }
+        updatingMagnifier = false
+      }
+      
+      function setOverlayVisibility(isVisible) {
+        if (overlayManager) { overlayManager.setVisibility(isVisible); }
+      }
+
+      function importOverlayFromLoader() {
+        if (overlayManager) {
+          closeOverlayLoader();
+          createAlert("Importing Overlay . . .", 3000,"info", (finished) => {
+            overlayManager.importOverlayFromLoader((success) => {
+              if (success) {
+                createAlert("Overlay imported Successfully", 3000,"success");
+              } else {
+                createAlert("Failed to Import Overlay", 3000,"error");
+              }
             });
+          });
+        }
+      }
 
-          if (feature && feature.geometry.type === "Polygon") {
-            var path = feature.geometry.coordinates[0].map(function(coordinate) {
-              return { lat: coordinate[1], lng: coordinate[0] };
-            });
-            draw(path);
+      function makeMarker() {
+        if (drawModeControl.current == 5) {
+          // VRA Auto Generation Mode
+          autoGenerateVRAsFromSelection({ 'isCrosshairClick': true, 'latLng': centerMarker.getPosition()});
+          return;
+        }
+        if (drawModeControl.current == 4) {
+          // Delete Mode
+          mobileClickSubPoly(centerMarker.getPosition());
+          return;
+        }
+        if (drawModeControl.current == 0) {
+          // Drag Mode
+          alert("Select a mode.");
+          return;
+        }
+    
+        overlayMarkers.push(centerMarker.getPosition());
+        if (tempShape != null) {
+          tempShape.setMap(null);
+        }
+        if (overlayMarkers.length == 1) {
+          tempShape = new google.maps.Marker({
+            position: centerMarker.getPosition(),
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 6,
+              fillColor: "white",
+              fillOpacity: 1,
+              strokeColor: "black",
+              strokeWeight: 2
+            },
+            map: map
+          });
+          return;
+        }
+    
+        // If more than one marker, generate a polyline
+        tempShape = new google.maps.Polyline({
+          path: overlayMarkers,
+          strokeColor: "#000000",
+          strokeOpacity: 1,
+          strokeWeight: 3,
+          draggable: true,
+          geodesic: true
+        });
+        tempShape.setMap(map);
+      }
+    
+      function mobileClickSubPoly(latLng) {
+        if (appArea == null) {
+          return;
+        }
+        // Mobile delete selection fix
+        let temp;
+        for (let i = 0; i < appArea.getNumHazard(); i++) {
+          temp = appArea.getHazard(i).getPoly();
+          if (google.maps.geometry.poly.containsLocation(latLng, temp)) {
+            let mev = {
+              stop: null,
+              latLng: latLng
+            };
+            google.maps.event.trigger(temp, "click", mev);
+            return;
           }
         }
-
-        terraDrawInstance.setMode("idle");
-        terraDrawInstance.removeFeatures([id]);
-        window.setTimeout(function() {
-          var mode = drawModeControl.current;
-          if (
-            !document.getElementById("mobile-mode").checked &&
-            mode >= 1 &&
-            mode <= 3
-          ) {
-            terraDrawInstance.setMode("polygon");
+        for (let i = 0; i < appArea.getNumVariableRateAreas(); i++) {
+          temp = appArea.getVariableRateArea(i).getPoly();
+          if (google.maps.geometry.poly.containsLocation(latLng, temp)) {
+            let mev = {
+              stop: null,
+              latLng: latLng
+            };
+            google.maps.event.trigger(temp, "click", mev);
+            return;
           }
-        }, 0);
-      });
-      terraDrawInstance.start();
-    });
-
-    map.setTilt(0);
-
-    //*********************************** User Location ************************************
-    // Try HTML5 geolocation.
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(position) {
-          var pos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          map.setCenter(pos);
-          map.setZoom(15);
-          centerMarker.setPosition(pos);
-        },
-        function() {
-          handleLocationError(true);
         }
-      );
-    } else {
-      // Browser doesn't support Geolocation
-      handleLocationError(false);
-    }
-    //********************************* End User Location **********************************
+        console.log("No subpoly contained spot");
+      }
+    
+      function promptAndDelete(identifier) {
+          // Named instance variable for AppArea is assumed to be appArea
+          // check if drawing mode is set to delete
+          if (drawModeControl.getCurrent() != "Delete") { return; } // also instanced variable (drawModeControl)
 
-    //************************************* Search Box *************************************
-    // Create the search box and link it to the UI element.
-    var input = document.getElementById("pac-input");
-    var searchBox = new google.maps.places.SearchBox(input);
+          if (appArea == null) { return; }
+          var index = appArea.getIndexOfIdentifier(identifier.id, identifier.type);
+          if (index == -1) { return; }
+          var centroid;
 
-    // Bias the SearchBox results towards current map's viewport.
-    map.addListener("bounds_changed", function() {
-      searchBox.setBounds(map.getBounds());
-    });
+          if (identifier.type == "hazard") {
+              centroid = appArea.getHazard(index).getCentroid();
+          } else if (identifier.type == "variable") {
+              centroid = appArea.getVariableRateArea(index).getCentroid();
+          } else { return; }
 
-    // Listen for the event fired when the user selects a prediction
-    searchBox.addListener("places_changed", function() {
-      var places = searchBox.getPlaces();
-      if (places.length == 0) {
-        return;
+          // function to clear markers and infowindow
+          appArea.resetGlobals();
+
+          appArea.deleteIdentifier = identifier;
+
+          var marker = new google.maps.Marker({
+              position: centroid,
+              map: appArea.getMap()
+          });
+
+          var infoWindow = new google.maps.InfoWindow({ content: "" });
+
+
+          // Couldn't pass values easily in content string, utilizing global variable instead
+          infoWindow.setContent('<button type="button" onClick="deleteSubPoly()">Delete</button>');
+          google.maps.event.addListener(infoWindow, 'closeclick', function () {
+              appArea.resetGlobals();
+          });
+
+          infoWindow.open(appArea.getMap(), marker);
+          appArea.marker = marker;
+          appArea.infoWindow = infoWindow;
       }
 
-      // For each place, get the location.
-      var bounds = new google.maps.LatLngBounds();
-      places.forEach(function(place) {
-        if (!place.geometry) {
-          console.log("Returned place contains no geometry");
-          return;
+      function resetDisplaySettings() {
+        const appAreaColor = "#FFFF00";
+        const appAreaOpacity = 0.6;
+        const hazardAreaColor = "#FF0000";
+        const hazardAreaOpacity = 0.7;
+        const vrAreaColor = "#CCCCCC";
+        const vrAreaOpacity = 0.6;
+    
+        $('#app-area-color').val(appAreaColor);
+        $('#app-area-opacity').val(appAreaOpacity * 100);
+        $('#app-area-opacity-display').text((appAreaOpacity * 100) + "%");
+        $('#hazard-area-color').val(hazardAreaColor);
+        $('#hazard-area-opacity').val(hazardAreaOpacity * 100);
+        $('#hazard-area-opacity-display').text((hazardAreaOpacity * 100) + "%");
+        $('#vr-area-color').val(vrAreaColor);
+        $('#vr-area-opacity').val(vrAreaOpacity * 100);
+        $('#vr-area-opacity-display').text((vrAreaOpacity * 100) + "%");
+    
+        try {
+          if (appArea) {
+            appArea.poly.setOptions({
+              fillColor: appAreaColor,
+              fillOpacity: appAreaOpacity
+            });
+            for(let i = 0; i < appArea.getNumHazard(); i++) {
+              appArea.getHazard(i).poly.setOptions({
+                fillColor: hazardAreaColor,
+                fillOpacity: hazardAreaOpacity
+              });
+            }
+            for(let i = 0; i < appArea.getNumVariableRateAreas(); i++) {
+              appArea.getVariableRateArea(i).poly.setOptions({
+                fillColor: vrAreaColor,
+                fillOpacity: vrAreaOpacity
+              });
+            }
+          }
+          // Static Values
+          AppArea.fill = appAreaColor;
+          AppArea.opacity = appAreaOpacity;
+          AppArea.hazardFill = hazardAreaColor;
+          AppArea.hazardOpacity = hazardAreaOpacity;
+          AppArea.vrFill = vrAreaColor;
+          AppArea.vrOpacity = vrAreaOpacity;
+        } catch (e) {
+          console.log("Error when resetting custom drawing display settings: " + e.message);
         }
-
-        // Only geocodes have viewport
-        if (place.geometry.viewport) {
-          bounds.union(place.geometry.viewport);
-        } else {
-          bounds.extend(place.geometry.location);
-        }
-      });
-      map.fitBounds(bounds);
-      map.setTilt(0);
-    });
-    //*********************************** End search Box ***********************************
-
-    //*********************************** Custom Controls***********************************
-    //https://developers.google.com/maps/documentation/javascript/examples/control-custom
-    function MapModeControl(divHolder) {
-      // Set CSS for the control border.
-      var controlUI = document.createElement("div");
-      controlUI.style.backgroundColor = "#fff";
-      controlUI.style.border = "2px solid #fff";
-      controlUI.style.borderRadius = "3px";
-      controlUI.style.cursor = "pointer";
-      controlUI.style.marginTop = "10px";
-      controlUI.style.padding = "2px";
-      controlUI.title = "Select Control Mode";
-      controlUI.id = "mode-control-container";
-
-      var modeText = document.createElement("div");
-      modeText.innerHTML = "Mode: ";
-      modeText.style.color = "rgb(25,25,25)";
-      modeText.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeText.style.fontSize = "15px";
-      modeText.style.lineHeight = "30px";
-      modeText.style.marginRight = "10px";
-      modeText.style.fontWeight = "600";
-
-      // Interior
-      var modeSelect = document.createElement("select");
-      modeSelect.style.color = "rgb(25,25,25)";
-      modeSelect.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeSelect.style.fontSize = "15px";
-      modeSelect.style.lineHeight = "30px";
-
-      var mode;
-      for (var i = 0; i < drawModeControl.modes.length; i++) {
-        mode = document.createElement("option");
-        mode.value = i;
-        mode.text = drawModeControl.modes[i];
-        mode.title = drawModeControl.hoverText[i];
-        modeSelect.appendChild(mode);
       }
-      modeSelect.addEventListener("change", function() {
-        var index = modeSelect.selectedIndex;
-        var value = modeSelect.options[index].value;
-        drawToggle(value);
-      });
-
-      controlUI.appendChild(modeText);
-      controlUI.appendChild(modeSelect);
-      divHolder.appendChild(controlUI);
-    }
-
-    var modeSelectionDiv = document.createElement("div");
-    MapModeControl(modeSelectionDiv);
-    modeSelectionDiv.index = 1;
-    var mapTopControls = document.createElement("div");
-    mapTopControls.id = "map-top-controls";
-    mapTopControls.appendChild(modeSelectionDiv);
-    mapTopControls.appendChild(input);
-    map.controls[google.maps.ControlPosition.TOP_LEFT].push(mapTopControls);
-
-    function CenterControl(divHolder) {
-      // Set CSS for the control border.
-      var controlUI = document.createElement("div");
-      controlUI.style.backgroundColor = "#fff";
-      controlUI.style.border = "2px solid #fff";
-      controlUI.style.borderRadius = "3px";
-      controlUI.style.cursor = "pointer";
-      controlUI.style.margin = "0";
-      controlUI.title = "Center Map on Application Area";
-      controlUI.style.padding = "2px";
-      controlUI.style.textAlign = "center";
-
-      var modeText = document.createElement("div");
-      modeText.innerHTML = "Center";
-      modeText.style.color = "rgb(25,25,25)";
-      modeText.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeText.style.fontSize = "15px";
-      modeText.style.lineHeight = "30px";
-      modeText.style.fontWeight = "600";
-
-      controlUI.appendChild(modeText);
-      divHolder.appendChild(controlUI);
-      divHolder.addEventListener("click", centerMap);
-    }
-
-    var centerDiv = document.createElement("div");
-    centerDiv.id = "center-btn";
-    CenterControl(centerDiv);
-
-    function ResetButtonControl(divHolder) {
-      // Set CSS for the control border.
-      var controlUI = document.createElement("div");
-      controlUI.style.backgroundColor = "#fff";
-      controlUI.style.border = "2px solid #fff";
-      controlUI.style.borderRadius = "3px";
-      controlUI.style.cursor = "pointer";
-      controlUI.style.margin = "0";
-      controlUI.title = "Reset (Clear Map)";
-      controlUI.style.padding = "2px";
-      controlUI.style.textAlign = "center";
-
-      var modeText = document.createElement("div");
-      modeText.innerHTML = "Reset";
-      modeText.style.color = "rgb(25,25,25)";
-      modeText.style.fontFamily = "Roboto,Arial,sans-serif";
-      modeText.style.fontSize = "15px";
-      modeText.style.lineHeight = "30px";
-      modeText.style.fontWeight = "600";
-
-      controlUI.appendChild(modeText);
-      divHolder.appendChild(controlUI);
-      divHolder.addEventListener("click", resetMap);
-    }
-
-    var resetDiv = document.createElement("div");
-    ResetButtonControl(resetDiv);
-    resetDiv.id = "reset-btn";
-
-    var mobileControl = document.getElementById("mobile-div");
-    var mapControlStack = document.createElement("div");
-    mapControlStack.id = "map-control-stack";
-    mapControlStack.appendChild(centerDiv);
-    mapControlStack.appendChild(resetDiv);
-    mapControlStack.appendChild(mobileControl);
-    document.querySelector(".map-container").appendChild(mapControlStack);
-
-    var logoAlignmentScheduled = false;
-    function alignControlStackWithGoogleLogo() {
-      if (logoAlignmentScheduled) {
-        return;
-      }
-
-      logoAlignmentScheduled = true;
-      window.requestAnimationFrame(function() {
-        logoAlignmentScheduled = false;
-        var googleLogo = document.querySelector("#map img[alt='Google']");
-        var mapBounds = document.getElementById("map").getBoundingClientRect();
-        var logoBounds = googleLogo && googleLogo.getBoundingClientRect();
-        if (!logoBounds || mapBounds.bottom - logoBounds.bottom > 20) {
-          return;
-        }
-
-        var containerBounds = mapControlStack.parentElement.getBoundingClientRect();
-        var bottom = Math.max(0, containerBounds.bottom - logoBounds.top + 10) + "px";
-        if (mapControlStack.style.bottom !== bottom) {
-          mapControlStack.style.bottom = bottom;
-        }
-      });
-    }
-
-    var mapLayoutObserver = new MutationObserver(alignControlStackWithGoogleLogo);
-    mapLayoutObserver.observe(document.getElementById("map"), {
-      attributes: true,
-      attributeFilter: ["style"],
-      childList: true,
-      subtree: true
-    });
-    map.addListener("idle", alignControlStackWithGoogleLogo);
-    map.addListener("tilesloaded", alignControlStackWithGoogleLogo);
-    window.addEventListener("resize", function() {
-      alignControlStackWithGoogleLogo();
-    });
-    window.requestAnimationFrame(alignControlStackWithGoogleLogo);
-    //********************************* End Custom Controls*********************************
-  }
-
-  function handleLocationError(browserHasGeolocation) {
-    var message = browserHasGeolocation
-      ? "Error: The Geolocation service failed."
-      : "Error: Your browser doesn't support geolocation.";
-    console.log(message);
-  }
-
-  function centerMap() {
-    if (appArea == null) {
-      return;
-    }
-    var center = appArea.getCentroid();
-    if (center == null) {
-      return;
-    }
-    map.setCenter(center);
-  }
-
-  function drawToggle(mode) {
-    if (appArea != null) {
-      appArea.resetGlobals();
-    }
-
-    // Value defaults in string, parse the int value
-    mode = parseInt(mode, 10);
-    switch (mode) {
-      case 4:
-      case 0:
-        terraDrawInstance.setMode("idle");
-        drawModeControl.current = mode;
-        break;
-      case 1: // Fall through
-      case 2: // Fall through
-      case 3:
-        if (document.getElementById("mobile-mode").checked) {
-          terraDrawInstance.setMode("idle");
-        } else {
-          terraDrawInstance.setMode("polygon");
-        }
-        drawModeControl.current = mode;
-        break;
-      default:
-        break; // unexpected input
-    }
-  }
-
-  function draw(path) {
-    var mode = drawModeControl.getCurrent();
-    switch (mode) {
-      case "Application Area":
-        if (appArea == null) {
-          appArea = new AppArea(map, path);
-        } else {
-          appArea.del();
-          appArea = new AppArea(map, path);
-        }
-        break;
-      case "Hazard":
-        if (appArea == null) {
-          console.log("No application area defined for hazard");
-          return;
-        }
-        appArea.addHazard(path);
-        break;
-      case "Variable Rate Area":
-        if (appArea == null) {
-          console.log("No application area defined for variate rate area");
-          return;
-        }
-        appArea.addVariableRate(path);
-        break;
-      default:
-        break; // unexpected input
-    }
-    var success = validate();
-    updateStats();
-  }
-
-  function resetMap() {
-    if (appArea != null) {
-      appArea.del();
-    }
-    appArea = null;
-    // Reset stat display
-    document.getElementById("num-acres").value = 0;
-    document.getElementById("num-bugs").value = 0;
-  }
-
-  function updateStats() {
-    try {
-      if (appArea != null) {
-        // Update stat display
-        var acres = appArea.getAdjustedArea();
-        acres = round(acres, 3);
-        document.getElementById("num-acres").value = acres;
-        var bpa = document.getElementById("num-bugs-per-acre").value;
-        var vr = document.getElementById("variable-rate").value;
-        var totalBugs = appArea.getTotalBugs(bpa, vr);
-
-        if (document.getElementById("add-bug-toggle").checked) {
-          var bpa2 = document.getElementById("num-bugs-per-acre2").value;
-          var vr2 = document.getElementById("variable-rate2").value;
-          totalBugs += appArea.getTotalBugs(bpa2, vr2);
-        }
-
-        document.getElementById("num-bugs").value = round(totalBugs, 0);
-      } else {
+    
+      function resetMap() {
+        if (!!appArea) { appArea.del(); }
+        appArea = null;
+        // Reset stat display
         document.getElementById("num-acres").value = 0;
         document.getElementById("num-bugs").value = 0;
       }
-    } catch (e) {
-      document.getElementById("num-acres").value = 0;
-      document.getElementById("num-bugs").value = 0;
-    }
-  }
-
-  function validate() {
-    if (appArea == null) {
-      console.log("App area was null");
-      return false;
-    }
-    if (!appArea.validateAndFix()) {
-      appArea == null;
-      return false;
-    }
-    return true;
-  }
-
-  // Make text boxes responsive to user input (update the stats)
-  var bugsPerAcre = document.getElementById("num-bugs-per-acre");
-  bugsPerAcre.addEventListener("change", updateStats);
-  bugsPerAcre.addEventListener("paste", updateStats);
-  bugsPerAcre.addEventListener("input", updateStats);
-
-  var percentMultiplier = document.getElementById("variable-rate");
-  percentMultiplier.addEventListener("change", updateStats);
-  percentMultiplier.addEventListener("paste", updateStats);
-  percentMultiplier.addEventListener("input", updateStats);
-
-  var bugsPerAcre2 = document.getElementById("num-bugs-per-acre2");
-  bugsPerAcre2.addEventListener("change", updateStats);
-  bugsPerAcre2.addEventListener("paste", updateStats);
-  bugsPerAcre2.addEventListener("input", updateStats);
-
-  var percentMultiplier2 = document.getElementById("variable-rate2");
-  percentMultiplier2.addEventListener("change", updateStats);
-  percentMultiplier2.addEventListener("paste", updateStats);
-  percentMultiplier2.addEventListener("input", updateStats);
-
-  toastr.options.positionClass = "toast-top-center";
-  document
-    .getElementById("additional-info")
-    .addEventListener("submit", function(event) {
-      if (validate()) {
-        //toastr.optionsOverride({progressBar: 'true'});
-        toastr.info("Processing...");
-        // Prevent default submission (we are building ajax requests)
-        event.preventDefault();
-
-        // Create form data object to easily get form values
-        var formData = new FormData(document.getElementById("additional-info"));
-
-        var applicationArea = appArea.toEasyFormat();
-        var data = {
-          // Map Data
-          appArea: applicationArea,
-          appAcres: appArea.getArea(),
-          hazardAcres: appArea.getHazardArea(),
-          vraAcres: appArea.getVRAArea(),
-          bugName: formData.get("bug-name"),
-          bugsPerAcre: formData.get("bugs-per-acre"),
-          variableRate: formData.get("variable-rate"),
-          numBugs: formData.get("num-bugs"),
-          // User Information Input
-          contactName: formData.get("contact_name"),
-          contactPhone: formData.get("contact_phone"),
-          contactEmail: formData.get("contact_email"),
-          billingAddress: formData.get("billing_address"),
-          // Application Area Input
-          crop: formData.get("crop"),
-          rowSpacing: formData.get("row_spacing"),
-          ranchName: formData.get("ranch-name"),
-          correctedAcreage: formData.get("corrected-acreage"),
-          // Preferences Input
-          applicationDate: formData.get("application-date"),
-          operator: formData.get("operator"),
-          notes: formData.get("notes")
-        };
-
-        if (document.getElementById("add-bug-toggle").checked) {
-          data.bugName2 = formData.get("bug-name2");
-          data.bugsPerAcre2 = formData.get("bugs-per-acre2");
-          data.variableRate2 = formData.get("variable-rate2");
+    
+      function round(value, decimals) {
+          return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
+      }
+    
+      function showPrompt(id, data = null) {
+        let header = "";
+        let body = "";
+        switch (id) {
+          case "application-date":
+            header = "Application Date";
+            body = "Enter a preferred date in which the job will take place";
+            break;
+          case "corrected-acreage":
+            header = "Corrected Acreage";
+            body =
+              "If exact field acreage is known, this number will be used in place of the estimate above." +
+              "<br>Note: if this number is given, variable rate areas and hazard areas will not be incorporated into initial bug estimates. Map data will still be sent";
+            break;
+          case "crop":
+            header = "Crop Type";
+            body = "The crop(s) contained in the field specified";
+            break;
+          case "notes":
+            header = "Notes";
+            body = "Enter any additional information desired";
+            break;
+          case "operator":
+            header = "Preferred Operator";
+            body = "Enter the name of a preferred Parabug operator, if desired";
+            break;
+          case "row-spacing":
+            header = "Row Spacing";
+            body =
+              "The spacing, in feet, between each row of crops in the field specified";
+            break;
+          case "shortcuts":
+            header = "Shortcuts / Hotkeys"
+            body = 
+              '<div class="row">' + 
+                '<div class="col col-6 s-key">1</div>' +
+                '<div class="col col-6 s-name">Drag Mode</div>' +
+                '<div class="col col-6 s-key">2</div>' +
+                '<div class="col col-6 s-name">Application Area Mode</div>' +
+                '<div class="col col-6 s-key">3</div>' +
+                '<div class="col col-6 s-name">Hazard Area Mode</div>' +
+                '<div class="col col-6 s-key">4</div>' +
+                '<div class="col col-6 s-name">Variable Rate Mode</div>' +
+                '<div class="col col-6 s-key">5</div>' +
+                '<div class="col col-6 s-name">Delete Mode</div>' +
+                '<div class="col col-6 s-key">t</div>' +
+                '<div class="col col-6 s-name">Toggle Crosshair Mode</div>' +
+                '<div class="col col-6 s-key">s</div>' +
+                '<div class="col col-6 s-name">Mark/Select (Crosshair Mode)</div>' +
+                '<div class="col col-6 s-key">f</div>' +
+                '<div class="col col-6 s-name">Finish Shape (Crosshair Mode)</div>' +
+              '</div>';
+            break;
+          case "ranch-map":
+            header = "Ranch Map File Upload";
+            body = "An Image/PDF file which displays the ranch map or desired application area. This file input can be used in place of the manually drawn application area. (10 MB Max)";
+            break;
+          default:
+          body = "tip not found";
+            return;
+            break;
         }
-
-        // Check bug names for empty strings?
-
-        // Ajax request
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-          if (this.readyState == 4 && this.status == 200) {
-            var message = this.responseText;
-            showAlert(message);
+    
+        modal.style.display = "block";
+        document.getElementById("modal-header-text").innerHTML = header;
+        document.getElementById("modal-body").innerHTML = body;
+    
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+          if (event.target == modal) {
+            modal.style.display = "none";
           }
         };
-        xhttp.open("POST", "/", true);
-        xhttp.setRequestHeader(
-          "Content-Type",
-          "application/json; charset=UTF-8"
-        );
-        xhttp.send(JSON.stringify(data));
-      } else {
-        event.preventDefault();
-        console.log("Did not submit");
       }
-    });
 
-  function showAlert(json) {
-    var message = JSON.parse(json);
+      /* Session Functions */
+      function importSession() {
+        sessionFileInput.click();
+      }
 
-    if (message.alertMessage === "Success") {
-      toastr.success("Request Complete!");
-    } else if (message.alertMessage === "invalid") {
-      toastr.warning("Please Fill Out the Map Application Area.");
-    } else {
-      toastr.error("Request Failed. Please Try Again.");
-    }
-  }
+      sessionFileInput.addEventListener("change", function(event) {
+        let fileURL = URL.createObjectURL(sessionFileInput.files[0]);
+        const xhr = new XMLHttpRequest();
+        // Read the current file as an XMLDocument to be used in @tmcw/togeojson library
+        xhr.onload = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              let formData = new FormData(document.getElementById("additional-info"));
+              let responseText = this.responseText;
+              let session = JSON.parse(responseText);
+              /***************************** Set Map Data *****************************/
+              if (session.map && session.map.ApplicationArea) {
+                try {
+                  appArea = new AppArea(map, session.map.ApplicationArea[0].shell);
+                  session.map.Hazards.forEach((hazard) => {
+                    appArea.addHazard(hazard[0].shell, hazard[0].holes);
+                  })
+                  session.map.VariableRateAreas.forEach((vra) => {
+                    appArea.addVariableRate(vra[0].shell, vra[0].holes);
+                  })
+                } catch (e) {
+                  // Error
+                  console.log(e);
+                }
+              }
 
-  function makeMarker() {
-    if (drawModeControl.current == 4) {
-      // Delete Mode
-      mobileClickSubPoly(centerMarker.getPosition());
-      return;
-    }
-    if (drawModeControl.current == 0) {
-      // Drag Mode
-      alert("Select a mode.");
-      return;
-    }
-
-    overlayMarkers.push(centerMarker.getPosition());
-    if (tempShape != null) {
-      tempShape.setMap(null);
-    }
-    if (overlayMarkers.length == 1) {
-      tempShape = new google.maps.Marker({
-        position: centerMarker.getPosition(),
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 6,
-          fillColor: "white",
-          fillOpacity: 1,
-          strokeColor: "black",
-          strokeWeight: 2
-        },
-        map: map
+              /***************************** Set Form Data *****************************/
+              if (session.form.bugName) {
+                document.getElementById("bug-name").value = session.form.bugName;
+              }
+              if (session.form.bugsPerAcre) {
+                document.getElementById("num-bugs-per-acre").value = session.form.bugsPerAcre;
+              }
+              if (session.form.variableRate) {
+                document.getElementById("variable-rate").value = session.form.variableRate;
+              }
+              if (session.form.bugName2) {
+                if (!document.getElementById("add-bug-toggle").checked) {
+                  document.getElementById("add-bug-toggle").click();
+                }
+                document.getElementById("bug-name2").value = session.form.bugName2;
+                if (session.form.bugsPerAcre2) {
+                  document.getElementById("num-bugs-per-acre2").value = session.form.bugsPerAcre2;
+                }
+                if (session.form.variableRate2) {
+                  document.getElementById("variable-rate2").value = session.form.variableRate2;
+                }
+              }
+              if (session.form.contactName) {
+                document.getElementById("contact-name").value = session.form.contactName;
+              }
+              if (session.form.contactPhone) {
+                document.getElementById("contact-phone").value = session.form.contactPhone;
+              }
+              if (session.form.contactEmail) {
+                document.getElementById("contact-email").value = session.form.contactEmail;
+              }
+              if (session.form.billingAddress) {
+                document.getElementById("billing-address").value = session.form.billingAddress;
+              }
+              if (session.form.crop) {
+                document.getElementById("crop").value = session.form.crop;
+              }
+              if (session.form.rowSpacing) {
+                document.getElementById("row-spacing").value = session.form.rowSpacing;
+              }
+              if (session.form.ranchName) {
+                document.getElementById("ranch-name").value = session.form.ranchName;
+              }
+              if (session.form.correctedAcreage) {
+                document.getElementById("corrected-acreage").value = session.form.correctedAcreage;
+              }
+              if (session.form.applicationDate) {
+                document.getElementById("application-date").value = session.form.applicationDate;
+              }
+              if (session.form.operator) {
+                document.getElementById("operator").value = session.form.operator;
+              }
+              if (session.form.notes) {
+                document.getElementById("notes").value = session.form.notes;
+              }
+            } else {
+                createAlert("Failed to Load Session File", 3000,"error");
+            }
+        }
+        xhr.onerror = function() {
+            createAlert("Failed to Load Session File", 3000,"error");
+        }
+        xhr.open("GET", fileURL, true);
+        xhr.send();
       });
-      return;
-    }
-
-    // If more than one marker, generate a polyline
-    tempShape = new google.maps.Polyline({
-      path: overlayMarkers,
-      strokeColor: "#000000",
-      strokeOpacity: 1,
-      strokeWeight: 3,
-      draggable: true,
-      geodesic: true
-    });
-    tempShape.setMap(map);
-  }
-
-  function mobileClickSubPoly(latLng) {
-    if (appArea == null) {
-      return;
-    }
-    // Mobile delete selection fix
-    var temp;
-    for (var i = 0; i < appArea.getNumHazard(); i++) {
-      temp = appArea.getHazard(i).getPoly();
-      if (google.maps.geometry.poly.containsLocation(latLng, temp)) {
-        var mev = {
-          stop: null,
-          latLng: latLng
+      
+      function exportSession() {
+        let formData = new FormData(document.getElementById("additional-info"));
+        let exportJson = {
+          map: (!!appArea) ? appArea.toEasyFormat() : null,
+          form: {
+            bugName: (formData.get("bug-name")) ? formData.get("bug-name") : null,
+            bugsPerAcre: (formData.get("bugs-per-acre")) ? formData.get("bugs-per-acre") : null,
+            variableRate: (formData.get("variable-rate")) ? formData.get("variable-rate") : null,
+            bugName2: (formData.get("bug-name2")) ? formData.get("bug-name2") : null,
+            bugsPerAcre2: (formData.get("bug-name2")) ? formData.get("bugs-per-acre2") : null,
+            variableRate2: (formData.get("bug-name2")) ? formData.get("variable-rate2") : null,
+            // User Information Input
+            contactName: (formData.get("contact_name")) ? formData.get("contact_name") : null,
+            contactPhone: (formData.get("contact_phone")) ? formData.get("contact_phone") : null,
+            contactEmail: (formData.get("contact_email")) ? formData.get("contact_email") : null,
+            billingAddress: (formData.get("billing_address")) ? formData.get("billing_address") : null,
+            // Application Area Input
+            crop: (formData.get("crop")) ? formData.get("crop") : null,
+            rowSpacing: (formData.get("row_spacing")) ? formData.get("row_spacing") : null,
+            ranchName: (formData.get("ranch-name")) ? formData.get("ranch-name") : null,
+            correctedAcreage: (formData.get("corrected-acreage")) ? formData.get("corrected-acreage") : null,
+            // Preferences Input
+            applicationDate: (formData.get("application-date")) ? formData.get("application-date") : null,
+            operator: (formData.get("operator")) ? formData.get("operator") : null,
+            notes: (formData.get("notes")) ? formData.get("notes") : null,
+          }
         };
-        google.maps.event.trigger(temp, "click", mev);
-        return;
-      }
-    }
-    for (i = 0; i < appArea.getNumVariableRateAreas(); i++) {
-      temp = appArea.getVariableRateArea(i).getPoly();
-      if (google.maps.geometry.poly.containsLocation(latLng, temp)) {
-        var mev = {
-          stop: null,
-          latLng: latLng
-        };
-        google.maps.event.trigger(temp, "click", mev);
-        return;
-      }
-    }
-    console.log("No subpoly contained spot");
-  }
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(exportJson, null, 2)], {
+          type: "text/plain"
+        }));
+        a.setAttribute("download", "pest_session_"+ new Date() + ".json");
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } 
 
-  function finishShape() {
-    if (tempShape != null) {
-      draw(tempShape.getPath());
-      tempShape.setMap(null);
-    }
-    overlayMarkers = [];
-    tempShape = null;
-  }
-
-  document.getElementById("mobile-mode").addEventListener("click", function() {
-    if (this.checked) {
-      terraDrawInstance.setMode("idle");
-      centerMarker.setPosition(map.getCenter());
-      centerMarker.setMap(map);
-      document.getElementById("mobile-options-div").style.display =
-        "inline-block";
-    } else {
-      drawToggle(drawModeControl.current);
-      centerMarker.setMap(null);
-      document.getElementById("mobile-options-div").style.display = "none";
-    }
-  });
-
-  document
-    .getElementById("add-bug-toggle")
-    .addEventListener("click", function() {
-      updateStats();
-      if (this.checked) {
-        document.getElementById("add-bug-display").style.display =
-          "inline-block";
-      } else {
-        document.getElementById("add-bug-display").style.display = "none";
+      function showSessionOptions() {
+        document.getElementById("session-options-dropdown-content").classList.toggle("show");
       }
-    });
-</script>
-</body>
+
+      window.onclick = function(event) {
+        if (!event.target.matches('#session-options-dropdown-btn')) {
+          let dropdowns = document.getElementById("session-options-dropdown-content");
+          if (dropdowns.classList.contains('show')) {
+            dropdowns.classList.remove('show');
+          }
+        }
+      }
+
+      function hideModal() {
+        modal.style.display = "none";
+      }
+
+      function toggleAdvancedOptions() {
+        let controlTab = document.getElementById("advanced-options-control-tab");
+        let btnText = document.getElementById("adv-btn-txt");
+        if (controlTab.display === "none") {
+          controlTab.display = "inline-block";
+          btnText.innerHTML = "Close";
+        } else {
+          controlTab.display = "none";
+          btnText.innerHTML = "Advanced";
+        }
+      }
+
+      function toggleLocationIcon() {
+        if (userLocation) {
+          if (userLocationMarker) {
+            userLocationMarker.setMap(null);
+            userLocationMarker = null;
+          } else {
+            userLocationMarker = new GeolocationMarker(map);
+            userLocationMarker.setCircleOptions({
+              'strokeOpacity': 0.3,
+              'fillOpacity': 0.3
+            });
+            // Try to get user location coords for 2 seconds
+            let startTime = new Date();
+            let userLocationCoords = userLocationMarker.getPosition();
+            if (userLocationCoords) {
+              map.setCenter(userLocationCoords);
+            } else {
+              let check = function() {
+                userLocationCoords = userLocationMarker.getPosition();
+                if (userLocationCoords) {
+                  map.setCenter(userLocationCoords);
+                } else {
+                  if (new Date() - startTime < 2000) {
+                    setTimeout(() => check(), 100);
+                  }
+                }
+              };
+              check();
+            }
+          }
+        } else {
+          createAlert("User location is currently disabled", 3000, 'error');
+        }
+      }
+
+      function updateStats() {
+        try {
+          if (appArea != null) {
+            // Update stat display
+            let acres = appArea.getAdjustedArea();
+            acres = round(acres, 3);
+            document.getElementById("num-acres").value = acres;
+            let bpa = document.getElementById("num-bugs-per-acre").value;
+            let vr = document.getElementById("variable-rate").value;
+            let totalBugs = appArea.getTotalBugs(bpa, vr);
+    
+            if (document.getElementById("add-bug-toggle").checked) {
+              let bpa2 = document.getElementById("num-bugs-per-acre2").value;
+              let vr2 = document.getElementById("variable-rate2").value;
+              totalBugs += appArea.getTotalBugs(bpa2, vr2);
+            }
+    
+            document.getElementById("num-bugs").value = round(totalBugs, 0);
+          } else {
+            document.getElementById("num-acres").value = 0;
+            document.getElementById("num-bugs").value = 0;
+          }
+        } catch (e) {
+          document.getElementById("num-acres").value = 0;
+          document.getElementById("num-bugs").value = 0;
+        }
+      }
+    
+      function validate() {
+        if (!!appArea) {
+          if (!appArea.validateAndFix()) {
+            appArea == null;
+            return false;
+          }
+        } else {
+          if (!$("#ranch-map").val()) {
+            return false;
+          }
+        }
+        return true;
+      }
+    
+      /* EVENT LISTENERS */
+      $('#num-bugs-per-acre').on('change paste input', updateStats);
+      $('#num-bugs-per-acre2').on('change paste input', updateStats);
+      $('#variable-rate').on('change paste input', updateStats);
+      $('#variable-rate2').on('change paste input', updateStats);
+
+      fileInput.addEventListener("click", function(event) {
+        fileInput.value = "";
+      });
+    
+      
+      fileInput.addEventListener("change", function(event) {
+        if (!overlayManager) { overlayManager = new GMapsOverlay(map); }
+        overlayManager.loadOverlay(fileInput.files[0], true);
+      });
+
+      document.getElementById("add-bug-toggle").addEventListener("click", function() {
+        updateStats();
+        if (this.checked) {
+          document.getElementById("add-bug-display").style.display = "inline-block";
+        } else {
+          document.getElementById("add-bug-display").style.display = "none";
+        }
+      });
+      
+      document.getElementById("additional-info").addEventListener("submit", function(event) {
+        if (validate()) {
+          createAlert("Processing...", 3000,"info");
+          event.preventDefault();
+
+          let formData = new FormData(document.getElementById("additional-info"));
+          // Create form data object to easily get form values
+          let aa = (!!appArea) ? appArea.toEasyFormat() : null;
+          let data = {
+            // Map Data
+            appArea: aa,
+            appAcres: (aa) ? appArea.getArea() : null,
+            hazardAcres: (aa) ? appArea.getHazardArea(): null,
+            vraAcres: (aa) ? appArea.getVRAArea() : null,
+            bugName: formData.get("bug-name"),
+            bugsPerAcre: formData.get("bugs-per-acre"),
+            variableRate: formData.get("variable-rate"),
+            numBugs: formData.get("num-bugs"),
+            // User Information Input
+            contactName: formData.get("contact_name"),
+            contactPhone: formData.get("contact_phone"),
+            contactEmail: formData.get("contact_email"),
+            billingAddress: formData.get("billing_address"),
+            // Application Area Input
+            crop: formData.get("crop"),
+            rowSpacing: formData.get("row_spacing"),
+            ranchName: formData.get("ranch-name"),
+            correctedAcreage: formData.get("corrected-acreage"),
+            ranchMap: formData.get("ranch-map"),
+            // Preferences Input
+            applicationDate: formData.get("application-date"),
+            operator: formData.get("operator"),
+            notes: formData.get("notes")
+          };
+          if (document.getElementById("add-bug-toggle").checked) {
+            data.bugName2 = formData.get("bug-name2");
+            data.bugsPerAcre2 = formData.get("bugs-per-acre2");
+            data.variableRate2 = formData.get("variable-rate2");
+          }
+    
+          let formToSend = new FormData();
+          formToSend.append('info', JSON.stringify(data));
+          formToSend.append('ranchMap', document.querySelector('[name=ranch-map]').files[0]);
+
+          // Ajax request
+          let xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              let response = JSON.parse(this.responseText);
+              if (response.success) {
+                createAlert("Request Complete!", 3000,"success");
+              } else {
+                createAlert(response.message, 10000, "error");
+              }
+            }
+          };
+          xhttp.open("POST", "/", true);
+          xhttp.send(formToSend);
+          window.scrollTo(0, 0);
+        } else {
+          event.preventDefault();
+          window.scrollTo(0, 0);
+          createAlert("Invalid map data. This could be due to a missing Application Area or Ranch Map.", 3000,'error');
+        }
+      });
+
+      document.getElementById("mobile-mode").addEventListener("click", function() {
+        if (this.checked) {
+          terraDrawInstance.setMode("idle");
+          centerMarker.setPosition(map.getCenter());
+          centerMarker.setMap(map);
+          document.getElementById("mobile-options-div").style.display = "inline-block";
+        } else {
+          drawToggle(drawModeControl.current);
+          centerMarker.setMap(null);
+          document.getElementById("mobile-options-div").style.display = "none";
+          hideMagnifier();
+        }
+      });
+      
+      document.getElementById("modal-close").addEventListener("click", function(event) { modal.style.display = "none"; });
+
+      
+      /* ADVANCED OPTIONS LISTENERS */
+      document.getElementById("advanced-options-button").addEventListener("click", function(event) {
+        let controls = document.getElementById("advanced-options-controls");
+        let settingsButton = document.getElementById("advanced-options-button");
+        if (controls.style.display === "none") {
+          controls.style.display = "block";
+          settingsButton.style.marginRight = "0px";
+        } else {
+          controls.style.display = "none";
+          settingsButton.style.marginRight = "12px";
+        }
+        $('#advanced-options').toggleClass("advanced-options-margin-fix");
+      });
+
+      document.getElementById("app-area-color").addEventListener("input", function(event) {
+        applyDisplaySettings();
+      });
+
+      document.getElementById("app-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("app-area-opacity-display").innerHTML = this.value + "%";
+        applyDisplaySettings();
+      });
+      
+      document.getElementById("hazard-area-color").addEventListener("input", function(event) {
+        applyDisplaySettings();
+      });
+
+      document.getElementById("hazard-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("hazard-area-opacity-display").innerHTML = this.value + "%";
+        applyDisplaySettings();
+      });
+      
+      $('#ranch-map').on("change", function(e) {
+        let ranchMapFile = e.currentTarget.files;
+        if (ranchMapFile.length == 1) {
+          let filesize = ((ranchMapFile[0].size/1024)/1024).toFixed(4);
+          if (filesize >= 11) {
+            window.scrollTo(0, 0);
+            createAlert("Ranch map input file too large. Files must be less than 11 MB", 10000, "error");
+            $('#ranch-map').val("");
+          }
+        } else if (ranchMapFile.length > 1) {
+          window.scrollTo(0, 0);
+          createAlert("Too many files included in ranch map input. Please include 1 file only and try again", 10000, "error");
+          $('#ranch-map').val("");
+        }
+      });
+
+      document.getElementById("vr-area-color").addEventListener("input", function(event) {
+        applyDisplaySettings();
+      });
+
+      document.getElementById("vr-area-opacity").addEventListener("input", function(event) {
+        document.getElementById("vr-area-opacity-display").innerHTML = this.value + "%";
+        applyDisplaySettings();
+      });
+
+      /* HOTKEYS */
+      $('#map').keypress(function(e) {
+        let key = String.fromCharCode(e.which);
+        switch (key) {
+          case '1':
+            $('#mode-selector').val(0);
+            drawToggle('0');
+            break;
+          case '2':
+            $('#mode-selector').val(1);
+            drawToggle('1');
+            break;
+          case '3':
+            $('#mode-selector').val(2);
+            drawToggle('2');
+            break;
+          case '4':
+            $('#mode-selector').val(3);
+            drawToggle('3');
+            break;
+          case '5':
+            $('#mode-selector').val(4);
+            drawToggle('4');
+            break;
+          case '6':
+            $('#mode-selector').val(5);
+            drawToggle('5');
+            break;
+          case 't': case 'T': // Mobile mode select / mark
+            $('#mobile-mode').click();
+            break;
+          case 's': case 'S': // Mobile mode select / mark
+            if ($('#mobile-mode').prop("checked")) { makeMarker(); }
+            break;
+          case 'f': case 'F': // Mobile mode finish
+            if ($('#mobile-mode').prop("checked")) { finishShape(); }
+            break;
+          default:
+            break;
+        }
+      });
+
+      /* Mouse Magnification On Overlay -> VRA Auto Generation Selection */
+      function magnify(imgID, zoom) {
+        let img, glass, w, h, bw;
+        img = document.getElementById(imgID);
+
+        /* Create magnifier glass: */
+        glass = document.createElement("DIV");
+        glass.setAttribute("class", "img-magnifier-glass");
+
+        /* Insert magnifier glass: */
+        img.parentElement.insertBefore(glass, img);
+
+        /* Set background properties for the magnifier glass: */
+        glass.style.backgroundImage = "url('" + img.src + "')";
+        glass.style.backgroundRepeat = "no-repeat";
+        glass.style.backgroundSize = (img.width * zoom) + "px " + (img.height * zoom) + "px";
+        bw = 3;
+        w = glass.offsetWidth / 2;
+        h = glass.offsetHeight / 2;
+
+        /* Execute a function when someone moves the magnifier glass over the image: */
+        glass.addEventListener("mousemove", moveMagnifier);
+        img.addEventListener("mousemove", moveMagnifier);
+
+        /*and also for touch screens:*/
+        glass.addEventListener("touchmove", moveMagnifier);
+        img.addEventListener("touchmove", moveMagnifier);
+        function moveMagnifier(e) {
+          let pos, x, y;
+          /* Prevent any other actions that may occur when moving over the image */
+          e.preventDefault();
+          /* Get the cursor's x and y positions: */
+          pos = getCursorPos(e);
+          x = pos.x;
+          y = pos.y;
+          /* Prevent the magnifier glass from being positioned outside the image: */
+          if (x > img.width - (w / zoom)) {x = img.width - (w / zoom);}
+          if (x < w / zoom) {x = w / zoom;}
+          if (y > img.height - (h / zoom)) {y = img.height - (h / zoom);}
+          if (y < h / zoom) {y = h / zoom;}
+          /* Set the position of the magnifier glass: */
+          glass.style.left = (x - w) + "px";
+          glass.style.top = (y - h) + "px";
+          /* Display what the magnifier glass "sees": */
+          glass.style.backgroundPosition = "-" + ((x * zoom) - w + bw) + "px -" + ((y * zoom) - h + bw) + "px";
+        }
+
+        function getCursorPos(e) {
+          let a, x = 0, y = 0;
+          e = e || window.event;
+          /* Get the x and y positions of the image: */
+          a = img.getBoundingClientRect();
+          /* Calculate the cursor's x and y coordinates, relative to the image: */
+          x = e.pageX - a.left;
+          y = e.pageY - a.top;
+          /* Consider any page scrolling: */
+          x = x - window.pageXOffset;
+          y = y - window.pageYOffset;
+          return {x : x, y : y};
+        }
+      }
+    </script>
+  </body>
+  
 </html>

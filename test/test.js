@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const renderPdf = require('../lib/pdf-renderer');
+const writePdf = require('../lib/pdf-generator');
 
 describe('App', function() {
   it('has the default page', function(done) {
@@ -31,31 +31,51 @@ describe('App', function() {
     const response = await request(app)
       .post('/')
       .send({
-        appArea: {
-          ApplicationArea: [{
-            shell: [
-              { lat: 0, lng: 0 },
-              { lat: 1, lng: 1 },
-              { lat: 0, lng: 1 },
-              { lat: 1, lng: 0 },
-              { lat: 0, lng: 0 }
-            ],
-            holes: []
-          }],
-          Hazards: [],
-          VariableRateAreas: []
-        }
+        info: JSON.stringify({
+          appArea: {
+            ApplicationArea: [{
+              shell: [
+                { lat: 0, lng: 0 },
+                { lat: 1, lng: 1 },
+                { lat: 0, lng: 1 },
+                { lat: 1, lng: 0 },
+                { lat: 0, lng: 0 }
+              ],
+              holes: []
+            }],
+            Hazards: [],
+            VariableRateAreas: []
+          }
+        })
       });
 
-    assert.equal(response.text, 'App area was not simple');
+    assert.equal(response.body.success, false);
+    assert.equal(response.body.message, 'Application Area was invalid');
   });
 
-  it('renders HTML into a PDF file', async function() {
-    this.timeout(30000);
+  it('rejects unsupported ranch-map upload types', async function() {
+    const response = await request(app)
+      .post('/')
+      .field('info', JSON.stringify({}))
+      .attach('ranchMap', Buffer.from('not an image'), {
+        filename: 'invalid.txt',
+        contentType: 'text/plain'
+      });
+
+    assert.equal(response.body.success, false);
+    assert.match(response.body.message, /Ranch map supplied was invalid/);
+  });
+
+  it('renders a PDF report with PdfMake', async function() {
     const outputPath = path.join(os.tmpdir(), `parabug-${process.pid}.pdf`);
 
     try {
-      await renderPdf('<!doctype html><html><body>Estimate</body></html>', outputPath);
+      await writePdf({
+        content: ['Estimate', { image: 'logo', width: 120 }],
+        images: {
+          logo: path.join(__dirname, '..', 'public', 'img', 'logo-lrg.jpg')
+        }
+      }, outputPath);
       const pdf = await fs.readFile(outputPath);
       assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
     } finally {

@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            margin: 0px;
+            width: 100%;
+            padding: 10px;
+        }
+
+        .logo-header {
+            text-align: center;
+        }
+
+        .logo-header img {
+            width: 100%;
+            max-width: 336px;
+        }
+
+        #notes {
+            font-size: 18px;
+            text-indent: 25px;
+        }
+
+        .text-info {
+            line-height: 24px;
+            font-size: 20px;
+            margin: 6px 10px 6px 10px;
+        }
+
+
+        table {
+            text-align: center;
+            width: 88%;
+            margin-left: 6%;
+            margin-right: 6%;
+            border-collapse: collapse;
+        }
+
+        table,
+        th,
+        td {
+            font-size: 18px;
+            border: 1px solid black;
+            line-height: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="logo-header"> <img src="https://parabug.xyz/img/logo-sml.jpg"> </div>
+
+
+    <div class="text-info">Contact Name: <%= contact_name %> </div>
+    <div class="text-info">Contact Email: <%= contact_email %> </div>
+    <div class="text-info">Contact Phone: <%= contact_phone %> </div>
+    <div class="text-info">Billing Address: <%= billing_address %> </div>
+    <div class="text-info">Crop: <%= crop %> </div>
+    <div class="text-info">Row Spacing: <%= row_spacing %> ft </div>
+
+    <% if(ranchName ){ %>
+    <div class="text-info">Ranch: <%= ranchName %> </div>
+    <% } %>
+
+    <% if(applicationDate ){ %>
+    <div class="text-info">Preferred Application Date: <%= applicationDate %> </div>
+    <% } %>
+
+    <% if( operator){ %>
+    <div class="text-info">Preferred Operator: <%= operator %> </div>
+    <% } %>
+
+    <div class="text-info">Notes:</br>
+        <div id="notes"> <%= notes %> </div>
+    </div><br>
+
+
+    <% if(correctedAcreage){ %>
+    <table>
+        <tr>
+            <th colspan="4"> Application Area (Corrected Acreage)</th>
+        </tr>
+        <tr>
+            <td>Size (Acres - Manual)</td>
+            <td><%= bug1%> (Per Acre)</td>
+
+            <% if(bug2){ %>
+            <td><%= bug2%> (Per Acre)</td>
+            <% } %>
+
+            <td>Total Bugs</td>
+        </tr>
+        <tr>
+            <td><%= correctedAcreage %></td>
+            <td><%= standardBPA1 %></td>
+
+            <% if(bug2){ %>
+            <td><%= standardBPA2 %></td>
+            <% } %>
+
+            <td><%= sumBugsCorrected %></td>
+        </tr>
+    </table>
+    <br><br>
+    <% } %>
+    
+    <div>
+        <br>
+        Created: <br>
+        <%= new Date();%>
+    </div>
+</body>
+
+</html>
