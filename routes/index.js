@@ -947,14 +947,13 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
       refreshToken: privateKey.refreshToken
     }
   });
-  const parabug_email_path = "info@parabug.solutions";
+  const parabug_email_path = process.env.PARABUG_EMAIL || privateKey.user;
   var parabugMailOptions = {
-    from:
-      '"Requested Parabug Estimate Quote"' +
-      "<" +
-      parabug_email_path +
-      ">", // sender address
-    to: " <" + parabug_email_path + ">", // list of receivers
+    from: {
+      name: "Requested Parabug Estimate Quote",
+      address: privateKey.user
+    },
+    to: parabug_email_path,
     subject: "Parabug Estimate Request", // Subject line
     text: info.notes, // plain text body
     html: pdfData,
@@ -977,11 +976,10 @@ function sendMail(info, pdfFileName, pdfData, kmlFileName, ranchMapName, csvFile
     }
   });
   var clientMailOptions = {
-    from:
-      '"Requested Parabug Estimate Quote"' +
-      "<" +
-      parabug_email_path +
-      ">", // sender address
+    from: {
+      name: "Requested Parabug Estimate Quote",
+      address: privateKey.user
+    },
     to: " <" + info.contactEmail + ">", // list of receivers
     subject: "Parabug Estimate Request", // Subject line
     text: info.notes, // plain text body

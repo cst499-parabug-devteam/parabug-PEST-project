@@ -285,93 +285,184 @@ html {
   text-overflow: ellipsis;
 }
 
-/* Overlay Loader Modal */
-.overlay-loader-modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 2000; /* Sit above map controls */
-  padding-top: 100px; /* Location of the box */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(0,0,0); /* Fallback color */
-  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+.overlay-import-heading {
+  min-width: 0;
 }
 
-/* Overlay Loader Modal Content */
-.overlay-loader-modal-content {
-  position: relative;
-  background-color: white;
-  margin: auto;
-  padding: 0;
-  border: 2px solid rgb(59, 59, 59);
-  width: 80%;
-  max-width: 1500px;
-  /* min-width: 400px; */
-  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
-  -webkit-animation-name: animatetop;
-  -webkit-animation-duration: 0.4s;
-  animation-name: animatetop;
-  animation-duration: 0.4s
+#overlay-loader-title {
+  font-size: 24px;
+  line-height: 32px;
+  margin: 0;
 }
 
-/* Add Animation */
-@-webkit-keyframes animatetop {
-  from {top:-300px; opacity:0} 
-  to {top:0; opacity:1}
+#overlay-loader-header {
+  color: #5f6b65;
+  font-size: 13px;
+  line-height: 20px;
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
 }
 
-@keyframes animatetop {
-  from {top:-300px; opacity:0}
-  to {top:0; opacity:1}
+#overlay-loader-modal .help-header {
+  align-items: flex-start;
+  gap: 12px;
 }
 
-/* The Close Button */
-.overlay-loader-close {
-  color: white;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  padding: 0px 8px;
+#overlay-loader-modal .help-close {
+  flex: 0 0 36px;
 }
 
-.overlay-loader-close:hover,
-.overlay-loader-close:focus {
-  color: #000;
-  text-decoration: none;
+#overlay-loader-body {
+  padding: 4px 24px 20px;
+}
+
+.overlay-import-layer {
+  border-bottom: 1px solid #dfe4e1;
+}
+
+.overlay-layer-heading {
+  align-items: center;
   cursor: pointer;
+  display: flex;
+  font-weight: 600;
+  gap: 8px;
+  min-height: 48px;
 }
 
-@media only screen and (max-width: 460px) {
-  .overlay-loader-close {
-    display: none;
-  }
+.overlay-layer-heading::before {
+  content: "+";
+  flex: 0 0 16px;
+  text-align: center;
 }
 
-.overlay-loader-modal-header {
-  padding: 12px;
-  /* background-color: #5cb85c; */
-  background-color: #f39325;
-  color: white;
-  font-size: 28px;
-  font-weight: bold;
+.overlay-import-layer[open] > .overlay-layer-heading::before {
+  content: "-";
 }
 
-.overlay-loader-modal-body {padding: 4px;}
-
-.overlay-loader-modal-footer {
-  padding: 12px;
-  /* background-color: #5cb85c; */
-  background-color: #f39325;
-  color: white;
-  text-align: right;
+.overlay-layer-heading::-webkit-details-marker {
+  display: none;
 }
 
-.overlay-loader-modal-footer button {
-  font-size: 18px;
-  font-weight: bold;
+.overlay-layer-heading > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.overlay-layer-remove {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 0 0 32px;
+  height: 32px;
+  margin-left: auto;
+  padding: 6px;
+}
+
+.overlay-layer-remove:hover {
+  background: #fff3f0;
+  border-color: #e4b7aa;
+}
+
+.overlay-layer-settings {
+  padding: 0 0 12px 24px;
+}
+
+#overlay-loader-modal .modal-row-content {
+  font-size: 14px;
+  line-height: 24px;
+  padding: 8px 0;
+}
+
+.overlay-import-note,
+.overlay-import-empty {
+  color: #5f6b65;
+  font-size: 13px;
+  line-height: 20px;
+  margin: 8px 0 0;
+}
+
+#overlay-loader-modal input {
+  accent-color: #f39325;
+  border: 1px solid #cbd4cf;
+  border-radius: 4px;
+  color: #25332f;
+  font: inherit;
+  vertical-align: middle;
+}
+
+#overlay-loader-modal input[type="number"] {
+  min-height: 36px;
+  padding: 4px 8px;
+  width: 64px;
+}
+
+#overlay-loader-modal input:disabled {
+  background: #f1f3f2;
+  color: #78827c;
+}
+
+#overlay-loader-modal input[type="range"] {
+  max-width: 100%;
+  width: 120px;
+}
+
+#overlay-loader-modal input[type="color"] {
+  height: 32px;
+  margin: 4px;
+  padding: 2px;
+  width: 36px;
+}
+
+#overlay-loader-modal .overlay-palette-toggle {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+#overlay-loader-modal input[type="checkbox"] {
+  flex: 0 0 16px;
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+#overlay-loader-footer {
+  background: #fff;
+  border-top: 1px solid #dfe4e1;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  position: sticky;
+}
+
+#overlay-loader-footer button {
+  border: 1px solid #cbd4cf;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 600 14px/20px Roboto, Arial, sans-serif;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.overlay-import-cancel {
+  background: #fff;
+  color: #25332f;
+}
+
+#overlay-loader-import {
+  background: #f39325;
+  border-color: #e28113 !important;
+  color: #25332f;
+}
+
+#overlay-loader-import:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .overlay-settings-row {
@@ -976,7 +1067,8 @@ html {
   border-color: #f39325;
 }
 
-#help-dialog {
+#help-dialog,
+#overlay-loader-modal {
   background: #fff;
   border: 1px solid #d5dad8;
   border-top: 4px solid #f39325;
@@ -993,11 +1085,13 @@ html {
   width: min(720px, calc(100% - 32px));
 }
 
-#help-dialog:not([open]) {
+#help-dialog:not([open]),
+#overlay-loader-modal:not([open]) {
   display: none;
 }
 
-#help-dialog::backdrop {
+#help-dialog::backdrop,
+#overlay-loader-modal::backdrop {
   background: rgba(16, 28, 26, 0.5);
 }
 
@@ -1065,7 +1159,8 @@ html {
 }
 
 #help-menu-button:focus-visible,
-#help-dialog :focus-visible {
+#help-dialog :focus-visible,
+#overlay-loader-modal :focus-visible {
   outline: 2px solid #f39325;
   outline-offset: -2px;
 }
@@ -1342,7 +1437,7 @@ html {
 }
 
 #top-alert {
-  width: 30%;
+  width: min(420px, calc(100% - 32px));
   position: absolute;
   top: 18px;
   left: 0;
@@ -1350,6 +1445,13 @@ html {
   margin-left: auto;
   margin-right: auto;
   /* display: none; */
+}
+
+#top-alert .alert {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 #user-info-display {

@@ -475,24 +475,20 @@
       </section>
     </dialog>
 
-    <div id="overlay-loader-modal" class="overlay-loader-modal">
-      <!-- Modal content -->
-      <div class="overlay-loader-modal-content">
-        <div class="overlay-loader-modal-header">
-          <span class="overlay-loader-close" onclick="closeOverlayLoader()">&times;</span>
-          <div id="overlay-loader-header"></div>
+    <dialog id="overlay-loader-modal" aria-labelledby="overlay-loader-title" aria-describedby="overlay-loader-header">
+      <header class="help-header">
+        <div class="overlay-import-heading">
+          <h2 id="overlay-loader-title">Import overlay</h2>
+          <p id="overlay-loader-header"></p>
         </div>
-        <div class="overlay-loader-modal-body">
-          <div id="overlay-loader-body"></div>
-        </div>
-        <div class="overlay-loader-modal-footer">
-          <span id="overlay-loader-footer">
-            <button class="btn btn-light mt-1" onclick="importOverlayFromLoader()">Import</button>
-            <button class="btn btn-light mt-1" onclick="closeOverlayLoader()">Cancel</button>
-          </span>
-        </div>
-      </div>
-    </div>
+        <button type="button" class="help-close" onclick="closeOverlayLoader()" aria-label="Close overlay import" title="Close overlay import">&times;</button>
+      </header>
+      <div id="overlay-loader-body"></div>
+      <footer id="overlay-loader-footer">
+        <button type="button" class="overlay-import-cancel" onclick="closeOverlayLoader()">Cancel</button>
+        <button type="button" id="overlay-loader-import" onclick="importOverlayFromLoader()">Import overlay</button>
+      </footer>
+    </dialog>
 
     <script>
       "use strict"
@@ -643,8 +639,23 @@
       }
 
       function closeOverlayLoader() {
-        document.getElementById("overlay-loader-modal").style.display = "none";
+        document.getElementById("overlay-loader-modal").close();
       }
+
+      const overlayLoaderDialog = document.getElementById("overlay-loader-modal");
+      overlayLoaderDialog.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeOverlayLoader();
+        }
+      });
+      overlayLoaderDialog.addEventListener("click", function(event) {
+        if (event.target !== overlayLoaderDialog) { return; }
+        let bounds = overlayLoaderDialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+          closeOverlayLoader();
+        }
+      });
 
       async function createAlert(message, duration, type="success", callback) {
           let alertBox = $('#top-alert');
