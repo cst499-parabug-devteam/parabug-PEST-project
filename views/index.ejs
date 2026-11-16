@@ -834,6 +834,7 @@
             }),
             modes: [
               new terraDraw.TerraDrawPolygonMode({
+                pointerDistance: 12,
                 styles: getTerraDrawPreviewStyles(drawModeControl.current)
               }),
               new terraDraw.TerraDrawRenderMode({ modeName: "idle", styles: {} })
