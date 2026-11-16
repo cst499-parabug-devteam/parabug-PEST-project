@@ -209,6 +209,39 @@ html {
   box-sizing: border-box;
 }
 
+.map-container:fullscreen {
+  background-color: #fff;
+  height: 100vh;
+  max-width: none;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 0;
+  width: 100vw;
+}
+
+.map-container:fullscreen #map {
+  height: 100%;
+  width: 100%;
+}
+
+#map-fullscreen-toggle {
+  align-items: center;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  margin: 10px 10px 0 0;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0;
+  width: 40px;
+}
+
+#map-fullscreen-toggle img {
+  display: block;
+  height: 18px;
+  width: 18px;
+}
+
 .modal {
   display: none;
   /* Hidden by default */

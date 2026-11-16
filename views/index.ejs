@@ -794,6 +794,7 @@
           zoom: 15,
           mapTypeId: "hybrid",
           mapTypeControl: false,
+          fullscreenControl: false,
           streetViewControl: false,
           rotateControl: false
         });
@@ -1059,9 +1060,10 @@
     
         /* Mobile Controls (Crosshair) */
         let mobileControl = document.getElementById("mobile-div");
+        let mapContainer = document.querySelector(".map-container");
         let mapControlStack = document.createElement("div");
         mapControlStack.id = "map-control-stack";
-        document.querySelector(".map-container").appendChild(mapControlStack);
+        mapContainer.appendChild(mapControlStack);
 
         let logoAlignmentScheduled = false;
         function alignControlStackWithGoogleLogo() {
@@ -1098,6 +1100,41 @@
         map.addListener("tilesloaded", alignControlStackWithGoogleLogo);
         window.addEventListener("resize", alignControlStackWithGoogleLogo);
         window.requestAnimationFrame(alignControlStackWithGoogleLogo);
+
+        let fullscreenButton = document.createElement("button");
+        fullscreenButton.type = "button";
+        fullscreenButton.id = "map-fullscreen-toggle";
+        fullscreenButton.className = "btn-white";
+        fullscreenButton.title = "Enter fullscreen map";
+        fullscreenButton.setAttribute("aria-label", "Enter fullscreen map");
+        fullscreenButton.innerHTML = '<img src="https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/maximize.svg" width="18" height="18" alt="">';
+        fullscreenButton.addEventListener("click", async function() {
+          try {
+            if (document.fullscreenElement === mapContainer) {
+              await document.exitFullscreen();
+            } else if (!document.fullscreenElement) {
+              await mapContainer.requestFullscreen();
+            }
+          } catch (error) {
+            createAlert("Fullscreen mode is unavailable in this browser.", 3000, "error");
+          }
+        });
+        map.controls[google.maps.ControlPosition.TOP_RIGHT].push(fullscreenButton);
+
+        document.addEventListener("fullscreenchange", function() {
+          let isFullscreen = document.fullscreenElement === mapContainer;
+          fullscreenButton.title = isFullscreen ? "Exit fullscreen map" : "Enter fullscreen map";
+          fullscreenButton.setAttribute("aria-label", fullscreenButton.title);
+          fullscreenButton.innerHTML = isFullscreen
+            ? '<img src="https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/minimize.svg" width="18" height="18" alt="">'
+            : '<img src="https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/maximize.svg" width="18" height="18" alt="">';
+          let center = map.getCenter();
+          window.requestAnimationFrame(function() {
+            google.maps.event.trigger(map, "resize");
+            if (center) { map.setCenter(center); }
+            alignControlStackWithGoogleLogo();
+          });
+        });
 
         /*  Dropup Menu With Additional Options */
         let dropUpMenuButton = $('<button>Options</button>')
